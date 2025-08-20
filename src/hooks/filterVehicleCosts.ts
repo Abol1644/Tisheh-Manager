@@ -51,7 +51,7 @@ export function groupTransportByVehicleAndAlternate(
   if (!transportList || transportList.length === 0) return grouped;
 
   transportList.forEach(item => {
-    const key = `${item.vehicleId}-${item.alternate}`;
+    const key = `${item.vehicleId}-${item.transit}-${item.alternate}`;
 
     if (!grouped[key]) {
       grouped[key] = {
@@ -70,7 +70,7 @@ export function groupTransportByVehicleAndAlternate(
     // Extract cost-related fields only
     const {
       // Exclude fields already in group root
-      vehicleId, alternate, vehicleTitle, capacity, fare,
+      vehicleId, alternate,transit, vehicleTitle, capacity, fare,
       ididentityShipp, dateTimeShipp,
       // Keep these
       ...costItem

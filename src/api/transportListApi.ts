@@ -16,7 +16,7 @@ export const getTransportListSale = async (
       listModelPrice: item,
       modelGeofences: geofence,
     });
-    console.log('get transport sale list', response.data)
+    console.log('❤ get transport sale list', response.data)
     return response.data;
   } catch (error: any) {
     console.error("Get Transport List Sale API error: ", error);

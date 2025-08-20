@@ -30,6 +30,7 @@ import LocationPinIcon from '@mui/icons-material/LocationPin';
 import PersonRoundedIcon from '@mui/icons-material/PersonRounded';
 import DoneAllRoundedIcon from '@mui/icons-material/DoneAllRounded';
 import ErrorOutlineRoundedIcon from '@mui/icons-material/ErrorOutlineRounded';
+import ScaleRoundedIcon from '@mui/icons-material/ScaleRounded';
 
 import { TomanIcon, RialIcon } from '@/components/elements/TomanIcon';
 
@@ -163,6 +164,7 @@ export function SabtSfaresh() {
       .then(data => {
         const list = Array.isArray(data) ? data : [data];
         setTransportListSale(list);
+        console.log("💚 ~ SabtSfaresh ~ list:", list)
       })
       .catch((error) => {
         let errorMessage = 'خطا در دریافت لیست حمل و نقل';
@@ -222,7 +224,14 @@ export function ShipmentTable({
   console.log("🚀 ~ ShipmentTable ~ Costs:", Costs)
   const groupedCosts = groupTransportByVehicleAndAlternate(Costs);
   console.log("🚀 ~ ShipmentTable ~ groupedCosts:", groupedCosts)
-  const displayItems = Object.values(groupedCosts);
+  const displayItems = Object.values(groupedCosts).sort((a, b) => {
+    const getOrder = (item: (typeof groupedCosts)[string]) => {
+      if (item.transit) return 1;
+      if (item.alternate) return 2;
+      return 0; // normal
+    };
+    return getOrder(a) - getOrder(b);
+  });
   console.log("🚀 ~ ShipmentTable ~ displayItems:", displayItems)
 
   return (
@@ -270,8 +279,8 @@ export function ShipmentTable({
                     <TableCell>
                       <Typography variant="body2" fontWeight="bold">
                         {group.vehicleTitle}
-                        {group.alternate &&<span style={{ color: 'var(--icon-success)' }}>(نوبت دار)</span>}
-                        {group.transit &&<span style={{ color: 'var(--text-warning)' }}>(ترانزیت)</span>}
+                        {group.alternate && <span style={{ color: 'var(--icon-success)' }}>(نوبت دار)</span>}
+                        {group.transit && <span style={{ color: 'var(--text-warning)' }}>(ترانزیت)</span>}
                       </Typography>
                     </TableCell>
                     <TableCell>
@@ -544,18 +553,18 @@ function OrderInput({
         <FormControl size='small' sx={{ minWidth: '200px', flex: 1 }}>
           <Select
             value={selectedUnit}
-            label='واحد'
             onChange={onUnitChange}
             input={
               <OutlinedInput
-                label='واحد'
+                label={units.length > 1 ? <span style={{ color: 'var(--icon-main)' }}><ScaleRoundedIcon sx={{ fontSize: 'small', p: 0 }} /> واحد</span> : 'واحد'}
                 sx={{
                   '& .MuiOutlinedInput-notchedOutline span': {
                     opacity: 1,
                     position: 'absolute',
-                    top: '-8px',
-                    left: '4px',
-                    backgroundColor: 'var(--background-paper)'
+                    top: '-4px',
+                    left: '6px',
+                    backgroundColor: 'var(--background-paper)',
+                    px: 0.5
                   }
                 }}
               />
