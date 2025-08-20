@@ -258,7 +258,6 @@ export function ShipmentTable({
 
                 return (
                   <TableRow
-                    // key={group.ididentityShipp} // or `${group.vehicleId}-${group.alternate}`
                     key={`${group.vehicleId}-${group.alternate}`}
                     onClick={() => onSelectTransport({ ...group.costs[0], ...group } as TransportList)}
                     hover
@@ -270,7 +269,9 @@ export function ShipmentTable({
                   >
                     <TableCell>
                       <Typography variant="body2" fontWeight="bold">
-                        {group.vehicleTitle} <span style={{ fontWeight: 'normal', color: 'var(--text-warning)' }}>{group.alternate && '(ترانزیت)'}</span>
+                        {group.vehicleTitle}
+                        {group.alternate &&<span style={{ color: 'var(--icon-success)' }}>(نوبت دار)</span>}
+                        {group.transit &&<span style={{ color: 'var(--text-warning)' }}>(ترانزیت)</span>}
                       </Typography>
                     </TableCell>
                     <TableCell>

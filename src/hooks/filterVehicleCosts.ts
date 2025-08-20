@@ -38,6 +38,7 @@ export function groupTransportByVehicleAndAlternate(
 ): Record<string, {
   vehicleId: number;
   alternate: boolean;
+  transit: boolean;
   vehicleTitle: string;
   capacity: number;
   fare: TransportList['fare'];
@@ -56,6 +57,7 @@ export function groupTransportByVehicleAndAlternate(
       grouped[key] = {
         vehicleId: item.vehicleId,
         alternate: item.alternate,
+        transit: item.transit,
         vehicleTitle: item.vehicleTitle,
         capacity: item.capacity,
         fare: item.fare, // same for all items in same shipment
