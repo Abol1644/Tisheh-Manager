@@ -1,7 +1,7 @@
 // utils/filterVehicleCosts.ts
 import { TransportList } from "@/models/TransportList";
 
-const filterVehicleCosts = (
+export const filterVehicleCosts = (
   items: TransportList[] | null | undefined,
   activateProportional: boolean,
   vehiclesCostOptionally: boolean,
@@ -23,15 +23,59 @@ const filterVehicleCosts = (
       // Case 1: Optionally is ON → include only items marked as optional
       (vehiclesCostOptionally && item.optionallyVehiclesCost) ||
       // Case 2: Conditional is ON → include only items with clock limit OR in traffic zone
-      (vehiclesCostConditional &&
-        (item.clockLimitVehiclesCost || item.inTrafficZoneVehiclesCost)) ||
+      (vehiclesCostConditional && item.clockLimitVehiclesCost) ||
       // Case 3: Both flags OFF → include only items that are NOT optional AND NOT conditional
       (!vehiclesCostOptionally &&
         !vehiclesCostConditional &&
         !item.optionallyVehiclesCost &&
-        !item.clockLimitVehiclesCost &&
-        !item.inTrafficZoneVehiclesCost)
+        !item.clockLimitVehiclesCost)
     );
   });
 };
-export default filterVehicleCosts;
+
+export function groupTransportByVehicleAndAlternate(
+  transportList: TransportList[] | null
+): Record<string, {
+  vehicleId: number;
+  alternate: boolean;
+  vehicleTitle: string;
+  capacity: number;
+  fare: TransportList['fare'];
+  ididentityShipp: number;
+  dateTimeShipp: string;
+  costs: Array<Partial<Omit<TransportList, 'fare'>>>;
+}> {
+  const grouped: ReturnType<typeof groupTransportByVehicleAndAlternate> = {};
+
+  if (!transportList || transportList.length === 0) return grouped;
+
+  transportList.forEach(item => {
+    const key = `${item.vehicleId}-${item.alternate}`;
+
+    if (!grouped[key]) {
+      grouped[key] = {
+        vehicleId: item.vehicleId,
+        alternate: item.alternate,
+        vehicleTitle: item.vehicleTitle,
+        capacity: item.capacity,
+        fare: item.fare, // same for all items in same shipment
+        ididentityShipp: item.ididentityShipp,
+        dateTimeShipp: item.dateTimeShipp,
+        costs: []
+      };
+    }
+
+    // Extract cost-related fields only
+    const {
+      // Exclude fields already in group root
+      vehicleId, alternate, vehicleTitle, capacity, fare,
+      ididentityShipp, dateTimeShipp,
+      // Keep these
+      ...costItem
+    } = item;
+
+    grouped[key].costs.push(costItem);
+  });
+
+  return grouped;
+}

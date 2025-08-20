@@ -18,7 +18,8 @@ import {
   Select, SelectChangeEvent,
   OutlinedInput,
   Slide, Backdrop,
-  Zoom, Grow
+  Zoom, Grow,
+  Divider
 } from '@mui/material';
 
 import NumberField from '@/components/elements/NumberField';
@@ -39,9 +40,9 @@ import { Inventory, GeoFence, TransportList, TransportTableProps } from '@/model
 import { useProductsStore, useProjectStore, useBranchDeliveryStore, useDistanceStore } from '@/stores';
 import { toPersianDigits } from '@/utils/persianNumbers'
 import { useSnackbar } from "@/contexts/SnackBarContext";
-import filterVehicleCosts from '@/hooks/filterVehicleCosts';
+import { filterVehicleCosts, groupTransportByVehicleAndAlternate } from '@/hooks/filterVehicleCosts';
 
-interface SabtSfareshTableProps {
+interface ShipmentTableProps {
   transportList: TransportList[] | null;
   selectedTransport: TransportList | null;
   onSelectTransport: (transport: TransportList) => void;
@@ -152,11 +153,10 @@ export function SabtSfaresh() {
   React.useEffect(() => {
     const priceIdSale = selectedItem?.priceId;
 
-    // 🔴 Prevent execution if no valid selectedItem
     if (!priceIdSale || !geofence || !products.length) return;
 
     const transportListPrice = products.filter((p) => p.priceId === priceIdSale);
-    if (transportListPrice.length === 0) return; // 🔴 Also guard against empty filter
+    if (transportListPrice.length === 0) return;
 
     setLoading(true);
     getTransportListSale(transportListPrice, geofence, distance, isBranchDelivery, primaryDistance)
@@ -179,7 +179,7 @@ export function SabtSfaresh() {
   return (
     <Box sx={{ width: '100%', flex: '1', borderRadius: '12px', display: 'flex', flexDirection: 'column', alignItems: 'stretch', justifyContent: 'end' }}>
       <Box sx={{ height: '100%' }}>
-        <SabtSfareshTable
+        <ShipmentTable
           transportList={transportListSale}
           selectedTransport={selectedTransport}
           onSelectTransport={setSelectedTransport}
@@ -192,6 +192,7 @@ export function SabtSfaresh() {
         inventory={inventory}
         transportList={transportListSale}
         selectedId={selectedTransport?.ididentityShipp || null}
+        geofence={geofence}
       />
 
       <OrderInput
@@ -209,52 +210,20 @@ export function SabtSfaresh() {
   );
 }
 
-export function SabtSfareshTable({
+export function ShipmentTable({
   transportList,
   selectedTransport,
   onSelectTransport,
   selectedUnit,
   unitRatio,
-}: SabtSfareshTableProps) {
+}: ShipmentTableProps) {
   const { toPersianPrice } = usePersianNumbers();
   const Costs = filterVehicleCosts(transportList, true, false, false);
-
-
-  // ✅ Move getPriceInfoString outside render loop
-  const getPriceInfoString = (row: any) => {
-    const formatNumber = (num: any) => {
-      return new Intl.NumberFormat('fa-IR').format(num);
-    };
-
-    const lines = [];
-
-    // 1. Vehicle Cost
-    if (row.priceVehiclesCost > 0) {
-      lines.push(`${row.vehiclesCostTitle.trim()} ${formatNumber(row.priceVehiclesCost)} ریال`);
-    }
-
-    // 2. Commission
-    if (row.fare?.comission > 0) {
-      lines.push(`کمیسیون ${formatNumber(row.fare.comission)} ریال`);
-    }
-
-    // 3. Fare (کرایه حمل)
-    if (row.fare?.fare > 0) {
-      lines.push(`کرایه حمل ${formatNumber(row.fare.fare)} ریال`);
-    }
-
-    // 4. CoefficientRoadTypeFare
-    if (row.fare?.coefficientRoadTypeFare > 0) {
-      lines.push(`ضریب ارتفاع جاده ${formatNumber(row.fare.coefficientRoadTypeFare)} ریال`);
-    }
-
-    // 5. FareDelay
-    if (row.fare?.fareDelay > 0) {
-      lines.push(`هزینه تاخیر در بارگیری/تخلیه ${formatNumber(row.fare.fareDelay)} ریال`);
-    }
-
-    return lines.length > 0 ? lines.join('\n') : 'اطلاعاتی موجود نیست';
-  };
+  console.log("🚀 ~ ShipmentTable ~ Costs:", Costs)
+  const groupedCosts = groupTransportByVehicleAndAlternate(Costs);
+  console.log("🚀 ~ ShipmentTable ~ groupedCosts:", groupedCosts)
+  const displayItems = Object.values(groupedCosts);
+  console.log("🚀 ~ ShipmentTable ~ displayItems:", displayItems)
 
   return (
     <Box className="income-modal-table-container" sx={{ mb: 1 }}>
@@ -271,31 +240,28 @@ export function SabtSfareshTable({
             </TableRow>
           </TableHead>
           <TableBody>
-            {Costs?.length === 0 ? (
+            {displayItems.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={3} align="center">
-                  هیچ وسیله‌ای یافت نشد
+                  ارسال به این منطقه انجام نمی‌شود
                 </TableCell>
               </TableRow>
             ) : (
-              Costs?.map((row) => {
-                const isSelected = selectedTransport?.vehiclesCostId === row.vehiclesCostId;
+              displayItems.map((group) => {
+                const isSelected = selectedTransport?.ididentityShipp === group.ididentityShipp;
 
-                // ✅ Calculate sumPrice: fullFare (from fare) + priceVehiclesCost
-                const fullFare = row.fare?.fullFare ?? 0;
-                const vehicleCost = row.priceVehiclesCost ?? 0;
-                const sumPrice = fullFare + vehicleCost;
+                const sumPrice = (group.fare?.fullFare ?? 0) +
+                  group.costs.reduce((sum, c) => sum + (c.priceVehiclesCost || 0), 0);
 
-                const displayWeight = toPersianDigits((row.capacity));
 
-                const priceInfo = getPriceInfoString(row);
+                const displayWeight = toPersianDigits(group.capacity);
 
                 return (
                   <TableRow
-                    key={`${row.vehicleId}-${row.ididentityShipp}`}
-                    onClick={() => onSelectTransport(row)}
+                    // key={group.ididentityShipp} // or `${group.vehicleId}-${group.alternate}`
+                    key={`${group.vehicleId}-${group.alternate}`}
+                    onClick={() => onSelectTransport({ ...group.costs[0], ...group } as TransportList)}
                     hover
-                    className="income-modal-table-rows"
                     sx={{
                       cursor: 'pointer',
                       bgcolor: isSelected ? 'action.selected' : 'inherit',
@@ -303,45 +269,103 @@ export function SabtSfareshTable({
                     }}
                   >
                     <TableCell>
-                      <Box sx={{ ...flex.columnStart }}>
-                        <Typography variant="body2" fontWeight="bold">
-                          {row.vehicleTitle}
-                        </Typography>
-                      </Box>
+                      <Typography variant="body2" fontWeight="bold">
+                        {group.vehicleTitle} <span style={{ fontWeight: 'normal', color: 'var(--text-warning)' }}>{group.alternate && '(ترانزیت)'}</span>
+                      </Typography>
                     </TableCell>
-                    <TableCell>{displayWeight} {selectedUnit}</TableCell>
+                    <TableCell>
+                      {displayWeight} {selectedUnit}
+                    </TableCell>
                     <TableCell>
                       <Box sx={{ ...flex.rowBetween, alignItems: 'center' }}>
-                        <Box sx={{ ...flex.columnStart }}>
-                          {/* ✅ Display sumPrice instead of just vehicle cost */}
-                          <Typography variant="body2">
-                            {toPersianPrice(sumPrice)}
-                          </Typography>
-                        </Box>
+                        <Typography variant="body2">
+                          {toPersianPrice(sumPrice)}
+                        </Typography>
 
-                        {/* Tooltip still shows detailed breakdown */}
-                        {priceInfo && (
-                          <Tooltip
-                            title={priceInfo}
-                            placement="right"
-                            arrow
-                            disableInteractive
-                            componentsProps={{
-                              tooltip: {
-                                sx: {
-                                  fontSize: '14px',
-                                  direction: 'rtl',
-                                  whiteSpace: 'pre-line',
-                                  textAlign: 'right',
-                                },
-                              },
-                            }}
-                          >
-                            <IconButton color="info" size="small">
-                              <InfoRoundedIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        )}
+                        {/* Tooltip: Show all cost details */}
+                        <Tooltip
+                          title={
+                            <Box component="div" sx={{ textAlign: 'left', dir: 'rtl', fontSize: '14px', p: 0.5 }}>
+                              {/* Service Costs (e.g. loading, traffic plan) */}
+                              {group.costs.map((c, i) => (
+                                <>
+                                  <Box sx={{ ...flex.rowBetween }} key={`cost-${c.vehiclesCostId || i}`}>
+                                    <Typography variant="body2">
+                                      {c.vehiclesCostTitle}:
+                                    </Typography>
+                                    <Typography variant="body2">
+                                      {toPersianPrice(c.priceVehiclesCost)} ریال
+                                    </Typography>
+                                  </Box>
+                                </>
+                              ))}
+                              {/* Base Freight */}
+                              {group.fare?.fare > 0 && (
+                                <>
+                                  <Divider variant="middle" sx={{ opacity: 0.4, my: 1, borderColor: 'background.paper' }} />
+                                  <Box sx={{ ...flex.rowBetween }}>
+                                    <Typography variant="body2">
+                                      کرایه پایه:
+                                    </Typography>
+                                    <Typography variant="body2">
+                                      {toPersianPrice(group.fare.fare)} ریال
+                                    </Typography>
+                                  </Box>
+                                </>
+                              )}
+                              {/* Commission */}
+                              {group.fare?.comission > 0 && (
+                                <>
+                                  <Divider variant="middle" sx={{ opacity: 0.4, my: 1, borderColor: 'background.paper' }} />
+                                  <Box sx={{ ...flex.rowBetween }}>
+                                    <Typography variant="body2">
+                                      کمیسیون:
+                                    </Typography>
+                                    <Typography variant="body2">
+                                      {toPersianPrice(group.fare.comission)} ریال
+                                    </Typography>
+                                  </Box>
+                                </>
+                              )}
+                              {/* Delay Fee */}
+                              {group.fare?.fareDelay > 0 && (
+                                <>
+                                  <Divider variant="middle" sx={{ opacity: 0.4, my: 1, borderColor: 'background.paper' }} />
+                                  <Box sx={{ ...flex.rowBetween }}>
+                                    <Typography variant="body2">
+                                      هزینه تأخیر در بارگیری/تخلیه:
+                                    </Typography>
+                                    <Typography variant="body2">
+                                      {toPersianPrice(group.fare.fareDelay)} ریال
+                                    </Typography>
+                                  </Box>
+                                </>
+                              )}
+
+                              {/* Road Type Coefficient */}
+                              {group.fare?.coefficientRoadTypeFare > 0 && (
+                                <>
+                                  <Divider variant="middle" sx={{ opacity: 0.4, my: 1, borderColor: 'background.paper' }} />
+                                  <Box sx={{ ...flex.rowBetween }}>
+                                    <Typography variant="body2">
+                                      ضریب ارتفاع جاده:
+                                    </Typography>
+                                    <Typography variant="body2">
+                                      {toPersianPrice(group.fare.coefficientRoadTypeFare)} ریال
+                                    </Typography>
+                                  </Box>
+                                </>
+                              )}
+                            </Box>
+                          }
+                          placement="right"
+                          arrow
+                          disableInteractive
+                        >
+                          <IconButton color="info" size="small">
+                            <InfoRoundedIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
                       </Box>
                     </TableCell>
                   </TableRow>
@@ -358,11 +382,13 @@ export function SabtSfareshTable({
 function OrderOptions({
   inventory,
   transportList,
-  selectedId
+  selectedId,
+  geofence
 }: {
   inventory: Inventory | null;
   transportList: TransportList[] | null;
   selectedId: number | null;  // ididentityShipp
+  geofence: GeoFence | null;
 }) {
   const { toPersianPrice } = usePersianNumbers();
   const typoStyles = { display: 'flex', alignItems: 'center', gap: '2px', mb: 1 };
@@ -399,26 +425,36 @@ function OrderOptions({
             }}
           >
             <InfoRoundedIcon color='info' />
-            <span style={{ fontSize: '110%', color: '#000', fontWeight: 500 }}>
+            <span style={{ color: '#000', fontWeight: 500 }}>
               {item.vehiclesCostTitle} :
             </span>
-            <span style={{ fontSize: '110%', color: '#000', fontWeight: 500, margin: '0 4px' }}>
+            <span style={{ color: '#000', fontWeight: 500, margin: '0 4px' }}>
               {toPersianPrice(item.priceVehiclesCost)}
             </span>
             {item.optionallyVehiclesCost && (
-              <span style={{ fontSize: '110%', color: 'darkred', fontWeight: 500 }}>
+              <span style={{ color: 'var(--text-warning)', fontWeight: 500 }}>
                 به اختیار کاربر
               </span>
             )}
-            {/* Clock Limit (commented for now) */}
 
-            {/* {item.clockLimitVehiclesCost && (
+            {item.clockLimitVehiclesCost && (
               <>
-                <span style={{ fontSize: '110%', color: 'green', fontWeight: 500 }}>
+                <span style={{ color: 'green', fontWeight: 500 }}>
                   در صورت ارسال بین ساعات
                 </span>
-                <span style={{ fontSize: '110%', color: '#000', fontWeight: 500, margin: '0 2px' }}>
-                  {item.limitOfHours ?? '??'} تا {item.limitToHours ?? '??'}
+                <span style={{ color: '#000', fontWeight: 500, margin: '0 2px' }}>
+                  {geofence?.limitOfHours ?? '??'} تا {geofence?.limitToHours ?? '??'}
+                </span>
+              </>
+            )}
+
+            {/* {item.inTrafficZoneVehiclesCost && (
+              <>
+                <span style={{ color: 'green', fontWeight: 500 }}>
+                  {item.vehiclesCostTitle}
+                </span>
+                <span style={{ color: '#000', fontWeight: 500, margin: '0 2px' }}>
+                  {toPersianPrice(item.priceVehiclesCost)}
                 </span>
               </>
             )} */}

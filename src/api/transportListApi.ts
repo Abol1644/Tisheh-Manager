@@ -1,6 +1,5 @@
 import apiClient from './apiClient';
 import { TransportList, GeoFence, ItemResaultPrice, Distance } from '@/models/'
-import filterVehicleCosts from '@/hooks/filterVehicleCosts';
 
 export const getTransportListSale = async (
   item: ItemResaultPrice[],
@@ -18,10 +17,6 @@ export const getTransportListSale = async (
       modelGeofences: geofence,
     });
     console.log('get transport sale list', response.data)
-    const Costs = filterVehicleCosts(response.data, true, false, false);
-    const optionalCosts = filterVehicleCosts(response.data, false, true, true);
-    console.log('get cost list', Costs)
-    console.log('get optional cost list', optionalCosts)
     return response.data;
   } catch (error: any) {
     console.error("Get Transport List Sale API error: ", error);
