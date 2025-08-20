@@ -1,0 +1,487 @@
+.cart-box,
+.datagrid-box {
+  animation-duration: 300ms;
+  animation-fill-mode: forwards;
+}
+
+.animate-in {
+  animation-name: grow-in;
+}
+
+.animate-out {
+  animation-name: grow-out;
+}
+
+@keyframes grow-in {
+  0% {
+    scale: 0.7;
+    opacity: 0;
+  }
+
+  50% {
+    scale: 1.08;
+    opacity: 0.7;
+  }
+
+  100% {
+    scale: 1;
+    opacity: 1;
+  }
+}
+
+@keyframes grow-out {
+  0% {
+    scale: 1;
+    opacity: 1;
+  }
+
+  50% {
+    scale: 1.08;
+    opacity: 0;
+  }
+
+  100% {
+    scale: 0.7;
+    opacity: 0;
+  }
+}
+
+.sales-tabs {
+  margin: 0 auto 0 auto;
+  padding: 2px 10px;
+  border-radius: 20px 20px 0 0;
+  transition: all 0.3s ease;
+  z-index: 2;
+}
+
+.sales-tabs-button {
+  min-height: 56px !important;
+  max-height: 54px !important;
+  height: 56px;
+}
+
+.MuiToggleButtonGroup-grouped:hover {
+  border-top-color: rgba(0, 0, 0, 0.12) !important;
+  border-bottom-color: rgba(0, 0, 0, 0.12) !important;
+  border-right-color: rgba(0, 0, 0, 0.12) !important;
+  border-left-color: rgba(0, 0, 0, 0.12) !important;
+}
+
+.MuiToggleButton-root {
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.MuiToggleButton-root:not(.Mui-selected):not(.Mui-disabled) {
+  border: 1px solid #969696;
+}
+
+.sale-button-group {
+  max-height: 50px;
+  height: 50px;
+}
+
+.MuiSelect-select.MuiInputBase-input.MuiOutlinedInput-input.MuiSelect-select {
+  padding: 12px 14px !important;
+}
+
+.sales-menu-tabs .MuiTabs-root,
+.sales-menu-tabs .MuiTabs-list,
+.sales-menu-tabs .MuiTabs-list button {
+  height: 56px;
+}
+
+.sales-menu-tabs .MuiTabs-list button {
+  min-height: 56px;
+}
+
+.sales-menu-tabs {
+  height: 56px;
+}
+
+.combo .MuiFormControl-root .MuiInputBase-root  {
+  border-radius: 80px !important;
+}
+
+.combo-with-menu .MuiOutlinedInput-notchedOutline {
+  border-top: 1px solid;
+  border-right: 1px solid;
+  border-bottom: 1px solid;
+  border-left: none;
+  /* border-radius: 0 12px 12px 0; */
+  border-radius: 0 50px 50px 0;
+  border-color: var(--border-main);
+}
+
+.combo-with-menu.MuiAutocomplete-root {
+  height: 56px;
+  .MuiFormControl-root,
+  .MuiInputBase-root {
+    height: 56px;
+  }
+}
+
+.combo-with-menu.MuiAutocomplete-root .MuiFormLabel-root.Mui-focused,
+.combo-with-menu.MuiAutocomplete-root .MuiFormLabel-root.MuiFormLabel-filled {
+  transform: translate(-11px, -9px) scale(0.75);
+}
+
+.MuiFormControl-root .MuiFormLabel-root.Mui-focused,
+.MuiFormControl-root .MuiFormLabel-root.MuiFormLabel-filled {
+  transform: translate(-11px, -9px) scale(0.75);
+}
+
+.combo-menu-button {
+  border: 1px solid;
+  border-right: none !important;
+  /* border-radius: 12px 0 0 12px !important; */
+  border-radius: 50px 0 0 50px !important;
+  height: 56px;
+  border-color: var(--border-main) !important;
+}
+
+.combo-menu {
+  background-color: aquamarine !important;
+}
+
+.combo-without-button {
+  height: 56px;
+  max-height: 56px;
+}
+
+.sabt-kala-modal {
+  transition: all 0.3s ease-in-out;
+}
+
+.sabt-kala-modal.open {
+  opacity: 1;
+  transform: translate(-50%, -50%) translateY(0);
+  animation: fadeUp 0.3s ease-out forwards;
+}
+
+.sabt-kala-modal.close {
+  opacity: 0;
+  transform: translate(-50%, -50%) translateY(20px);
+  animation: fadeDown 0.3s ease-in forwards;
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) translateY(0);
+  }
+}
+
+@keyframes fadeDown {
+  from {
+    opacity: 1;
+    transform: translate(-50%, -50%) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -50%) translateY(20px);
+  }
+}
+
+.cart-container {
+  transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out;
+  will-change: opacity, transform;
+}
+
+.cart-container.fade-in {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.cart-container.fade-out {
+  opacity: 0;
+  transform: scale(0.95);
+}
+
+.off-price-line-through {
+  position: relative;
+  display: inline-block;
+  max-width: 60px;
+}
+
+.off-price-line-through::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 20%;
+  right: 0;
+  height: 1.5px;
+  background-color: #e54040ff;
+  transform: rotate(-15deg);
+  transform-origin: center;
+}
+
+.order-row {
+  transition: all 0.4s ease;
+}
+.order-row.odd {
+  background-color: var(--background-overlay);
+}
+
+.order-row .MuiTableCell-root {
+  border-width: 0 0 0 2px !important;
+  border-style: solid !important;
+  border-color: var(--table-border-overlay) !important;
+  padding: 12px;
+}
+
+.order-row .MuiTableCell-root:last-child {
+  border-left: none !important;
+}
+
+.table-row-collapse-cell {
+  border-bottom: none !important;
+  background-color: var(--info-shade);
+}
+
+.order-row.open {
+  background-color: var(--info-shade);
+}
+
+.order-row.open .MuiTableCell-root {
+  border-width: 2px 0 2px 2px !important;
+  border-top-color: var(--text-secondary) !important;
+}
+
+.shipments-table-container {
+  border: 2px solid var(--table-border-overlay);
+  border-radius: 16px;
+}
+
+.shipments-table {
+  background-color: var(--background-default);
+  border-radius: 16px;
+}
+
+.shipments-table .MuiTableCell-root {
+  border-bottom: none;
+  border-left: 2px solid var(--table-border-overlay);
+}
+
+.shipments-table .MuiTableCell-root:last-child {
+  border-left: none;
+}
+
+.shipments-table-header,
+.shipments-table-rows:first-child {
+  border-bottom: 2px solid var(--table-border-overlay);
+}
+
+.contact-table-container {
+  border: 2px solid var(--table-border-overlay);
+  border-radius: 16px;
+}
+
+.contact-table {
+  background-color: var(--info-shade);
+  border-radius: 16px;
+}
+
+.contact-table .MuiTableCell-root {
+  border-bottom: none;
+  border-left: 2px solid var(--table-border-overlay);
+  padding: 12px !important;
+}
+
+.contact-table .MuiTableCell-root:last-child {
+  border-left: none;
+}
+
+.income-modal-table {
+  background-color: var(--background-default);
+  scrollbar-width: none;
+  border-radius: 16px;
+}
+
+.income-modal-table-container {
+  border: 2px solid var(--table-border-overlay);
+  border-radius: 18px;
+}
+
+.income-modal-table .MuiTableCell-root {
+  border-bottom: none;
+  border-left: 1px solid var(--table-border-overlay);
+  padding: 12px;
+}
+
+.income-modal-table .MuiTableCell-root:last-child {
+  border-left: none;
+}
+
+.income-modal-table-header,
+.income-modal-table-rows:not(:last-child) .MuiTableCell-root {
+  border-bottom: 1px solid var(--table-border-overlay);
+}
+
+.income-modal-table-header .MuiTableCell-root {
+  background-color: var(--table-header) !important;
+}
+
+.income-modal-table-rows {
+  transition: background-color 0.2s ease;
+}
+
+.income-modal-table-rows:hover {
+  background-color: var(--background-overlay);
+  cursor: pointer;
+}
+
+.details-account-menu-item:hover svg {
+  animation: wiggle 0.8s ease;
+}
+
+.add-account-menu-item svg {
+  transition: all 0.3s ease;
+}
+
+.add-account-menu-item:hover svg {
+  fill: var(--icon-success);
+  animation: jump 0.4s ease;
+}
+
+.delete-account-menu-item svg {
+  transition: all 0.3s ease;
+}
+
+.delete-account-menu-item:hover svg {
+  animation: delete 1s ease;
+}
+
+.connect-account-menu-item svg {
+  transition: all 0.3s ease;
+}
+
+.connect-account-menu-item:hover svg {
+  animation: wiggle 0.4s ease;
+}
+
+@keyframes reload-location {
+  0% {
+    rotate: 0deg;
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    rotate: -360deg;
+    transform: scale(0);
+    opacity: 0;
+  }
+}
+
+@keyframes reload-success {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.5);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes reload-location-r {
+  0% {
+    rotate: 180deg;
+    transform: scale(0);
+    opacity: 0;
+  }
+  100% {
+    rotate: 0deg;
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes reload-success-r {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.5);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0);
+    opacity: 0;
+  }
+}
+
+@keyframes hide-icon-r {
+  from {
+    opacity: 0;
+    scale: 2;
+  }
+  to {
+    opacity: 0;
+    scale: 4;
+  }
+}
+
+.location-icon-button:hover {
+  .reload-icon {
+    animation: reload-location 0.6s ease forwards;
+  }
+  .location-icon {
+    animation: reload-success 0.6s 0.6s ease forwards;
+  }
+}
+
+.location-icon-button:not(:hover) {
+  .reload-icon {
+    animation: hide-icon-r 0.6s, reload-location-r 0.6s ease 0.6s;
+  }
+  .location-icon {
+    animation: reload-success-r 0.6s ease;
+  }
+}
+
+.location-icon {
+  opacity: 0;
+}
+
+.mapboxgl-ctrl-bottom-left {
+  display: none;
+}
+
+.reload-icon {
+  color: var(--text-light);
+}
+
+.location-icon {
+  color: var(--text-light);
+}
+
+
+.map-grow {
+  transition: all 0.4s ease;
+}
+
+.map-grow.in {
+  margin: 0;
+  transition: all 0.4s ease;
+}
+
+.map-grow.out {
+  margin: -100vw;
+  transition: all 0.4s ease;
+}
+
+.category-disabled {
+  opacity: 0.5;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}

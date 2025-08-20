@@ -1,0 +1,32 @@
+export interface Organ {
+  id: number;
+  versionMedia: number;
+  companyLogo: string;
+  subTitle: string;
+  companyName: string;
+  companyNameEn: string;
+  title: string;
+  titleMetaTag: string;
+  titleEn: string;
+  titleEnMetaTag: string;
+  slogan: string;
+  sloganContact: string;
+  companyDescription: string | null;
+  description: string;
+  descriptionMetaTag: string | null;
+  shortcutIcon: string | null;
+  keywords: string | null;
+  website: string;
+  email: string | null;
+  countryNumber: number;
+  provinceNumber: number;
+  phone: string;
+  fax: string | null;
+  mobile: string | null;
+  dateOfEstablishment: string;
+  accessWorkGroupId: string;
+  activate: boolean;
+  dateTime: string;
+  userIdMng: number;
+  userIpMng: string;
+}

@@ -1,0 +1,32 @@
+export interface ListCart {
+  id: number;
+  codeAccCustomer: number;
+  projectIdCustomer: number;
+  byWhom: string;
+  branchCenterDelivery: boolean;
+  fastSending: boolean;
+  preSell: boolean;
+  transit: boolean;
+  warehouseId: number;
+  vehicleId: number;
+  name: string;
+  lastName: string;
+  codeAccCustomerTitle: string;
+  projectIdCustomerTitle: string;
+  postalCode: number;
+  longitude: number;
+  latitude: number;
+  elevation: number;
+  address: string;
+  recipientName: string;
+  recipientNumber: number;
+  genderId: number;
+  genderTitle: string;
+  contactId: number;
+  office: string;
+  nationalId: number;
+  foreignNational: boolean;
+  alternate: boolean;
+  installment: boolean;
+  valueDeliveryService: number;
+}
