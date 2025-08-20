@@ -151,19 +151,18 @@ export function SabtSfaresh() {
 
   React.useEffect(() => {
     const priceIdSale = selectedItem?.priceId;
+
+    // 🔴 Prevent execution if no valid selectedItem
+    if (!priceIdSale || !geofence || !products.length) return;
+
     const transportListPrice = products.filter((p) => p.priceId === priceIdSale);
-    if (!transportListPrice || !geofence) return;
+    if (transportListPrice.length === 0) return; // 🔴 Also guard against empty filter
 
     setLoading(true);
     getTransportListSale(transportListPrice, geofence, distance, isBranchDelivery, primaryDistance)
       .then(data => {
         const list = Array.isArray(data) ? data : [data];
         setTransportListSale(list);
-
-        // ✅ Auto-select first row ONLY if no selection exists
-        // if (!selectedTransport && list.length > 0) {
-        //   setSelectedTransport(list[0]);
-        // }
       })
       .catch((error) => {
         let errorMessage = 'خطا در دریافت لیست حمل و نقل';
@@ -175,7 +174,7 @@ export function SabtSfaresh() {
         showSnackbar(errorMessage, 'error', 5000, <ErrorOutlineRoundedIcon />);
       })
       .finally(() => setLoading(false));
-  }, [products, geofence, isBranchDelivery, selectedItem?.priceId, selectedTransport]);
+  }, [products, geofence, isBranchDelivery, selectedItem?.priceId, distance, primaryDistance]);
 
   return (
     <Box sx={{ width: '100%', flex: '1', borderRadius: '12px', display: 'flex', flexDirection: 'column', alignItems: 'stretch', justifyContent: 'end' }}>
@@ -370,7 +369,7 @@ function OrderOptions({
 
   // ✅ Find the selected row from transportList by ididentityShipp
   const selectedTransport = transportList?.find(t => t.ididentityShipp === selectedId);
-  
+
 
   // ✅ Filter optional/conditional costs from this single row
   const optionalCosts = selectedTransport
@@ -412,7 +411,7 @@ function OrderOptions({
               </span>
             )}
             {/* Clock Limit (commented for now) */}
-          
+
             {/* {item.clockLimitVehiclesCost && (
               <>
                 <span style={{ fontSize: '110%', color: 'green', fontWeight: 500 }}>
@@ -423,7 +422,7 @@ function OrderOptions({
                 </span>
               </>
             )} */}
-          
+
           </Box>
         </Grow>
       ))}
