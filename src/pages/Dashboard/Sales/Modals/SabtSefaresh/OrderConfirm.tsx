@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 
 import {
   Typography,
@@ -31,13 +31,16 @@ import PersonRoundedIcon from '@mui/icons-material/PersonRounded';
 import DoneAllRoundedIcon from '@mui/icons-material/DoneAllRounded';
 import ErrorOutlineRoundedIcon from '@mui/icons-material/ErrorOutlineRounded';
 import ScaleRoundedIcon from '@mui/icons-material/ScaleRounded';
+import Inventory2RoundedIcon from '@mui/icons-material/Inventory2Rounded';
+import AccessTimeRoundedIcon from '@mui/icons-material/AccessTimeRounded';
 
 import { TomanIcon, RialIcon } from '@/components/elements/TomanIcon';
 
 import usePersianNumbers from '@/hooks/usePersianNumbers';
+import { useWeekdays, useFormattedWeekdays, usePreparationTime } from '@/hooks/weekDayConverter';
 import { flex } from '@/models/ReadyStyles';
 import { getInventory, getGeoFence, getTransportListSale } from '@/api';
-import { Inventory, GeoFence, TransportList, TransportTableProps } from '@/models';
+import { Inventory, GeoFence, TransportList, TransportTableProps, ItemResaultPrice } from '@/models';
 import { useProductsStore, useProjectStore, useBranchDeliveryStore, useDistanceStore } from '@/stores';
 import { toPersianDigits } from '@/utils/persianNumbers'
 import { useSnackbar } from "@/contexts/SnackBarContext";
@@ -49,16 +52,6 @@ interface ShipmentTableProps {
   onSelectTransport: (transport: TransportList) => void;
   selectedUnit: string;
   unitRatio: number;
-}
-
-interface OrderOptionsProps {
-  transportList: TransportList[] | null;
-  options?: Array<{
-    name: string;
-    price: string;
-    info?: string;
-  }>;
-  inventory: Inventory | null;
 }
 
 export function SabtSfaresh() {
@@ -164,7 +157,6 @@ export function SabtSfaresh() {
       .then(data => {
         const list = Array.isArray(data) ? data : [data];
         setTransportListSale(list);
-        console.log("💚 ~ SabtSfaresh ~ list:", list)
       })
       .catch((error) => {
         let errorMessage = 'خطا در دریافت لیست حمل و نقل';
@@ -195,6 +187,7 @@ export function SabtSfaresh() {
         transportList={transportListSale}
         selectedId={selectedTransport?.ididentityShipp || null}
         geofence={geofence}
+        selectedItem={selectedItem}
       />
 
       <OrderInput
@@ -221,14 +214,12 @@ export function ShipmentTable({
 }: ShipmentTableProps) {
   const { toPersianPrice } = usePersianNumbers();
   const Costs = filterVehicleCosts(transportList, true, false, false);
-  console.log("🚀 ~ ShipmentTable ~ Costs:", Costs)
   const groupedCosts = groupTransportByVehicleAndAlternate(Costs);
-  console.log("🚀 ~ ShipmentTable ~ groupedCosts:", groupedCosts)
   const displayItems = Object.values(groupedCosts).sort((a, b) => {
     const getOrder = (item: (typeof groupedCosts)[string]) => {
       if (item.transit) return 1;
       if (item.alternate) return 2;
-      return 0; // normal
+      return 0; 
     };
     return getOrder(a) - getOrder(b);
   });
@@ -258,16 +249,12 @@ export function ShipmentTable({
             ) : (
               displayItems.map((group) => {
                 const isSelected = selectedTransport?.ididentityShipp === group.ididentityShipp;
-
                 const sumPrice = (group.fare?.fullFare ?? 0) +
                   group.costs.reduce((sum, c) => sum + (c.priceVehiclesCost || 0), 0);
-
-
                 const displayWeight = toPersianDigits(group.capacity);
-
                 return (
                   <TableRow
-                    key={`${group.vehicleId}-${group.alternate}`}
+                    key={`${group.vehicleId}-${Boolean(group.alternate)}-${Boolean(group.transit)}`}
                     onClick={() => onSelectTransport({ ...group.costs[0], ...group } as TransportList)}
                     hover
                     sx={{
@@ -278,9 +265,7 @@ export function ShipmentTable({
                   >
                     <TableCell>
                       <Typography variant="body2" fontWeight="bold">
-                        {group.vehicleTitle}
-                        {group.alternate && <span style={{ color: 'var(--icon-success)' }}>(نوبت دار)</span>}
-                        {group.transit && <span style={{ color: 'var(--text-warning)' }}>(ترانزیت)</span>}
+                        {group.vehicleTitle} {group.alternate && <span style={{ color: 'var(--icon-success)' }}>(نوبت دار)</span>} {group.transit && <span style={{ color: 'var(--text-warning)' }}>(ترانزیت)</span>}
                       </Typography>
                     </TableCell>
                     <TableCell>
@@ -393,54 +378,66 @@ function OrderOptions({
   inventory,
   transportList,
   selectedId,
-  geofence
+  geofence,
+  selectedItem
 }: {
   inventory: Inventory | null;
   transportList: TransportList[] | null;
   selectedId: number | null;  // ididentityShipp
   geofence: GeoFence | null;
+  selectedItem: ItemResaultPrice | null;
 }) {
   const { toPersianPrice } = usePersianNumbers();
   const typoStyles = { display: 'flex', alignItems: 'center', gap: '2px', mb: 1 };
-
-  // ✅ Find the selected row from transportList by ididentityShipp
   const selectedTransport = transportList?.find(t => t.ididentityShipp === selectedId);
+  const [visibleInventory, setVisibleInventory] = useState(true);
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setVisibleInventory(!selectedTransport?.transit);
+    }, 200);
 
-  // ✅ Filter optional/conditional costs from this single row
+    return () => clearTimeout(timer);
+  }, [selectedTransport]);
+
   const optionalCosts = selectedTransport
     ? filterVehicleCosts([selectedTransport], false, true, true)
     : [];
+  const { selectedWarehouse } = useProductsStore();
+
+  const alternateDays = selectedItem?.shippingTimeAlternate;
+  const weekdayNames = useWeekdays(alternateDays);
+  const formattedAlternateDays = useFormattedWeekdays(weekdayNames);
+
+  const transitStartPreaper = selectedItem?.shippingStartTimeWarehouse;
+  const transitPreparationTime = usePreparationTime({ start: transitStartPreaper });
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, px: 1, py: 0.5 }}>
 
-      {/* Render optional/conditional costs for selected row */}
       {optionalCosts.length > 0 && selectedTransport && optionalCosts.map((item, index) => (
         <Grow in key={index}>
           <Box
-            // key={index}
             sx={{
               display: 'flex',
               alignItems: 'center',
               flexWrap: 'wrap',
               gap: '4px',
-              fontSize: '0.95rem',
-              color: '#000',
-              fontWeight: 500,
               bgcolor: 'action.hover',
               py: 1,
               px: 2,
               borderRadius: '60px',
+              borderLeft: '3px solid var(--icon-main)',
+              boxShadow: '-6px 0 4px -4px var(--icon-main)'
             }}
           >
             <InfoRoundedIcon color='info' />
-            <span style={{ color: '#000', fontWeight: 500 }}>
+            <Typography>
               {item.vehiclesCostTitle} :
-            </span>
-            <span style={{ color: '#000', fontWeight: 500, margin: '0 4px' }}>
+            </Typography>
+            <Typography sx={{ margin: '0 4px' }}>
               {toPersianPrice(item.priceVehiclesCost)}
-            </span>
+            </Typography>
             {item.optionallyVehiclesCost && (
               <span style={{ color: 'var(--text-warning)', fontWeight: 500 }}>
                 به اختیار کاربر
@@ -474,39 +471,75 @@ function OrderOptions({
       ))}
 
       {/* Inventory Info */}
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: 'row',
-          justifyContent: 'space-around',
-          gap: 1,
-          py: 1,
-        }}
-      >
-        <Typography sx={typoStyles}>
-          <FiberManualRecordIcon fontSize="small" />
-          موجودی: {inventory?.fullInvestory != null
-            ? toPersianPrice(inventory.fullInvestory)
-            : '-'
-          }
-        </Typography>
-
-        <Typography sx={typoStyles}>
-          <LocationPinIcon fontSize="small" />
-          در انبار: {inventory?.warehouse != null
-            ? toPersianPrice(inventory.warehouse)
-            : '-'
-          }
-        </Typography>
-
-        <Typography sx={typoStyles}>
-          <PersonRoundedIcon fontSize="small" />
-          فروشنده: {inventory?.escrowBalance != null
-            ? toPersianPrice(inventory.escrowBalance)
-            : '-'
-          }
-        </Typography>
-      </Box>
+      {visibleInventory
+        ?
+        <Grow in={!selectedTransport?.transit} easing={{ enter: 'ease-in', exit: 'ease-out' }}>
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'row',
+              justifyContent: 'start',
+              gap: 3,
+              pt: 1,
+              px: 2,
+              bgcolor: 'action.hover',
+              borderRadius: '60px',
+              borderLeft: '3px solid var(--icon-success)',
+              boxShadow: '-6px 0 4px -4px var(--icon-success)'
+            }}
+          >
+            <Typography sx={typoStyles}>
+              <Tooltip title={inventory?.inventoryStr} placement='top' arrow disableInteractive slots={{ transition: Zoom }} >
+                <Inventory2RoundedIcon color='info' sx={{ fontSize: '22px' }} />
+              </Tooltip>
+              موجودی: {inventory?.fullInvestory != null
+                ? toPersianPrice(inventory.fullInvestory)
+                : '-'
+              }
+            </Typography>
+            <Tooltip title={selectedWarehouse?.virtualWarehouse && 'انبار وابسته'} placement='top' arrow disableInteractive slots={{ transition: Zoom }} >
+              <Typography sx={typoStyles}>
+                <LocationPinIcon color='info' sx={{ fontSize: '22px' }} />
+                انبار: {selectedWarehouse?.title != null
+                  ? selectedWarehouse.title
+                  : '-'
+                }
+              </Typography>
+            </Tooltip>
+            <Typography sx={typoStyles}>
+              <AccessTimeRoundedIcon color='info' sx={{ fontSize: '22px' }} />
+              آماده سازی {transitPreparationTime}
+            </Typography>
+          </Box>
+        </Grow>
+        :
+        <Grow in={!selectedTransport?.alternate} easing={{ enter: 'ease-in', exit: 'ease-out' }}>
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'row',
+              justifyContent: 'start',
+              gap: 3,
+              pt: 1,
+              px: 2,
+              bgcolor: 'action.hover',
+              borderRadius: '60px',
+              borderLeft: '3px solid var(--icon-success)',
+              boxShadow: '-6px 0 4px -4px var(--icon-success)'
+            }}
+          >
+            <Tooltip title={inventory?.inventoryStr} placement='top' arrow disableInteractive slots={{ transition: Zoom }} >
+              <Typography sx={typoStyles}>
+                <Inventory2RoundedIcon color='info' sx={{ fontSize: '22px' }} />
+                alternate {inventory?.fullInvestory != null
+                  ? toPersianPrice(inventory.fullInvestory)
+                  : '-'
+                }
+              </Typography>
+            </Tooltip>
+          </Box>
+        </Grow>
+      }
     </Box>
   );
 }

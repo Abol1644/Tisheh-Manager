@@ -70,7 +70,7 @@ export function groupTransportByVehicleAndAlternate(
     // Extract cost-related fields only
     const {
       // Exclude fields already in group root
-      vehicleId, alternate,transit, vehicleTitle, capacity, fare,
+      vehicleId, alternate, transit, vehicleTitle, capacity, fare,
       ididentityShipp, dateTimeShipp,
       // Keep these
       ...costItem
