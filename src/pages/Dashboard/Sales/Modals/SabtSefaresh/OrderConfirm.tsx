@@ -19,7 +19,8 @@ import {
   OutlinedInput,
   Slide, Backdrop,
   Zoom, Grow,
-  Divider
+  Divider,
+  CircularProgress
 } from '@mui/material';
 
 import NumberField from '@/components/elements/NumberField';
@@ -38,7 +39,7 @@ import { TomanIcon, RialIcon } from '@/components/elements/TomanIcon';
 
 import usePersianNumbers from '@/hooks/usePersianNumbers';
 import { useWeekdays, useFormattedWeekdays, usePreparationTime } from '@/hooks/weekDayConverter';
-import { flex, width } from '@/models/ReadyStyles';
+import { flex, width, gap } from '@/models/ReadyStyles';
 import { getInventory, getGeoFence, getTransportListSale } from '@/api';
 import { Inventory, GeoFence, TransportList, TransportTableProps, ItemResaultPrice } from '@/models';
 import { useProductsStore, useProjectStore, useBranchDeliveryStore, useDistanceStore } from '@/stores';
@@ -52,16 +53,18 @@ interface ShipmentTableProps {
   onSelectTransport: (transport: TransportList) => void;
   selectedUnit: string;
   unitRatio: number;
+  transportloading: boolean;
 }
 
 export function SabtSfaresh() {
   const { toPersianPrice } = usePersianNumbers();
   const [loading, setLoading] = useState(true);
+  const [transportloading, setTransportLoading] = useState(true);
   const [inventory, setInventory] = useState<Inventory | null>(null);
   const [geofence, setgeofence] = useState<GeoFence | null>(null);
   const [transportListSale, setTransportListSale] = useState<TransportList[]>([]);
   const [selectedTransport, setSelectedTransport] = useState<TransportList | null>(null);
-  const selectedId = selectedTransport?.ididentityShipp || null;
+  const selectedId = selectedTransport?.vehicleId || null;
 
   const { products } = useProductsStore();
 
@@ -152,7 +155,7 @@ export function SabtSfaresh() {
     const transportListPrice = products.filter((p) => p.priceId === priceIdSale);
     if (transportListPrice.length === 0) return;
 
-    setLoading(true);
+    setTransportLoading(true);
     getTransportListSale(transportListPrice, geofence, distance, isBranchDelivery, primaryDistance)
       .then(data => {
         const list = Array.isArray(data) ? data : [data];
@@ -179,13 +182,14 @@ export function SabtSfaresh() {
           onSelectTransport={setSelectedTransport}
           selectedUnit={selectedUnit}
           unitRatio={unitRatio}
+          transportloading={transportloading}
         />
       </Box>
 
       <OrderOptions
         inventory={inventory}
         transportList={transportListSale}
-        selectedId={selectedTransport?.ididentityShipp || null}
+        selectedId={selectedTransport?.vehicleId || null}
         geofence={geofence}
         selectedItem={selectedItem}
       />
@@ -212,8 +216,9 @@ export function ShipmentTable({
   selectedUnit,
   unitRatio,
 }: ShipmentTableProps) {
+  console.log("🎁🎁🤢 ~ ShipmentTable ~ selectedTransport:", selectedTransport)
   const { toPersianPrice } = usePersianNumbers();
-  const Costs = filterVehicleCosts(transportList, true, false);
+  const Costs = filterVehicleCosts(transportList, false);
   const groupedCosts = groupTransportByVehicleAndAlternate(Costs);
   const displayItems = Object.values(groupedCosts).sort((a, b) => {
     const getOrder = (item: (typeof groupedCosts)[string]) => {
@@ -223,7 +228,18 @@ export function ShipmentTable({
     };
     return getOrder(a) - getOrder(b);
   });
-  console.log("🚀 ~ ShipmentTable ~ displayItems:", displayItems)
+
+  // Function to get all original transport items for a group (including optional costs)
+  const getOriginalTransportItems = (group: (typeof groupedCosts)[string]): TransportList[] => {
+    if (!transportList) return [];
+
+    // Find all original transport items that match this group's criteria
+    return transportList.filter(item =>
+      item.vehicleId === group.vehicleId &&
+      item.alternate === group.alternate &&
+      item.transit === group.transit
+    );
+  };
 
   return (
     <Box className="income-modal-table-container" sx={{ mb: 1 }}>
@@ -236,7 +252,7 @@ export function ShipmentTable({
             >
               <TableCell width={100}>شیوه تحویل</TableCell>
               <TableCell width={60}>ظرفیت</TableCell>
-              <TableCell width={100}>هزینه کل</TableCell> {/* Changed label */}
+              <TableCell width={100}>هزینه کل</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -248,15 +264,23 @@ export function ShipmentTable({
               </TableRow>
             ) : (
               displayItems.map((group) => {
-                const isSelected = selectedTransport?.ididentityShipp === group.ididentityShipp;
+                const isSelected = selectedTransport?.vehicleId === group.vehicleId;
                 const sumPrice = (group.fare?.fullFare ?? 0) +
                   group.costs.reduce((sum, c) => sum + (c.priceVehiclesCost || 0), 0);
                 const displayWeight = toPersianDigits(group.capacity);
+
                 return (
                   <TableRow
                     key={`${group.vehicleId}-${Boolean(group.alternate)}-${Boolean(group.transit)}`}
-                    onClick={() => onSelectTransport({ ...group.costs[0], ...group } as TransportList)}
-                    hover
+                    onClick={() => {
+                      const originalGroupItems = getOriginalTransportItems(group);
+                      const primaryItem = originalGroupItems[0] || group.costs[0];
+                      const itemWithAllData = {
+                        ...primaryItem,
+                        _allTransportItems: originalGroupItems
+                      };
+                      onSelectTransport(itemWithAllData as TransportList);
+                    }}
                     sx={{
                       cursor: 'pointer',
                       bgcolor: isSelected ? 'action.selected' : 'inherit',
@@ -276,12 +300,9 @@ export function ShipmentTable({
                         <Typography variant="body2">
                           {toPersianPrice(sumPrice)}
                         </Typography>
-
-                        {/* Tooltip: Show all cost details */}
                         <Tooltip
                           title={
                             <Box component="div" sx={{ textAlign: 'left', dir: 'rtl', fontSize: '14px', p: 0.5 }}>
-                              {/* Service Costs (e.g. loading, traffic plan) */}
                               {group.costs.map((c, i) => (
                                 <>
                                   <Box sx={{ ...flex.rowBetween }} key={`cost-${c.vehiclesCostId || i}`}>
@@ -292,12 +313,11 @@ export function ShipmentTable({
                                       {toPersianPrice(c.priceVehiclesCost)} ریال
                                     </Typography>
                                   </Box>
+                                  <Divider variant="middle" sx={{ opacity: 0.4, my: 1, borderColor: 'background.paper' }} />
                                 </>
                               ))}
-                              {/* Base Freight */}
                               {group.fare?.fare > 0 && (
                                 <>
-                                  <Divider variant="middle" sx={{ opacity: 0.4, my: 1, borderColor: 'background.paper' }} />
                                   <Box sx={{ ...flex.rowBetween }}>
                                     <Typography variant="body2">
                                       کرایه پایه:
@@ -308,7 +328,6 @@ export function ShipmentTable({
                                   </Box>
                                 </>
                               )}
-                              {/* Commission */}
                               {group.fare?.comission > 0 && (
                                 <>
                                   <Divider variant="middle" sx={{ opacity: 0.4, my: 1, borderColor: 'background.paper' }} />
@@ -322,7 +341,6 @@ export function ShipmentTable({
                                   </Box>
                                 </>
                               )}
-                              {/* Delay Fee */}
                               {group.fare?.fareDelay > 0 && (
                                 <>
                                   <Divider variant="middle" sx={{ opacity: 0.4, my: 1, borderColor: 'background.paper' }} />
@@ -336,8 +354,6 @@ export function ShipmentTable({
                                   </Box>
                                 </>
                               )}
-
-                              {/* Road Type Coefficient */}
                               {group.fare?.coefficientRoadTypeFare > 0 && (
                                 <>
                                   <Divider variant="middle" sx={{ opacity: 0.4, my: 1, borderColor: 'background.paper' }} />
@@ -383,31 +399,26 @@ function OrderOptions({
 }: {
   inventory: Inventory | null;
   transportList: TransportList[] | null;
-  selectedId: number | null; 
+  selectedId: number | null;
   geofence: GeoFence | null;
   selectedItem: ItemResaultPrice | null;
 }) {
   const { toPersianPrice } = usePersianNumbers();
-  const typoStyles = { display: 'flex', alignItems: 'center', gap: '2px',  };
+  const typoStyles = { display: 'flex', alignItems: 'center', gap: '2px', };
   const detailBox =
   {
     display: 'flex',
     flexDirection: 'row',
     justifyContent: 'start',
-    gap: 3,
     py: 1,
     px: 2,
     bgcolor: 'action.hover',
     borderRadius: '60px',
     borderLeft: '3px solid var(--icon-success)',
     boxShadow: '-6px 0 4px -4px var(--icon-success)',
-    transition: 'all 0.2s ease',
-    '&:hover': {
-      scale: '1.02',
-      transform: 'translateY(-5px)'
-    }
+    ...gap.ten
   };
-  const selectedTransport = transportList?.find(t => t.ididentityShipp === selectedId);
+  const selectedTransport = transportList?.find(t => t.vehicleId === selectedId);
   const [visibleInventory, setVisibleInventory] = useState(true);
 
   useEffect(() => {
@@ -419,13 +430,12 @@ function OrderOptions({
   }, [selectedTransport]);
 
   const optionalCosts = selectedTransport
-    ? filterVehicleCosts([selectedTransport], false, true)
+    ? filterVehicleCosts([selectedTransport], true)
     : [];
 
   const Costs = selectedTransport
-    ? filterVehicleCosts([selectedTransport], true, false)
+    ? filterVehicleCosts([selectedTransport], null)
     : [];
-  console.log("🎂 ~ OrderOptions ~ Costs:", Costs)
   const { selectedWarehouse } = useProductsStore();
 
   const alternateDays = selectedItem?.shippingTimeAlternate;
@@ -438,53 +448,42 @@ function OrderOptions({
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, px: 1, py: 0.5 }}>
 
-      {/* <Grow in easing={{ enter: 'ease-in', exit: 'ease-out' }}> */}
       <div>
-        {optionalCosts.map((item, index) => (
-          <Box key={`optionalCosts-${index}`} sx={detailBox} >
-            <InfoRoundedIcon color='info' />
-            <Typography>
-              {item.vehiclesCostTitle} :
-            </Typography>
-            <Typography sx={{ margin: '0 4px' }}>
-              {toPersianPrice(item.priceVehiclesCost)}
-            </Typography>
-            {item.optionallyVehiclesCost && (
-              <span style={{ color: 'var(--text-warning)', fontWeight: 500 }}>
-                به اختیار کاربر
-              </span>
-            )}
-          </Box>
-        ))}
         {Costs.map((item, index) => (
-          <Box key={`Costs-${index}`} sx={detailBox} >
-            <InfoRoundedIcon color='info' />
-            <Typography>
-              {item.vehiclesCostTitle} :
-            </Typography>
-            <Typography sx={{ margin: '0 4px' }}>
-              {toPersianPrice(item.priceVehiclesCost)}
-            </Typography>
-            {item.optionallyVehiclesCost && (
-              <span style={{ color: 'var(--text-warning)', fontWeight: 500 }}>
-                به اختیار کاربر
-              </span>
-            )}
-            <InfoRoundedIcon color='info' />
-            <span style={{ color: 'green', fontWeight: 500 }}>
-              ارسال بین ساعات
-            </span>
-            <span style={{ color: '#000', fontWeight: 500, margin: '0 2px' }}>
-              {geofence?.limitOfHours ?? '??'} تا {geofence?.limitToHours ?? '??'}
-            </span>
+          <Box key={`Costs-${index}`} >
+            {item?.optionallyVehiclesCost &&
+              <Box key={`optionalCosts-${index}`} sx={{ ...flex.row, ...gap.ten, ...detailBox }} >
+                <InfoRoundedIcon color='info' />
+                <Typography>
+                  {item.vehiclesCostTitle} :
+                </Typography>
+                <Typography sx={{ margin: '0 4px' }}>
+                  {toPersianPrice(item.priceVehiclesCost)}
+                </Typography>
+                {item.optionallyVehiclesCost && (
+                  <span style={{ color: 'var(--text-warning)', fontWeight: 500 }}>
+                    به اختیار کاربر
+                  </span>
+                )}
+              </Box>
+            }
+            {item?.limitOfHoursVehiclesCost &&
+              <Box sx={{ ...flex.row, ...gap.ten, ...detailBox }}>
+                <InfoRoundedIcon color='info' />
+                <span style={{ color: 'green', fontWeight: 500 }}>
+                  ارسال بین ساعات
+                </span>
+                <span style={{ color: '#000', fontWeight: 500, margin: '0 2px' }}>
+                  {item?.limitOfHoursVehiclesCost ?? '??'} تا {item?.limitToHoursVehiclesCost ?? '??'}
+                </span>
+              </Box>
+            }
           </Box>
         ))}
       </div>
-      {/* </Grow> */}
 
       {visibleInventory
         ?
-        // <Grow in={!selectedTransport?.transit} easing={{ enter: 'ease-in', exit: 'ease-out' }}>
         <Box sx={detailBox}>
           <Typography sx={typoStyles}>
             <Tooltip title={inventory?.inventoryStr} placement='top' arrow disableInteractive slots={{ transition: Zoom }} >
@@ -509,9 +508,7 @@ function OrderOptions({
             {selectedTransport?.alternate ? formattedAlternateDays : 'آماده سازی ' + transitPreparationTime}
           </Typography>
         </Box>
-        // {/* </Grow> */}
         :
-        // {/*  <Grow in={!selectedTransport?.alternate} easing={{ enter: 'ease-in', exit: 'ease-out' }}> */}
         <Box sx={detailBox} >
           <Typography sx={typoStyles}>
             <LocationPinIcon color='info' sx={{ fontSize: '22px' }} />
@@ -522,7 +519,6 @@ function OrderOptions({
             {transitPreparationTime}
           </Typography>
         </Box>
-        // {/* </Grow> */}
       }
     </Box>
   );

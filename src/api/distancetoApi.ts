@@ -8,7 +8,7 @@ export const getDistance = async (
   onlyLoad: false
 ): Promise<Distance[]> => {
   try {
-    const requestUrl = `Tansport/ReLoadDistance?&ProjectId=${project.id}&LatitudeProject=${project.latitude}&LongitudeProject=${project.longitude}&ElevationProject=${project.elevation}&OnlyLoad=${onlyLoad}`;
+    const requestUrl = `Transport/ReLoadDistance?&ProjectId=${project.id}&LatitudeProject=${project.latitude}&LongitudeProject=${project.longitude}&ElevationProject=${project.elevation}&OnlyLoad=${onlyLoad}`;
     const response = await apiClient.post<Distance[] | Distance>(
       // `DistanceTo/Find?ProjectId=${projectId}`
       requestUrl
@@ -60,7 +60,7 @@ export const reloadDistance = async (
   if (!project) {
     throw new Error("Project is required for reloadDistance");
   }
-  const requestUrl = `Tansport/ReLoadDistance?&ProjectId=${project.id}&LatitudeProject=${project.latitude}&LongitudeProject=${project.longitude}&ElevationProject=${project.elevation}&OnlyLoad=${onlyLoad}`;
+  const requestUrl = `Transport/ReLoadDistance?&ProjectId=${project.id}&LatitudeProject=${project.latitude}&LongitudeProject=${project.longitude}&ElevationProject=${project.elevation}&OnlyLoad=${onlyLoad}`;
   console.log("requseting reload distance:", requestUrl);
   try {
     const response = await apiClient.post<Distance[] | Distance>(requestUrl);

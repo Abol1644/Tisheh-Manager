@@ -58,6 +58,8 @@ export interface TransportList {
   slope2: number;
   slope3: number;
   inTrafficZoneVehiclesCost: boolean;
+  limitOfHoursVehiclesCost: number,
+  limitToHoursVehiclesCost: number,
   clockLimitVehiclesCost: boolean;
   optionallyVehiclesCost: boolean;
   comission: number;

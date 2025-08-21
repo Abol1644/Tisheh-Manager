@@ -9,7 +9,7 @@ export const getTransportListSale = async (
   warehouseId: number | undefined
 ): Promise<TransportList[]> => {
   try {
-    const response = await apiClient.post<TransportList[]>('Tansport/GetListTansportSale', {
+    const response = await apiClient.post<TransportList[]>('Transport/GetListTansportSale', {
       branchCenterDelivery: branchDeliveryCenter,
       listDistance: distance,
       warehouseId: warehouseId,

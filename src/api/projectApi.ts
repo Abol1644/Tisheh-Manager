@@ -9,7 +9,7 @@ export const getUnConnectedProjects = async (): Promise<Project[]> => {
     );
     return response.data;
   } catch (error: any) {
-    console.error("Get Projects API error: ", error);
+    // console.error("Get Projects API error: ", error);
     
     const serverMessage = error.response?.data || "Failed to fetch Projects";
     throw new Error(serverMessage);
