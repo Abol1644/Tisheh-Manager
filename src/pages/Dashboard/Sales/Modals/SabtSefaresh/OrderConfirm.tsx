@@ -64,7 +64,6 @@ export function SabtSfaresh() {
   const [geofence, setgeofence] = useState<GeoFence | null>(null);
   const [transportListSale, setTransportListSale] = useState<TransportList[]>([]);
   const [selectedTransport, setSelectedTransport] = useState<TransportList | null>(null);
-  const selectedId = selectedTransport?.vehicleId || null;
 
   const { products } = useProductsStore();
 
@@ -160,6 +159,7 @@ export function SabtSfaresh() {
       .then(data => {
         const list = Array.isArray(data) ? data : [data];
         setTransportListSale(list);
+        console.log("🚀 ~ SabtSfaresh ~ list:", list)
       })
       .catch((error) => {
         let errorMessage = 'خطا در دریافت لیست حمل و نقل';
@@ -190,6 +190,8 @@ export function SabtSfaresh() {
         inventory={inventory}
         transportList={transportListSale}
         selectedId={selectedTransport?.vehicleId || null}
+        selectedAlternate={selectedTransport?.alternate || false}
+        selectedTransit={selectedTransport?.transit || false}
         geofence={geofence}
         selectedItem={selectedItem}
       />
@@ -215,8 +217,8 @@ export function ShipmentTable({
   onSelectTransport,
   selectedUnit,
   unitRatio,
+  transportloading
 }: ShipmentTableProps) {
-  console.log("🎁🎁🤢 ~ ShipmentTable ~ selectedTransport:", selectedTransport)
   const { toPersianPrice } = usePersianNumbers();
   const Costs = filterVehicleCosts(transportList, false);
   const groupedCosts = groupTransportByVehicleAndAlternate(Costs);
@@ -229,18 +231,6 @@ export function ShipmentTable({
     return getOrder(a) - getOrder(b);
   });
 
-  // Function to get all original transport items for a group (including optional costs)
-  const getOriginalTransportItems = (group: (typeof groupedCosts)[string]): TransportList[] => {
-    if (!transportList) return [];
-
-    // Find all original transport items that match this group's criteria
-    return transportList.filter(item =>
-      item.vehicleId === group.vehicleId &&
-      item.alternate === group.alternate &&
-      item.transit === group.transit
-    );
-  };
-
   return (
     <Box className="income-modal-table-container" sx={{ mb: 1 }}>
       <TableContainer sx={{ overflow: 'auto' }} className="income-modal-table">
@@ -252,35 +242,41 @@ export function ShipmentTable({
             >
               <TableCell width={100}>شیوه تحویل</TableCell>
               <TableCell width={60}>ظرفیت</TableCell>
-              <TableCell width={100}>هزینه کل</TableCell>
+              <TableCell width={100}>
+                <Box sx={{ ...flex.rowBetween }}>
+                  هزینه کل
+                  <RialIcon size={24} />
+                </Box>
+              </TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {displayItems.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={3} align="center">
-                  ارسال به این منطقه انجام نمی‌شود
+                  {transportloading
+                    ?
+                    <CircularProgress size={24} />
+                    :
+                    'ارسال به این منطقه انجام نمی‌شود'
+                  }
                 </TableCell>
               </TableRow>
             ) : (
               displayItems.map((group) => {
-                const isSelected = selectedTransport?.vehicleId === group.vehicleId;
+                const isSelected =
+                  selectedTransport &&
+                  selectedTransport.vehicleId === group.vehicleId &&
+                  Boolean(selectedTransport.alternate) === Boolean(group.alternate) &&
+                  Boolean(selectedTransport.transit) === Boolean(group.transit);
                 const sumPrice = (group.fare?.fullFare ?? 0) +
                   group.costs.reduce((sum, c) => sum + (c.priceVehiclesCost || 0), 0);
                 const displayWeight = toPersianDigits(group.capacity);
-
                 return (
                   <TableRow
                     key={`${group.vehicleId}-${Boolean(group.alternate)}-${Boolean(group.transit)}`}
-                    onClick={() => {
-                      const originalGroupItems = getOriginalTransportItems(group);
-                      const primaryItem = originalGroupItems[0] || group.costs[0];
-                      const itemWithAllData = {
-                        ...primaryItem,
-                        _allTransportItems: originalGroupItems
-                      };
-                      onSelectTransport(itemWithAllData as TransportList);
-                    }}
+                    onClick={() => onSelectTransport({ ...group.costs[0], ...group } as TransportList)}
+                    hover
                     sx={{
                       cursor: 'pointer',
                       bgcolor: isSelected ? 'action.selected' : 'inherit',
@@ -300,9 +296,12 @@ export function ShipmentTable({
                         <Typography variant="body2">
                           {toPersianPrice(sumPrice)}
                         </Typography>
+
+                        {/* Tooltip: Show all cost details */}
                         <Tooltip
                           title={
                             <Box component="div" sx={{ textAlign: 'left', dir: 'rtl', fontSize: '14px', p: 0.5 }}>
+                              {/* Service Costs (e.g. loading, traffic plan) */}
                               {group.costs.map((c, i) => (
                                 <>
                                   <Box sx={{ ...flex.rowBetween }} key={`cost-${c.vehiclesCostId || i}`}>
@@ -316,6 +315,7 @@ export function ShipmentTable({
                                   <Divider variant="middle" sx={{ opacity: 0.4, my: 1, borderColor: 'background.paper' }} />
                                 </>
                               ))}
+                              {/* Base Freight */}
                               {group.fare?.fare > 0 && (
                                 <>
                                   <Box sx={{ ...flex.rowBetween }}>
@@ -328,6 +328,7 @@ export function ShipmentTable({
                                   </Box>
                                 </>
                               )}
+                              {/* Commission */}
                               {group.fare?.comission > 0 && (
                                 <>
                                   <Divider variant="middle" sx={{ opacity: 0.4, my: 1, borderColor: 'background.paper' }} />
@@ -341,6 +342,7 @@ export function ShipmentTable({
                                   </Box>
                                 </>
                               )}
+                              {/* Delay Fee */}
                               {group.fare?.fareDelay > 0 && (
                                 <>
                                   <Divider variant="middle" sx={{ opacity: 0.4, my: 1, borderColor: 'background.paper' }} />
@@ -354,6 +356,8 @@ export function ShipmentTable({
                                   </Box>
                                 </>
                               )}
+
+                              {/* Road Type Coefficient */}
                               {group.fare?.coefficientRoadTypeFare > 0 && (
                                 <>
                                   <Divider variant="middle" sx={{ opacity: 0.4, my: 1, borderColor: 'background.paper' }} />
@@ -394,12 +398,16 @@ function OrderOptions({
   inventory,
   transportList,
   selectedId,
+  selectedAlternate,
+  selectedTransit,
   geofence,
   selectedItem
 }: {
   inventory: Inventory | null;
   transportList: TransportList[] | null;
   selectedId: number | null;
+  selectedAlternate: boolean;
+  selectedTransit: boolean;
   geofence: GeoFence | null;
   selectedItem: ItemResaultPrice | null;
 }) {
@@ -408,34 +416,27 @@ function OrderOptions({
   const detailBox =
   {
     display: 'flex',
-    flexDirection: 'row',
-    justifyContent: 'start',
     py: 1,
     px: 2,
     bgcolor: 'action.hover',
     borderRadius: '60px',
     borderLeft: '3px solid var(--icon-success)',
-    boxShadow: '-6px 0 4px -4px var(--icon-success)',
-    ...gap.ten
+    borderBottom: '2px solid var(--icon-success)',
+    boxShadow: '-6px 4px 4px -4px var(--icon-success)',
+    ...gap.ten,
   };
-  const selectedTransport = transportList?.find(t => t.vehicleId === selectedId);
+  const selectedTransport = transportList?.filter(t =>
+    t.vehicleId === selectedId &&
+    Boolean(t.alternate) === Boolean(selectedAlternate) &&
+    Boolean(t.transit) === Boolean(selectedTransit)
+  ) || [];
+  console.log("🚀 ~ OrderOptions ~ selectedTransport:", selectedTransport)
   const [visibleInventory, setVisibleInventory] = useState(true);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setVisibleInventory(!selectedTransport?.transit);
-    }, 200);
-
-    return () => clearTimeout(timer);
+    setVisibleInventory(!selectedTransport[0]?.transit);
   }, [selectedTransport]);
 
-  const optionalCosts = selectedTransport
-    ? filterVehicleCosts([selectedTransport], true)
-    : [];
-
-  const Costs = selectedTransport
-    ? filterVehicleCosts([selectedTransport], null)
-    : [];
   const { selectedWarehouse } = useProductsStore();
 
   const alternateDays = selectedItem?.shippingTimeAlternate;
@@ -446,80 +447,80 @@ function OrderOptions({
   const transitPreparationTime = usePreparationTime({ start: transitStartPreaper });
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, px: 1, py: 0.5 }}>
+    <Box sx={{ ...flex.column, gap: 1, px: 1, py: 0.5 }}>
+      <Grow in={selectedTransport.length > 0} timeout={300} unmountOnExit>
+        <Box sx={{ ...flex.rowAround,  ...gap.ten, ...detailBox }}>
+          {selectedTransport.map((item, index) => (
+            <React.Fragment key={`option-${index}`}>
+              {item.optionallyVehiclesCost && (
+                <Box sx={{ ...flex.row, ...gap.ten }}>
+                  <InfoRoundedIcon color='info' />
+                  <Typography>{item.vehiclesCostTitle} :</Typography>
+                  <Typography sx={{ margin: '0 4px' }}>
+                    {toPersianPrice(item.priceVehiclesCost)}
+                  </Typography>
+                  <span style={{ color: 'var(--text-warning)', fontWeight: 500 }}>به اختیار کاربر</span>
+                </Box>
+              )}
+              {item.limitOfHoursVehiclesCost && (
+                <Box sx={{ ...flex.row, ...gap.ten }}>
+                  <AccessTimeRoundedIcon color='info' />
+                  <Typography>ارسال بین ساعات</Typography>
+                  <Typography sx={{ margin: '0 2px' }}>
+                    {item.limitOfHoursVehiclesCost ?? '??'} تا {item.limitToHoursVehiclesCost ?? '??'}
+                  </Typography>
+                </Box>
+              )}
+            </React.Fragment>
+          ))}
+        </Box>
+      </Grow>
 
-      <div>
-        {Costs.map((item, index) => (
-          <Box key={`Costs-${index}`} >
-            {item?.optionallyVehiclesCost &&
-              <Box key={`optionalCosts-${index}`} sx={{ ...flex.row, ...gap.ten, ...detailBox }} >
-                <InfoRoundedIcon color='info' />
-                <Typography>
-                  {item.vehiclesCostTitle} :
-                </Typography>
-                <Typography sx={{ margin: '0 4px' }}>
-                  {toPersianPrice(item.priceVehiclesCost)}
-                </Typography>
-                {item.optionallyVehiclesCost && (
-                  <span style={{ color: 'var(--text-warning)', fontWeight: 500 }}>
-                    به اختیار کاربر
-                  </span>
-                )}
-              </Box>
-            }
-            {item?.limitOfHoursVehiclesCost &&
-              <Box sx={{ ...flex.row, ...gap.ten, ...detailBox }}>
-                <InfoRoundedIcon color='info' />
-                <span style={{ color: 'green', fontWeight: 500 }}>
-                  ارسال بین ساعات
-                </span>
-                <span style={{ color: '#000', fontWeight: 500, margin: '0 2px' }}>
-                  {item?.limitOfHoursVehiclesCost ?? '??'} تا {item?.limitToHoursVehiclesCost ?? '??'}
-                </span>
-              </Box>
-            }
-          </Box>
-        ))}
-      </div>
-
-      {visibleInventory
-        ?
-        <Box sx={detailBox}>
-          <Typography sx={typoStyles}>
-            <Tooltip title={inventory?.inventoryStr} placement='top' arrow disableInteractive slots={{ transition: Zoom }} >
-              <Inventory2RoundedIcon color='info' sx={{ fontSize: '22px' }} />
-            </Tooltip>
-            موجودی: {inventory?.fullInvestory != null
-              ? toPersianPrice(inventory.fullInvestory)
-              : '-'
-            }
-          </Typography>
-          <Tooltip title={selectedWarehouse?.virtualWarehouse && 'انبار وابسته'} placement='top' arrow disableInteractive slots={{ transition: Zoom }} >
+      {/* Inventory / Transit Details - with Grow */}
+      <Box sx={{
+        minHeight: '48px',
+        position: 'relative',
+        '& > div': {
+          position: 'absolute',
+          width: '100%'
+        }
+      }}>
+        {/* Inventory Box */}
+        <Grow in={visibleInventory} timeout={300} mountOnEnter>
+          <Box sx={{ ...detailBox, ...flex.rowAround }}>
             <Typography sx={typoStyles}>
-              <LocationPinIcon color='info' sx={{ fontSize: '22px' }} />
-              انبار: {selectedWarehouse?.title != null
-                ? selectedWarehouse.title
-                : '-'
-              }
+              <Tooltip title={inventory?.inventoryStr} placement='top' arrow disableInteractive slots={{ transition: Zoom }}>
+                <Inventory2RoundedIcon color='info' sx={{ fontSize: '22px',mr: 0.5 }} />
+              </Tooltip>
+              موجودی: {toPersianPrice(inventory?.fullInvestory ?? 0)}
             </Typography>
-          </Tooltip>
-          <Typography sx={typoStyles}>
-            <AccessTimeRoundedIcon color='info' sx={{ fontSize: '22px' }} />
-            {selectedTransport?.alternate ? formattedAlternateDays : 'آماده سازی ' + transitPreparationTime}
-          </Typography>
-        </Box>
-        :
-        <Box sx={detailBox} >
-          <Typography sx={typoStyles}>
-            <LocationPinIcon color='info' sx={{ fontSize: '22px' }} />
-            {selectedItem?.titleCompany}
-          </Typography>
-          <Typography sx={typoStyles}>
-            <LocationPinIcon color='info' sx={{ fontSize: '22px' }} />
-            {transitPreparationTime}
-          </Typography>
-        </Box>
-      }
+            <Tooltip title={selectedWarehouse?.virtualWarehouse && 'انبار وابسته'} placement='top' arrow disableInteractive slots={{ transition: Zoom }}>
+              <Typography sx={typoStyles}>
+                <LocationPinIcon color='info' sx={{ fontSize: '22px', mr: 0.5 }} />
+                انبار: {selectedWarehouse?.title ?? '-'}
+              </Typography>
+            </Tooltip>
+            <Typography sx={typoStyles}>
+              <AccessTimeRoundedIcon color='info' sx={{ fontSize: '22px', mr: 0.5 }} />
+              {selectedTransport[0]?.alternate ? formattedAlternateDays : 'آماده سازی ' + transitPreparationTime}
+            </Typography>
+          </Box>
+        </Grow>
+
+        {/* Transit Box */}
+        <Grow in={!visibleInventory} timeout={300} mountOnEnter>
+          <Box sx={{ ...detailBox, ...flex.rowAround }}>
+            <Typography sx={typoStyles}>
+              <LocationPinIcon color='info' sx={{ fontSize: '22px', mr: 0.5 }} />
+              {selectedItem?.titleCompany}
+            </Typography>
+            <Typography sx={typoStyles}>
+              <AccessTimeRoundedIcon color='info' sx={{ fontSize: '22px', mr: 0.5 }} />
+              {transitPreparationTime}
+            </Typography>
+          </Box>
+        </Grow>
+      </Box>
     </Box>
   );
 }

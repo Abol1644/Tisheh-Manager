@@ -22,7 +22,7 @@ export const getConnectedProject = async (BranchCenterDelivery:boolean, id:numbe
     const response = await apiClient.get<Project[]>(
       `Projects/GetAll?CodeAccConnect=${id}&BranchCenterDelivery=${BranchCenterDelivery}`
     );
-    console.error("Get Projects API : ", response.data);
+    // console.error("Get Projects API : ", response.data);
     return response.data;
   } catch (error: any) {
 

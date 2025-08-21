@@ -8,7 +8,7 @@ export const getInventory = async (
 ): Promise<Inventory> => {
   try {
     const response = await apiClient.get<Inventory>(`Cardex/GetInventoryProduct?CategoryId=${item.id}&ModelId=${item.modelId}&WarehouseId=${item.warehouseId}&VirtualWarehouse=${item.virtualWarehouse}&DependentOnInventoryInWarehouse=${item.dependentOnInventoryInWarehouse}&EscrowBalance=${item.escrowBalance}&UnlimitedInventory=${item.unlimitedInventory}&NumberRequired=${numberRequired}&UnitRatio=${item.unitRatio}&StartDate=${period.dateTimeStart}&EndDate=${period.dateTimeEnd}`);
-    console.log("Get Inventory list: ", response.data);
+    // console.log("Get Inventory list: ", response.data);
     return response.data;
   } catch (error: any) {
     console.error("Get Inventory API error: ", error);

@@ -7,6 +7,10 @@ export const flex = {
     display: 'flex',
     flexDirection: 'row'
   },
+  rowReverse: {
+    display: 'flex',
+    flexDirection: 'row-reverse'
+  },
   column: {
     display: 'flex',
     flexDirection: 'column'
