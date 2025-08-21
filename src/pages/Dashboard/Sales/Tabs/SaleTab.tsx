@@ -230,7 +230,7 @@ export default function Sale() {
               boxSizing: 'border-box',
               position: 'relative',
               border: 'none',
-              borderRadius: '16px',
+              borderRadius: '20px',
               scrollbarWidth: 'none',
               backgroundColor: 'background.default'
             },

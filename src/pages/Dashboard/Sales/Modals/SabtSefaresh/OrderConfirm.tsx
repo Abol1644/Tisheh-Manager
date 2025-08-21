@@ -383,7 +383,7 @@ function OrderOptions({
 }: {
   inventory: Inventory | null;
   transportList: TransportList[] | null;
-  selectedId: number | null;  // ididentityShipp
+  selectedId: number | null; 
   geofence: GeoFence | null;
   selectedItem: ItemResaultPrice | null;
 }) {
