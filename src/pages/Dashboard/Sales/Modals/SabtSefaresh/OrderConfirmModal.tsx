@@ -45,7 +45,7 @@ import { Inventory } from '@/models';
 import { useProductsStore, useOrgansStore } from '@/stores';
 import ProjectInfo from './ProjectInfo'
 import ProductInfo from './ProductInfo'
-import { SabtSfaresh } from './OrderConfirm'
+import { OrderConfirm } from './OrderConfirm'
 
 
 interface SaleModalProps {
@@ -152,7 +152,7 @@ export default function SabtKalaModal({ open, onClose }: SaleModalProps) {
           <CustomTabPanel value={value} index={0}>
             <Zoom in={value === 0}>
               <Box sx={{ ...height.full, ...flex.justifyStart, mb: 'auto' }}>
-                <SabtSfaresh />
+                <OrderConfirm />
               </Box>
             </Zoom>
           </CustomTabPanel>

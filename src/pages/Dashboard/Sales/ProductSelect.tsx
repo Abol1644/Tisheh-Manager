@@ -2,7 +2,7 @@ import React, { memo, useMemo, useCallback, useState, useEffect } from "react";
 import { DataGrid, GridColDef, gridClasses } from "@mui/x-data-grid";
 import { styled } from "@mui/material/styles";
 
-import SabtKalaModal from "@/pages/Dashboard/Sales/Modals/SabtSefaresh/OrderConfirmModal";
+import OrderConfirmModal from "@/pages/Dashboard/Sales/Modals/SabtSefaresh/OrderConfirmModal";
 import usePersianNumbers from "@/hooks/usePersianNumbers";
 import { persianDataGridLocale, useDataGridStyles } from "@/components/datagrids/DataGridProps";
 
@@ -41,7 +41,7 @@ import ErrorOutlineRoundedIcon from '@mui/icons-material/ErrorOutlineRounded';
 import InfoRoundedIcon from '@mui/icons-material/InfoRounded';
 
 import { useOrgansStore } from '@/stores/organStore';
-import { useProductsStore, useProjectStore, useBranchDeliveryStore, useDistanceStore } from '@/stores/';
+import { useProductsStore, useProjectStore, useAccountStore, useBranchDeliveryStore, useDistanceStore } from '@/stores/';
 import { useSnackbar } from "@/contexts/SnackBarContext";
 
 const ODD_OPACITY = 0.1;
@@ -98,11 +98,12 @@ export function ProductSelect(props: any) {
   const { showSnackbar, closeSnackbarById } = useSnackbar();
   const [modalOpen, setModalOpen] = useState(false);
   const [initDone, setInitDone] = useState(false);
+  const [alternateShow, setAlternateShow] = useState(false);
   const [Account, setAccount] = useState<Account[]>([]);
   const [Project, setProject] = useState<Project[]>([]);
   const [Warehouse, setWarehouse] = useState<Warehouse[]>([]);
   const { selectedProject, setSelectedProject } = useProjectStore();
-  const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
+  const { selectedAccount, setSelectedAccount } = useAccountStore();
   const [connectedProjects, setConnectedProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFetchingDistance, setIsFetchingDistance] = useState(false);
@@ -115,6 +116,11 @@ export function ProductSelect(props: any) {
     () => distance.find((d) => d.warehouseId > 0)?.warehouseId || null,
     [distance]
   );
+
+  useEffect(() => {
+    const isAlt = products.find(product => product.activateAlternate);
+    setAlternateShow(!!isAlt);
+  }, [products]);
 
   useEffect(() => {
     const storedDeliveryType = localStorage.getItem('isBranchDelivery');
@@ -215,7 +221,7 @@ export function ProductSelect(props: any) {
         const loadingSnackbarId = showSnackbar('درحال پردازش انبار', 'info', 0, <InfoRoundedIcon />);
         await fetchDistance();
         closeSnackbarById(loadingSnackbarId);
-      } catch (error:any) {
+      } catch (error: any) {
         setSelectedWarehouse(null);
         let errorMessage = 'خطا در دریافت فاصله';
         if (error.response?.data) {
@@ -561,7 +567,19 @@ export function ProductSelect(props: any) {
       headerName: "عادی",
       width: 400,
       resizable: true,
-      flex: 0.27,
+      flex: 0.22,
+      renderCell: (params) => {
+        const { toPersianPrice } = usePersianNumbers();
+        if (params.value === 0) return "-";
+        return toPersianPrice(params.value);
+      },
+    },
+    {
+      field: "priceAlternate",
+      headerName: "نوبت دار",
+      width: 400,
+      resizable: true,
+      flex: 0.22,
       renderCell: (params) => {
         const { toPersianPrice } = usePersianNumbers();
         if (params.value === 0) return "-";
@@ -618,7 +636,7 @@ export function ProductSelect(props: any) {
       groupId: "group3",
       headerName: "قیمت مستقیم از کارخانه",
       headerAlign: "center" as const,
-      children: [{ field: "priceTransit" }],
+      children: [{ field: "priceTransit" }, { field: "priceAlternate" }],
     },
   ];
 
@@ -738,6 +756,9 @@ export function ProductSelect(props: any) {
         <StripedDataGrid
           rows={filteredProducts()}
           columns={columns}
+          columnVisibilityModel={{
+            priceAlternate: alternateShow,
+          }}
           columnGroupingModel={columnGroupingModel}
           onRowClick={handleRowClick}
           rowHeight={60}
@@ -777,7 +798,7 @@ export function ProductSelect(props: any) {
           }}
         />
 
-        <SabtKalaModal
+        <OrderConfirmModal
           open={modalOpen}
           onClose={handleCloseModal}
         />

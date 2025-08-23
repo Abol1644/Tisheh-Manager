@@ -6,6 +6,7 @@ import { useProjectStore, useProductsStore } from "@/stores/";
 
 interface DistanceState {
   distance: Distance[];
+  setDistance: (distance: Distance[]) => void;
   loading: boolean;
   error: string | null;
   fetchDistance: () => Promise<void>;
@@ -16,7 +17,8 @@ export const useDistanceStore = create<DistanceState>((set) => ({
   distance: [],
   loading: false,
   error: null,
-
+  setDistance: (distance: Distance[]) => set({ distance }),
+  
   fetchDistance: async () => {
     set({ loading: true, error: null });
     try {

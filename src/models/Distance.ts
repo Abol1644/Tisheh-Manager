@@ -6,7 +6,7 @@ export interface Distance {
   distance: number;
   duration: number;
   durationTraffic: number;
-  slopeUp: number;
+  slopeUp: Float32Array;
   slopeDown: number;
   elevation: number;
 }

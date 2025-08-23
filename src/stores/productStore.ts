@@ -65,9 +65,9 @@ export const useProductsStore = create<ProductsStore>((set, get) => ({
     const { products } = get();
 
     // Get all products with the same priceId
-    const transportListPrice = products.filter((p) => p.priceId === priceId && p.valueId !== p.valueIdBase);
+    const TransportListItemShipPrice = products.filter((p) => p.priceId === priceId && p.valueId !== p.valueIdBase);
 
-    return Array.from(transportListPrice.values());
+    return Array.from(TransportListItemShipPrice.values());
   },
 
   setProducts: (products) => set({ products }),
