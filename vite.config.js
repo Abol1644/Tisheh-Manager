@@ -48,7 +48,8 @@ export default defineConfig({
       
       includeAssets: ['**/*'],
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg}']
+        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        maximumFileSizeToCacheInBytes: 3_000_000,
       },
       devOptions: {
         enabled: false

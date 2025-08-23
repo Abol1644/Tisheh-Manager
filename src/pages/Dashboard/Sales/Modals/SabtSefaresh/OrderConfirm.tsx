@@ -166,6 +166,11 @@ export function OrderConfirm() {
         const list = Array.isArray(data) ? data : [data];
         setTransportListSale(list);
         console.log("🚀 ~ OrderConfirm ~ list:", list)
+        
+        // Update distance store with listDistance from transport API response
+        if (list.length > 0 && list[0].listDistance) {
+          setDistance(list[0].listDistance);
+        }
       })
       .catch((error) => {
         let errorMessage = 'خطا در دریافت لیست حمل و نقل';
@@ -178,7 +183,7 @@ export function OrderConfirm() {
       })
       // Fixed: Use setTransportLoading instead of setLoading for transport-specific loading state
       .finally(() => setTransportLoading(false));
-  }, [products, geofence, isBranchDelivery, selectedItem?.priceId, distance, primaryDistance]);
+  }, [products, geofence, isBranchDelivery, selectedItem?.priceId, primaryDistance]);
 
   return (
     <Box sx={{ width: '100%', flex: '1', borderRadius: '12px', display: 'flex', flexDirection: 'column', alignItems: 'stretch', justifyContent: 'end' }}>
@@ -447,51 +452,7 @@ function OrderOptions({
   const transitPreparationTime = usePreparationTime({ start: transitStartPreaper });
 
   return (
-    <Box sx={{ ...flex.column, gap: 1, px: 1, py: 0.5 }}>
-      <Grow in={selectedTransport.length > 0} timeout={300} unmountOnExit>
-        <Box
-          sx={{
-            ...flex.column, ...gap.ten, ...detailBox,
-            '& .MuiTypography-root, span ': {
-              whiteSpace: 'nowrap !important',
-            }
-          }}>
-          {selectedTransport.map((item, index) => (
-            <React.Fragment key={`option-${index}`}>
-              {item.optionallyVehiclesCost && (
-                <Box sx={{ ...flex.row, ...gap.ten }}>
-                  <InfoRoundedIcon color='info' sx={{ fontSize: '20px' }} />
-                  <Typography variant="body2">{item.vehiclesCostTitle} :</Typography>
-                  <Typography variant="body2" sx={{ margin: '0 4px' }}>
-                    {toPersianPrice(item.priceVehiclesCost)}
-                  </Typography>
-                </Box>
-              )}
-              {item.limitOfHoursVehiclesCost && (
-                <Box sx={{ ...flex.row, ...gap.fifteen }}>
-                  <Box sx={{ ...flex.row, ...gap.five }}>
-                    <InfoRoundedIcon color='info' sx={{ fontSize: '20px' }} />
-                    <Typography variant="body2">{item.vehiclesCostTitle} :</Typography>
-                    <Typography variant="body2" sx={{ margin: '0 4px' }}>
-                      {toPersianPrice(item.priceVehiclesCost)}
-                    </Typography>
-                  </Box>
-
-                  <Box sx={{ ...flex.row, ...gap.five }}>
-                    <AccessTimeRoundedIcon color='info' sx={{ fontSize: '20px' }} />
-                    <Typography variant="body2">ارسال بین ساعات</Typography>
-                    <Typography variant="body2" sx={{ margin: '0 2px' }}>
-                      {item.limitOfHoursVehiclesCost ?? '??'} تا {item.limitToHoursVehiclesCost ?? '??'}
-                    </Typography>
-                  </Box>
-                </Box>
-              )}
-            </React.Fragment>
-          ))}
-        </Box>
-      </Grow>
-
-      {/* Inventory / Transit Details - with Grow */}
+    <Box sx={{ ...flex.column, gap: 1, py: 0.5 }}>
       <Box sx={{
         minHeight: '48px',
         position: 'relative',
@@ -500,7 +461,6 @@ function OrderOptions({
           width: '100%'
         }
       }}>
-        {/* Inventory Box */}
         <Grow in={visibleInventory} timeout={300} mountOnEnter>
           <Box sx={{ ...detailBox, ...flex.rowAround }}>
             <Typography sx={typoStyles}>
@@ -536,6 +496,51 @@ function OrderOptions({
           </Box>
         </Grow>
       </Box>
+
+      <Grow in={selectedTransport.length > 0} timeout={300} unmountOnExit>
+        <Box
+          sx={{
+            ...flex.column, ...gap.ten, ...detailBox,
+            '& .MuiTypography-root, span ': {
+              whiteSpace: 'nowrap !important',
+            }
+          }}>
+          {selectedTransport.map((item, index) => (
+            <React.Fragment key={`option-${index}`}>
+              {item.optionallyVehiclesCost && (
+                <Box sx={{ ...flex.row, ...gap.ten }}>
+                  <InfoRoundedIcon color='info' sx={{ fontSize: '20px' }} />
+                  <Typography variant="body2">{item.vehiclesCostTitle} :</Typography>
+                  <Typography variant="body2" sx={{ margin: '0 4px' }}>
+                    {toPersianPrice(item.priceVehiclesCost)} 
+                  </Typography>
+                  <RialIcon size={24} />
+                </Box>
+              )}
+              {item.limitOfHoursVehiclesCost && (
+                <Box sx={{ ...flex.row, ...gap.fifteen }}>
+                  <Box sx={{ ...flex.row, ...gap.five }}>
+                    <InfoRoundedIcon color='info' sx={{ fontSize: '20px' }} />
+                    <Typography variant="body2">{item.vehiclesCostTitle} :</Typography>
+                    <Typography variant="body2" sx={{ margin: '0 4px' }}>
+                      {toPersianPrice(item.priceVehiclesCost)}
+                    </Typography>
+                    <RialIcon size={24} />
+                  </Box>
+
+                  <Box sx={{ ...flex.row, ...gap.five }}>
+                    <AccessTimeRoundedIcon color='info' sx={{ fontSize: '20px' }} />
+                    <Typography variant="body2">ارسال بین ساعات</Typography>
+                    <Typography variant="body2" sx={{ margin: '0 2px' }}>
+                      {item.limitOfHoursVehiclesCost ?? '??'} تا {item.limitToHoursVehiclesCost ?? '??'}
+                    </Typography>
+                  </Box>
+                </Box>
+              )}
+            </React.Fragment>
+          ))}
+        </Box>
+      </Grow>
     </Box>
   );
 }
