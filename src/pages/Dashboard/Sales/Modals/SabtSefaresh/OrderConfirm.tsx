@@ -55,8 +55,7 @@ interface ShipmentTableProps {
   transportList: TransportList[] | null;
   selectedTransport: TransportItem | null;
   onSelectTransport: (transport: TransportItem) => void;
-  selectedUnit: string;
-  unitRatio: number;
+  selectedUnit: ItemResaultPrice | null;
   transportloading: boolean;
 }
 
@@ -82,11 +81,11 @@ export function OrderConfirm() {
   const isBranchDelivery = useBranchDeliveryStore((s) => s.isBranchDelivery);
 
   // Unit selection state
-  const [selectedUnit, setSelectedUnit] = useState<string>('');
-  const [unitRatio, setUnitRatio] = useState<number>(1);
+  const [selectedUnit, setSelectedUnit] = useState<ItemResaultPrice | null>(null);
 
   // On product selection, initialize unit
   const { selectedItem, getAvailableUnits } = useProductsStore();
+  console.log("⏰ ~ OrderConfirm ~ selectedItem:", selectedItem)
   const availableUnits = selectedItem ? getAvailableUnits(selectedItem.priceId) : [];
   const { distance, setDistance } = useDistanceStore();
   const { showSnackbar } = useSnackbar();
@@ -99,17 +98,15 @@ export function OrderConfirm() {
   React.useEffect(() => {
     if (selectedItem && !selectedUnit && availableUnits.length > 0) {
       const firstUnit = availableUnits[0];
-      setSelectedUnit(firstUnit.valueTitle);
-      setUnitRatio(firstUnit.unitRatio || 1);
+      setSelectedUnit(firstUnit);
     }
   }, [selectedItem, availableUnits, selectedUnit]);
 
   const handleUnitChange = (e: SelectChangeEvent<string>) => {
     const title = e.target.value;
-    setSelectedUnit(title);
     const unit = availableUnits.find(u => u.valueTitle === title);
     if (unit) {
-      setUnitRatio(unit.unitRatio || 1);
+      setSelectedUnit(unit);
     }
   };
 
@@ -193,7 +190,6 @@ export function OrderConfirm() {
           selectedTransport={selectedTransport}
           onSelectTransport={setSelectedTransport}
           selectedUnit={selectedUnit}
-          unitRatio={unitRatio}
           transportloading={transportloading}
         />
       </Box>
@@ -228,7 +224,6 @@ export function ShipmentTable({
   selectedTransport,
   onSelectTransport,
   selectedUnit,
-  unitRatio,
   transportloading
 }: ShipmentTableProps) {
   const { toPersianPrice } = usePersianNumbers();
@@ -283,7 +278,7 @@ export function ShipmentTable({
                   Boolean(selectedTransport.transit) === Boolean(group.transit);
                 const sumPrice = (group.fare?.fullFare ?? 0) +
                   group.costs.reduce((sum, c) => sum + (c.priceVehiclesCost || 0), 0);
-                const displayWeight = toPersianDigits(group.capacity);
+                const displayWeight = toPersianDigits(group.capacity * (selectedUnit?.unitRatio || 1));
                 return (
                   <TableRow
                     key={`${group.vehicleId}-${Boolean(group.alternate)}-${Boolean(group.transit)}`}
@@ -302,7 +297,7 @@ export function ShipmentTable({
                       </Typography>
                     </TableCell>
                     <TableCell>
-                      {displayWeight} {selectedUnit}
+                      {displayWeight} {selectedUnit?.valueTitle || ''}
                     </TableCell>
                     <TableCell>
                       <Tooltip
@@ -552,9 +547,9 @@ function OrderInput({
   availableUnits
 }: {
   maxInventory?: number;
-  selectedUnit: string;
+  selectedUnit: ItemResaultPrice | null;
   onUnitChange: (e: SelectChangeEvent<string>) => void;
-  availableUnits: any[];
+  availableUnits: ItemResaultPrice[];
 }) {
   const [productNumber, setProductNumber] = React.useState('0');
   const { selectedItem } = useProductsStore();
@@ -586,7 +581,7 @@ function OrderInput({
 
         <FormControl size='small' sx={{ minWidth: '200px', flex: 1 }}>
           <Select
-            value={selectedUnit}
+            value={selectedUnit?.valueTitle || ''}
             onChange={onUnitChange}
             input={
               <OutlinedInput

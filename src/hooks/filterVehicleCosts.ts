@@ -35,6 +35,7 @@ export function groupTransportByVehicleAndAlternate(
 ): Record<
   string,
   {
+    
     vehicleId: number;
     alternate: boolean;
     transit: boolean;
