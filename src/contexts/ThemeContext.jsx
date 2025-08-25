@@ -107,7 +107,7 @@ export function CustomThemeProvider({ children }) {
       document.body.style.setProperty('--background-secondaryShade', '#1b061e');
       document.body.style.setProperty('--background-paper', '#1e1e1e');
       document.body.style.setProperty('--background-overlay', '#212121');
-      document.body.style.setProperty('--background-overlay-light', '#434343');
+      document.body.style.setProperty('--background-overlay-light', '#2F2F2F');
       document.body.style.setProperty('--background-fade', 'rgb(0, 0, 0, 0.1)');
       document.body.style.setProperty('--text-primary', '#ffffff');
       document.body.style.setProperty('--text-secondary', '#aaaaaa');
@@ -130,7 +130,7 @@ export function CustomThemeProvider({ children }) {
       document.body.style.setProperty('--primary-warningShade', '#ffbd59');
       document.body.style.setProperty('--background-default', '#ffffff');
       document.body.style.setProperty('--background-secondary', '#9c27b0');
-      document.body.style.setProperty('--background-secondaryShade', '#fdf3ff');
+      document.body.style.setProperty('--background-secondaryShade', '#F5F5F5');
       document.body.style.setProperty('--background-paper', '#ffffff');
       document.body.style.setProperty('--background-overlay', '#ECEBEB');
       document.body.style.setProperty('--background-overlay-light', '#fbfbfb');

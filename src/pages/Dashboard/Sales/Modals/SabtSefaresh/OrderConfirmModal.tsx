@@ -111,8 +111,8 @@ export default function SabtKalaModal({ open, onClose }: SaleModalProps) {
             top: '50%',
             left: '50%',
             width: '700px',
-            minHeight: '780px',
-            margin: '-390px 0 0 -350px',
+            minHeight: '680px',
+            margin: '-340px 0 0 -350px',
             bgcolor: 'background.paper',
             background: 'linear-gradient(-165deg, #00ff684d, var(--background-paper) 75%)',
             border: 'none',
@@ -151,7 +151,7 @@ export default function SabtKalaModal({ open, onClose }: SaleModalProps) {
           </Box>
           <CustomTabPanel value={value} index={0}>
             <Zoom in={value === 0}>
-              <Box sx={{ ...height.full, ...flex.justifyStart, mb: 'auto' }}>
+              <Box sx={{ ...height.full, ...flex.justifyStart, flex: 1 }}>
                 <OrderConfirm />
               </Box>
             </Zoom>
@@ -170,7 +170,7 @@ export default function SabtKalaModal({ open, onClose }: SaleModalProps) {
               </Box>
             </Zoom>
           </CustomTabPanel>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2, mt: 4 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2, mt: 2 }}>
             <FormControl size='small' sx={{ minWidth: '200px', flex: 1 }}>
               <Select
                 displayEmpty

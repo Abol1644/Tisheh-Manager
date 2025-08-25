@@ -39,7 +39,7 @@ import { TomanIcon, RialIcon } from '@/components/elements/TomanIcon';
 
 import usePersianNumbers from '@/hooks/usePersianNumbers';
 import { useWeekdays, useFormattedWeekdays, usePreparationTime } from '@/hooks/weekDayConverter';
-import { flex, width, gap } from '@/models/ReadyStyles';
+import { flex, width, gap, height } from '@/models/ReadyStyles';
 import { getInventory, getGeoFence, getTransportListSale } from '@/api';
 // Added TransportItem import to handle individual transport items from new nested structure
 import { Inventory, GeoFence, TransportList, TransportTableProps, ItemResaultPrice, TransportItem } from '@/models';
@@ -47,7 +47,7 @@ import { useProductsStore, useProjectStore, useBranchDeliveryStore, useDistanceS
 import { toPersianDigits } from '@/utils/persianNumbers'
 import { useSnackbar } from "@/contexts/SnackBarContext";
 import { filterVehicleCosts, groupTransportByVehicleAndAlternate } from '@/hooks/filterVehicleCosts';
-import { whitespace } from 'stylis';
+import { position, whitespace } from 'stylis';
 
 // Updated interface to use TransportItem for selected transport instead of TransportList
 // This matches the new nested structure where individual items are selected from listItemVehicleShipp
@@ -163,7 +163,7 @@ export function OrderConfirm() {
         const list = Array.isArray(data) ? data : [data];
         setTransportListSale(list);
         console.log("🚀 ~ OrderConfirm ~ list:", list)
-        
+
         // Update distance store with listDistance from transport API response
         if (list.length > 0 && list[0].listDistance) {
           setDistance(list[0].listDistance);
@@ -183,8 +183,8 @@ export function OrderConfirm() {
   }, [products, geofence, isBranchDelivery, selectedItem?.priceId, primaryDistance]);
 
   return (
-    <Box sx={{ width: '100%', flex: '1', borderRadius: '12px', display: 'flex', flexDirection: 'column', alignItems: 'stretch', justifyContent: 'end' }}>
-      <Box sx={{ height: '100%' }}>
+    <Box sx={{ width: '100%', ...flex.columnBetween }}>
+      <Box>
         <ShipmentTable
           transportList={transportListSale}
           selectedTransport={selectedTransport}
@@ -192,29 +192,30 @@ export function OrderConfirm() {
           selectedUnit={selectedUnit}
           transportloading={transportloading}
         />
+        <OrderOptions
+          inventory={inventory}
+          transportList={transportListSale}
+          selectedId={selectedTransport?.vehicleId || null}
+          selectedAlternate={selectedTransport?.alternate || false}
+          selectedTransit={selectedTransport?.transit || false}
+          geofence={geofence}
+          selectedItem={selectedItem}
+        />
       </Box>
 
-      <OrderOptions
-        inventory={inventory}
-        transportList={transportListSale}
-        selectedId={selectedTransport?.vehicleId || null}
-        selectedAlternate={selectedTransport?.alternate || false}
-        selectedTransit={selectedTransport?.transit || false}
-        geofence={geofence}
-        selectedItem={selectedItem}
-      />
-
-      <OrderInput
-        maxInventory={inventory?.fullInvestory ?? undefined}
-        selectedUnit={selectedUnit}
-        onUnitChange={handleUnitChange}
-        availableUnits={availableUnits}
-      />
-
-      {/* Prices Box */}
-      <Box className="Prices" sx={{ /* ... */ }}>
-        {/* ... unchanged */}
+      <Box sx={{ ...flex.rowBetween, ...width.full, ...gap.ten, mb: 2 }}>
+        <OrderInput
+          maxInventory={inventory?.fullInvestory ?? undefined}
+          selectedUnit={selectedUnit}
+          onUnitChange={handleUnitChange}
+          availableUnits={availableUnits}
+        />
+        <Prices
+          fullCost={1000}
+          pricePerUnit={1000000}
+        />
       </Box>
+
     </Box>
   );
 }
@@ -507,7 +508,7 @@ function OrderOptions({
                   <InfoRoundedIcon color='info' sx={{ fontSize: '20px' }} />
                   <Typography variant="body2">{item.vehiclesCostTitle} :</Typography>
                   <Typography variant="body2" sx={{ margin: '0 4px' }}>
-                    {toPersianPrice(item.priceVehiclesCost)} 
+                    {toPersianPrice(item.priceVehiclesCost)}
                   </Typography>
                   <RialIcon size={24} />
                 </Box>
@@ -540,6 +541,69 @@ function OrderOptions({
   );
 }
 
+function Prices({
+  fullCost,
+  pricePerUnit,
+}: {
+  fullCost: number;
+  pricePerUnit: number;
+}) {
+  const { toPersianPrice } = usePersianNumbers();
+
+  const priceBox =
+  {
+    ...flex.rowBetween,
+    ...width.full,
+    height: '48px',
+    borderRadius: '12px',
+    bgcolor: 'var(--background-overlay-light)',
+    px: 2,
+  };
+
+  return (
+    <Box className="Prices" sx={{ ...flex.column, ...width.half, gap: '24px' }}>
+      <Box sx={priceBox}>
+        <Box
+          sx={{
+            position: 'absolute',
+            mb: 6,
+            bgcolor: 'var(--background-overlay-light)',
+            borderRadius: '8px',
+            px: 1
+          }}
+        >
+          <Typography variant="caption">
+            قیمت واحد
+          </Typography>
+        </Box>
+        <Typography variant="body1" >
+          {toPersianPrice(fullCost)}
+        </Typography>
+        <RialIcon size={28} />
+      </Box>
+      <Box sx={priceBox}>
+        <Box
+          sx={{
+            position: 'absolute',
+            mb: 6,
+            bgcolor: 'var(--background-overlay-light)',
+            borderRadius: '8px',
+            px: 1
+          }}
+        >
+          <Typography variant="caption">
+            قیمت تحویل
+          </Typography>
+        </Box>
+        <Typography variant="body1" >
+          {toPersianPrice(pricePerUnit)}
+        </Typography>
+        <RialIcon size={28} />
+      </Box>
+    </Box>
+  )
+}
+
 function OrderInput({
   maxInventory,
   selectedUnit,
@@ -558,58 +622,54 @@ function OrderInput({
   const hasMultipleUnits = availableUnits.length > 1;
 
   return (
-    <Box sx={{ py: 1, px: 2, mb: 1 }}>
-      <Typography> تعداد و واحد کالا </Typography>
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: 'row',
-          gap: '24px',
-          width: '100%',
-          mt: 1
-        }}
-      >
-        <NumberField
-          label="تعداد"
-          value={productNumber}
-          onChange={setProductNumber}
-          decimal={true}
-          step={1}
-          min={0}
-          max={maxInventory}
-        />
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '24px',
+        width: '50%',
+      }}
+    >
+      <NumberField
+        label="تعداد"
+        value={productNumber}
+        onChange={setProductNumber}
+        decimal={true}
+        step={1}
+        min={0}
+        max={maxInventory}
+      />
 
-        <FormControl size='small' sx={{ minWidth: '200px', flex: 1 }}>
-          <Select
-            value={selectedUnit?.valueTitle || ''}
-            onChange={onUnitChange}
-            input={
-              <OutlinedInput
-                label={units.length > 1 ? <span style={{ color: 'var(--icon-main)' }}><ScaleRoundedIcon sx={{ fontSize: 'small', p: 0 }} /> واحد</span> : 'واحد'}
-                sx={{
-                  '& .MuiOutlinedInput-notchedOutline span': {
-                    opacity: 1,
-                    position: 'absolute',
-                    top: '-4px',
-                    left: '6px',
-                    backgroundColor: 'var(--background-paper)',
-                    px: 0.5
-                  }
-                }}
-              />
-            }
-          >
-            {units.map((unitItem) => (
-              <MenuItem
-                key={unitItem.valueId}
-                value={unitItem.valueTitle}
-              >
-                {unitItem.valueTitle}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-      </Box>
+      <FormControl size='small' sx={{ minWidth: '200px', flex: 1 }}>
+        <Select
+          value={selectedUnit?.valueTitle || ''}
+          onChange={onUnitChange}
+          input={
+            <OutlinedInput
+              label={units.length > 1 ? <span style={{ color: 'var(--icon-main)' }}><ScaleRoundedIcon sx={{ fontSize: 'small', p: 0 }} /> واحد</span> : 'واحد'}
+              sx={{
+                '& .MuiOutlinedInput-notchedOutline span': {
+                  opacity: 1,
+                  position: 'absolute',
+                  top: '-4px',
+                  left: '6px',
+                  backgroundColor: 'var(--background-paper)',
+                  px: 0.5
+                }
+              }}
+            />
+          }
+        >
+          {units.map((unitItem) => (
+            <MenuItem
+              key={unitItem.valueId}
+              value={unitItem.valueTitle}
+            >
+              {unitItem.valueTitle}
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
     </Box>
   );
 }
