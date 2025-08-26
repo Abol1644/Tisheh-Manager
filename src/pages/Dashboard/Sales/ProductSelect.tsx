@@ -99,6 +99,7 @@ export function ProductSelect(props: any) {
   const [modalOpen, setModalOpen] = useState(false);
   const [initDone, setInitDone] = useState(false);
   const [alternateShow, setAlternateShow] = useState(false);
+  const [dis3show, setDis3Show] = useState(false);
   const [Account, setAccount] = useState<Account[]>([]);
   const [Project, setProject] = useState<Project[]>([]);
   const [Warehouse, setWarehouse] = useState<Warehouse[]>([]);
@@ -119,7 +120,9 @@ export function ProductSelect(props: any) {
 
   useEffect(() => {
     const isAlt = products.find(product => product.activateAlternate);
+    const haveDis3 = products.find(product => product.discountPriceWarehouse2);
     setAlternateShow(!!isAlt);
+    setDis3Show(!!haveDis3);
   }, [products]);
 
   useEffect(() => {
@@ -563,6 +566,48 @@ export function ProductSelect(props: any) {
       },
     },
     {
+      field: "discountPriceWarehouse2",
+      headerName: "تخفیف سطح 3",
+      width: 400,
+      resizable: true,
+      flex: 0.35,
+      renderCell: (params) => {
+        const { toPersianPrice } = usePersianNumbers();
+        if (params.value === null) return "-";
+        return (
+          <div style={{
+            display: "flex",
+            flexDirection: "column",
+            padding: "4px 0",
+            justifyContent: "center",
+            height: "100%",
+            gap: "2px",
+          }}>
+            <Typography variant="body2">
+              {params.row.percentage != 0
+                ?
+                params.value === 0
+                  ?
+                  '-'
+                  :
+                  toPersianPrice(params.value)
+                :
+                '-'
+              }
+            </Typography>
+            <Typography variant="caption" color="text.warning">
+              {params.row.promotionTitle != null && params.row.lowestNumberOfDiscount1 != 0 && params.row.priceWarehouse != 0
+                ?
+                `${params.row.promotionTitle} حداقل از ${params.row.lowestNumberOfDiscount1} ${params.row.valueTitle}`
+                :
+                ''
+              }
+            </Typography>
+          </div>
+        );
+      },
+    },
+    {
       field: "priceTransit",
       headerName: "عادی",
       width: 400,
@@ -630,6 +675,7 @@ export function ProductSelect(props: any) {
         { field: "priceWarehouse" },
         { field: "discountPriceWarehouse" },
         { field: "discountPriceWarehouse1" },
+        { field: "discountPriceWarehouse2" },
       ],
     },
     {
@@ -758,6 +804,7 @@ export function ProductSelect(props: any) {
           columns={columns}
           columnVisibilityModel={{
             priceAlternate: alternateShow,
+            discountPriceWarehouse2: dis3show,
           }}
           columnGroupingModel={columnGroupingModel}
           onRowClick={handleRowClick}
