@@ -102,11 +102,11 @@ export default React.memo(function AddProjectModal({ open, onClose }: ModalProps
             <Box
               sx={{
                 width: fullScreen ? 'calc(100vw - 50px)' : '900px',
-                height: fullScreen ? 'calc(100vh - 50px)' : '500px',
+                height: fullScreen ? 'calc(100vh - 50px)' : '550px',
                 bgcolor: 'background.paper',
                 background: 'linear-gradient(-165deg, #00ff684d, var(--background-paper) 75%)',
                 border: 'none',
-                boxShadow: '0 20px 20px -20px var(--text-secondary)',
+                boxShadow: 'inset 0 0 10px 1px rgba(255, 255, 255, 0.2), 0px 11px 15px -7px rgba(0,0,0,0.2),0px 24px 38px 3px rgba(0,0,0,0.14),0px 9px 46px 8px rgba(0,0,0,0.12)',
                 p: '15px 15px',
                 borderRadius: '25px',
                 overflow: 'hidden',
@@ -114,6 +114,7 @@ export default React.memo(function AddProjectModal({ open, onClose }: ModalProps
                 flexDirection: 'column',
                 justifyContent: 'flex-start',
                 transition: 'all 0.3s ease',
+                // backdropFilter: 'blur(5px)',
                 '&:focus-visible': {
                   outline: 'none'
                 },
@@ -240,7 +241,7 @@ export default React.memo(function AddProjectModal({ open, onClose }: ModalProps
                         </Tooltip>
                         <Tooltip title={mapTile === 'satellite' ? "نقشه خیابانی" : "نقشه ماهواره ای"} placement='top' arrow disableInteractive slots={{ transition: Zoom }} >
                           <IconButton onClick={ToggleMapTile}>
-                            <PublicRoundedIcon sx={{ display: mapTile === 'satellite' ? 'none' : 'block' }} />
+                            <PublicRoundedIcon sx={{ display: mapTile === 'satellite' ? 'none' : 'block', fill: 'var(--text-dark)' }} />
                             <MapRoundedIcon sx={{ display: mapTile === 'satellite' ? 'block' : 'none' }} />
                           </IconButton>
                         </Tooltip>
@@ -263,6 +264,8 @@ export default React.memo(function AddProjectModal({ open, onClose }: ModalProps
                             width: '100%',
                             borderRadius: '10px',
                             overflow: 'hidden',
+                            minHeight: '400px', // Ensure minimum height
+                            position: 'relative', // For proper leaflet rendering
                           }}
                         >
                           <Map
@@ -272,6 +275,9 @@ export default React.memo(function AddProjectModal({ open, onClose }: ModalProps
                             onPositionChange={setPosition}
                             height="100%"
                             mapTile={mapTile}
+                            markerType="svg-pin"
+                            markerColor="#00ff68"
+                            markerSize={[32, 48]}
                           />
                         </Box>
                       </Box>

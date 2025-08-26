@@ -267,7 +267,7 @@ export default React.memo(function ConnectToProject({ open, onClose }: ModalProp
                 bgcolor: 'background.paper',
                 background: 'linear-gradient(-165deg, #00ff684d, var(--background-paper) 75%)',
                 border: 'none',
-                boxShadow: '0 20px 20px -20px var(--text-secondary)',
+                boxShadow: 'inset 0 0 10px 1px rgba(255, 255, 255, 0.2), 0px 11px 15px -7px rgba(0,0,0,0.2),0px 24px 38px 3px rgba(0,0,0,0.14),0px 9px 46px 8px rgba(0,0,0,0.12)',
                 p: '20px 20px',
                 borderRadius: '25px',
                 overflow: 'auto',

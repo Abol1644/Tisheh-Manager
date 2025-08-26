@@ -44,20 +44,26 @@ const NumberField: React.FC<NumberFieldProps> = ({
   const validationRegex = decimal ? decimalRegex : integerRegex;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = toEnglishNumber(e.target.value);
+    const inputValue = e.target.value;
 
     // Allow empty
-    if (val === '') {
+    if (inputValue === '') {
       onChange(0);
       return ; 
     }
 
+    // Convert Persian digits to English for validation
+    const englishValue = inputValue.replace(/[۰-۹]/g, (char) => {
+      const persianDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
+      return persianDigits.indexOf(char).toString();
+    });
+
     // Must match number pattern
-    if (!validationRegex.test(val)) {
+    if (!validationRegex.test(englishValue)) {
       return;
     }
 
-    const num = parseFloat(val);
+    const num = parseFloat(englishValue);
 
     // Check bounds
     if (min !== undefined && num < min) return; // ❌ Below min

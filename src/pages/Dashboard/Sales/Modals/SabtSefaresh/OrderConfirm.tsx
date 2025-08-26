@@ -47,17 +47,7 @@ import { useProductsStore, useProjectStore, useBranchDeliveryStore, useDistanceS
 import { toPersianDigits } from '@/utils/persianNumbers'
 import { useSnackbar } from "@/contexts/SnackBarContext";
 import { filterVehicleCosts, groupTransportByVehicleAndAlternate } from '@/hooks/filterVehicleCosts';
-import { usePriceCalculator } from '@/hooks/usePriceCalculator';
-
-// Updated interface to use TransportItem for selected transport instead of TransportList
-// This matches the new nested structure where individual items are selected from listItemVehicleShipp
-interface ShipmentTableProps {
-  transportList: TransportList[] | null;
-  selectedTransport: TransportItem | null;
-  onSelectTransport: (transport: TransportItem) => void;
-  selectedUnit: ItemResaultPrice | null;
-  transportloading: boolean;
-}
+import { usePriceCalculator, useRoundedPrice } from '@/hooks/usePriceCalculator';
 
 export function OrderConfirm() {
   const { toPersianPrice } = usePersianNumbers();
@@ -69,10 +59,8 @@ export function OrderConfirm() {
   const [transportListSale, setTransportListSale] = useState<TransportList[]>([]);
   // Changed from TransportList to TransportItem to match new nested structure
   const [selectedTransport, setSelectedTransport] = useState<TransportItem | null>(null);
-  console.log("🎂 ~ OrderConfirm ~ selectedTransport:", selectedTransport)
 
-  const { products, selectedItem, getAvailableUnits } = useProductsStore();
-  console.log("⏰ ~ OrderConfirm ~ selectedItem:", selectedItem)
+  const { products, selectedItem, getAvailableUnits, setSelectedItem } = useProductsStore();
 
   const selectedPeriod = React.useMemo(() => {
     const item = localStorage.getItem('periodData');
@@ -96,8 +84,9 @@ export function OrderConfirm() {
 
   React.useEffect(() => {
     if (selectedItem && !selectedUnit && availableUnits.length > 0) {
-      const firstUnit = availableUnits[0];
-      setSelectedUnit(firstUnit);
+      // Find the base unit that matches valueIdBase, fallback to first unit if not found
+      const baseUnit = availableUnits.find(unit => unit.valueId === selectedItem.valueIdBase) || availableUnits[0];
+      setSelectedUnit(baseUnit);
     }
   }, [selectedItem, availableUnits, selectedUnit]);
 
@@ -114,6 +103,7 @@ export function OrderConfirm() {
     const unit = availableUnits.find(u => u.valueTitle === title);
     if (unit) {
       setSelectedUnit(unit);
+      setSelectedItem(unit); // Update the entire selected item, not just the unit
     }
   };
 
@@ -169,6 +159,7 @@ export function OrderConfirm() {
       .then(data => {
         const list = Array.isArray(data) ? data : [data];
         setTransportListSale(list);
+        console.log("✔ ~ OrderConfirm ~ list:", list)
 
         // Update distance store with listDistance from transport API response
         if (list.length > 0 && list[0].listDistance) {
@@ -186,7 +177,7 @@ export function OrderConfirm() {
           };
           return getOrder(a) - getOrder(b);
         });
-        
+
         if (displayItems.length > 0) {
           const firstItem = displayItems[0];
           setSelectedTransport({ ...firstItem.costs[0], ...firstItem } as TransportItem);
@@ -214,6 +205,7 @@ export function OrderConfirm() {
           onSelectTransport={setSelectedTransport}
           selectedUnit={selectedUnit}
           transportloading={transportloading}
+          selectedItem={selectedItem}
         />
         <OrderOptions
           inventory={inventory}
@@ -251,10 +243,19 @@ export function ShipmentTable({
   selectedTransport,
   onSelectTransport,
   selectedUnit,
-  transportloading
-}: ShipmentTableProps) {
+  transportloading,
+  selectedItem
+}: {
+  transportList: TransportList[] | null;
+  selectedTransport: TransportItem | null;
+  onSelectTransport: (transport: TransportItem) => void;
+  selectedUnit: ItemResaultPrice | null;
+  transportloading: boolean;
+  selectedItem: ItemResaultPrice | null;
+}) {
   const { toPersianPrice } = usePersianNumbers();
   const Costs = filterVehicleCosts(transportList, false, false);
+  console.log("🦈 ~ ShipmentTable ~ Costs:", transportList)
   const groupedCosts = groupTransportByVehicleAndAlternate(Costs);
   const displayItems = Object.values(groupedCosts).sort((a, b) => {
     const getOrder = (item: (typeof groupedCosts)[string]) => {
@@ -264,6 +265,7 @@ export function ShipmentTable({
     };
     return getOrder(a) - getOrder(b);
   });
+  console.log("😅 ~ ShipmentTable ~ displayItems:", displayItems)
 
   return (
     <Box className="income-modal-table-container" sx={{ mb: 1 }}>
@@ -305,7 +307,8 @@ export function ShipmentTable({
                   Boolean(selectedTransport.transit) === Boolean(group.transit);
                 const sumPrice = (group.fare?.fullFare ?? 0) +
                   group.costs.reduce((sum, c) => sum + (c.priceVehiclesCost || 0), 0);
-                const displayWeight = toPersianDigits(group.capacity * (selectedUnit?.unitRatio || 1));
+                const displayWeight = toPersianDigits(group.capacity * (selectedItem?.unitRatio || 1));
+                console.log("💵 ~ displayWeight:", group.capacity, selectedUnit?.unitRatio)
                 return (
                   <TableRow
                     key={`${group.vehicleId}-${Boolean(group.alternate)}-${Boolean(group.transit)}`}
@@ -324,7 +327,7 @@ export function ShipmentTable({
                       </Typography>
                     </TableCell>
                     <TableCell>
-                      {displayWeight} {selectedUnit?.valueTitle || ''}
+                      {displayWeight} {selectedItem?.valueTitle || ''}
                     </TableCell>
                     <TableCell>
                       <Tooltip
@@ -576,9 +579,11 @@ function Prices({
   selectedItem: ItemResaultPrice | null;
   selectedTransport: TransportItem | null;
 }) {
+  console.log("🚀 ~ Prices ~ selectedTransport:", selectedTransport)
+  console.log("🍒 ~ Prices ~ selectedItem:", selectedItem)
   const { toPersianPrice } = usePersianNumbers();
   const { resultPrice, price, disPrice } = usePriceCalculator(selectedItem, numberOfProduct, selectedTransport);
-  console.log("💵 ~ Prices ~ resultPrice, price, disPrice:", resultPrice, price, disPrice)
+  const roundedResultPrice = useRoundedPrice(resultPrice);
 
   const priceBox =
   {
@@ -606,7 +611,7 @@ function Prices({
             قیمت واحد
           </Typography>
         </Box>
-        {selectedItem?.discountPriceWarehouse != 0 
+        {(selectedItem?.lowestNumberOfDiscount ?? 0) <= numberOfProduct
           ?
           <Box sx={{ ...flex.row, ...gap.fifteen }}>
             <Box
@@ -621,7 +626,7 @@ function Prices({
                 sx={{
                   position: 'relative',
                   zIndex: 1,
-                  color: 'text.primary', 
+                  color: 'text.primary',
                 }}
               >
                 {toPersianPrice(selectedItem?.priceWarehouse)}
@@ -634,12 +639,12 @@ function Prices({
                   top: '50%',
                   left: '0',
                   right: '0',
-                  height: '2px', 
-                  bgcolor: 'error.main', 
+                  height: '2px',
+                  bgcolor: 'error.main',
                   transform: 'rotate(-10deg)',
                   transformOrigin: 'center',
                   zIndex: 2,
-                  pointerEvents: 'none', 
+                  pointerEvents: 'none',
                 }}
               />
             </Box>
@@ -649,8 +654,8 @@ function Prices({
           </Box>
           :
           <Typography variant="body1" >
-              {toPersianPrice(price)}
-            </Typography>
+            {toPersianPrice(price)}
+          </Typography>
         }
         <RialIcon size={28} />
       </Box>

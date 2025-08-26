@@ -76,13 +76,14 @@ export const usePriceCalculator = (
       disPrice = priceWarehouse - discountPriceWarehouse2;
     }
     // === 2. If no warehouse discount, fallback to standard pricing modes ===
-    else if (activatePreSell) {
-      basePrice = pricePreSell;
-    } else if (activateTransit) {
-      basePrice = priceTransit;
-    } else if (activateAlternate) {
-      basePrice = priceAlternate;
-    } else {
+    // else if (activatePreSell) {
+    //   basePrice = pricePreSell;
+    // } else if (activateTransit) {
+    //   basePrice = priceTransit;
+    // } else if (activateAlternate) {
+    //   basePrice = priceAlternate;
+    // }
+    else {
       // Default to regular warehouse price
       basePrice = priceWarehouse;
     }
@@ -103,4 +104,46 @@ export const usePriceCalculator = (
       disPrice,
     };
   }, [item, capacity, selectedTransport]);
+};
+
+export const useRoundedPrice = (value: number | null | undefined): number => {
+  return useMemo(() => {
+    if (value == null || isNaN(value)) return 0;
+
+    const num = Math.floor(value); // truncate decimal part (like (long) in C#)
+
+    if (num <= 9) return num;
+
+    const digits = num.toString().length;
+
+    if (digits > 6) {
+      // 7+ digits → round to nearest 10,000
+      const remainder = num % 10000;
+      if (remainder === 5000) return num;
+      return remainder >= 5000 ? num + (10000 - remainder) : num - remainder;
+    }
+
+    if (digits > 5) {
+      // 6 digits → round to nearest 1,000
+      const remainder = num % 1000;
+      if (remainder === 500) return num;
+      return remainder > 500 ? num + (1000 - remainder) : num - remainder;
+    }
+
+    if (digits > 4) {
+      // 5 digits → round to nearest 100
+      const remainder = num % 100;
+      if (remainder === 50) return num;
+      return remainder > 50 ? num + (100 - remainder) : num - remainder;
+    }
+
+    if (digits > 1) {
+      // 2–4 digits → round to nearest 10
+      const remainder = num % 10;
+      if (remainder === 5) return num;
+      return remainder > 5 ? num + (10 - remainder) : num - remainder;
+    }
+
+    return num;
+  }, [value]);
 };
