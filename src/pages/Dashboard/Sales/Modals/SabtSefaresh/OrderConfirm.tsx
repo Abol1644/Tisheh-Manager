@@ -47,7 +47,7 @@ import { useProductsStore, useProjectStore, useBranchDeliveryStore, useDistanceS
 import { toPersianDigits } from '@/utils/persianNumbers'
 import { useSnackbar } from "@/contexts/SnackBarContext";
 import { filterVehicleCosts, groupTransportByVehicleAndAlternate } from '@/hooks/filterVehicleCosts';
-import { position, whitespace } from 'stylis';
+import { usePriceCalculator } from '@/hooks/usePriceCalculator';
 
 // Updated interface to use TransportItem for selected transport instead of TransportList
 // This matches the new nested structure where individual items are selected from listItemVehicleShipp
@@ -62,14 +62,17 @@ interface ShipmentTableProps {
 export function OrderConfirm() {
   const { toPersianPrice } = usePersianNumbers();
   const [loading, setLoading] = useState(true);
+  const [numberOfProduct, setNumberOfProduct] = React.useState(0);
   const [transportloading, setTransportLoading] = useState(true);
   const [inventory, setInventory] = useState<Inventory | null>(null);
   const [geofence, setgeofence] = useState<GeoFence | null>(null);
   const [transportListSale, setTransportListSale] = useState<TransportList[]>([]);
   // Changed from TransportList to TransportItem to match new nested structure
   const [selectedTransport, setSelectedTransport] = useState<TransportItem | null>(null);
+  console.log("🎂 ~ OrderConfirm ~ selectedTransport:", selectedTransport)
 
-  const { products } = useProductsStore();
+  const { products, selectedItem, getAvailableUnits } = useProductsStore();
+  console.log("⏰ ~ OrderConfirm ~ selectedItem:", selectedItem)
 
   const selectedPeriod = React.useMemo(() => {
     const item = localStorage.getItem('periodData');
@@ -82,10 +85,6 @@ export function OrderConfirm() {
 
   // Unit selection state
   const [selectedUnit, setSelectedUnit] = useState<ItemResaultPrice | null>(null);
-
-  // On product selection, initialize unit
-  const { selectedItem, getAvailableUnits } = useProductsStore();
-  console.log("⏰ ~ OrderConfirm ~ selectedItem:", selectedItem)
   const availableUnits = selectedItem ? getAvailableUnits(selectedItem.priceId) : [];
   const { distance, setDistance } = useDistanceStore();
   const { showSnackbar } = useSnackbar();
@@ -101,6 +100,14 @@ export function OrderConfirm() {
       setSelectedUnit(firstUnit);
     }
   }, [selectedItem, availableUnits, selectedUnit]);
+
+  React.useEffect(() => {
+    if (selectedTransport && selectedUnit) {
+      const displayWeight = selectedTransport.capacity * (selectedUnit.unitRatio || 1);
+      setNumberOfProduct(displayWeight);
+    }
+  }, [selectedTransport, selectedUnit]);
+
 
   const handleUnitChange = (e: SelectChangeEvent<string>) => {
     const title = e.target.value;
@@ -162,11 +169,27 @@ export function OrderConfirm() {
       .then(data => {
         const list = Array.isArray(data) ? data : [data];
         setTransportListSale(list);
-        console.log("🚀 ~ OrderConfirm ~ list:", list)
 
         // Update distance store with listDistance from transport API response
         if (list.length > 0 && list[0].listDistance) {
           setDistance(list[0].listDistance);
+        }
+
+        // Auto-select the first transport item
+        const Costs = filterVehicleCosts(list, false, false);
+        const groupedCosts = groupTransportByVehicleAndAlternate(Costs);
+        const displayItems = Object.values(groupedCosts).sort((a, b) => {
+          const getOrder = (item: (typeof groupedCosts)[string]) => {
+            if (item.transit) return 1;
+            if (item.alternate) return 2;
+            return 0;
+          };
+          return getOrder(a) - getOrder(b);
+        });
+        
+        if (displayItems.length > 0) {
+          const firstItem = displayItems[0];
+          setSelectedTransport({ ...firstItem.costs[0], ...firstItem } as TransportItem);
         }
       })
       .catch((error) => {
@@ -209,10 +232,13 @@ export function OrderConfirm() {
           selectedUnit={selectedUnit}
           onUnitChange={handleUnitChange}
           availableUnits={availableUnits}
+          numberOfProduct={numberOfProduct}
+          setNumberOfProduct={setNumberOfProduct}
         />
         <Prices
-          fullCost={1000}
-          pricePerUnit={1000000}
+          numberOfProduct={numberOfProduct}
+          selectedItem={selectedItem}
+          selectedTransport={selectedTransport}
         />
       </Box>
 
@@ -542,13 +568,17 @@ function OrderOptions({
 }
 
 function Prices({
-  fullCost,
-  pricePerUnit,
+  numberOfProduct,
+  selectedItem,
+  selectedTransport
 }: {
-  fullCost: number;
-  pricePerUnit: number;
+  numberOfProduct: number;
+  selectedItem: ItemResaultPrice | null;
+  selectedTransport: TransportItem | null;
 }) {
   const { toPersianPrice } = usePersianNumbers();
+  const { resultPrice, price, disPrice } = usePriceCalculator(selectedItem, numberOfProduct, selectedTransport);
+  console.log("💵 ~ Prices ~ resultPrice, price, disPrice:", resultPrice, price, disPrice)
 
   const priceBox =
   {
@@ -576,9 +606,52 @@ function Prices({
             قیمت واحد
           </Typography>
         </Box>
-        <Typography variant="body1" >
-          {toPersianPrice(fullCost)}
-        </Typography>
+        {selectedItem?.discountPriceWarehouse != 0 
+          ?
+          <Box sx={{ ...flex.row, ...gap.fifteen }}>
+            <Box
+              sx={{
+                position: 'relative',
+                display: 'inline-block',
+                verticalAlign: 'middle',
+              }}
+            >
+              <Typography
+                variant="body1"
+                sx={{
+                  position: 'relative',
+                  zIndex: 1,
+                  color: 'text.primary', 
+                }}
+              >
+                {toPersianPrice(selectedItem?.priceWarehouse)}
+              </Typography>
+              <Box
+                component="span"
+                sx={{
+                  content: '""',
+                  position: 'absolute',
+                  top: '50%',
+                  left: '0',
+                  right: '0',
+                  height: '2px', 
+                  bgcolor: 'error.main', 
+                  transform: 'rotate(-10deg)',
+                  transformOrigin: 'center',
+                  zIndex: 2,
+                  pointerEvents: 'none', 
+                }}
+              />
+            </Box>
+            <Typography variant="body1" >
+              {toPersianPrice(price)}
+            </Typography>
+          </Box>
+          :
+          <Typography variant="body1" >
+              {toPersianPrice(price)}
+            </Typography>
+        }
         <RialIcon size={28} />
       </Box>
       <Box sx={priceBox}>
@@ -596,7 +669,7 @@ function Prices({
           </Typography>
         </Box>
         <Typography variant="body1" >
-          {toPersianPrice(pricePerUnit)}
+          {toPersianPrice(resultPrice)}
         </Typography>
         <RialIcon size={28} />
       </Box>
@@ -608,14 +681,17 @@ function OrderInput({
   maxInventory,
   selectedUnit,
   onUnitChange,
-  availableUnits
+  availableUnits,
+  numberOfProduct,
+  setNumberOfProduct
 }: {
   maxInventory?: number;
   selectedUnit: ItemResaultPrice | null;
   onUnitChange: (e: SelectChangeEvent<string>) => void;
   availableUnits: ItemResaultPrice[];
+  numberOfProduct: number;
+  setNumberOfProduct: (value: number) => void;
 }) {
-  const [productNumber, setProductNumber] = React.useState('0');
   const { selectedItem } = useProductsStore();
 
   const units = availableUnits;
@@ -632,8 +708,8 @@ function OrderInput({
     >
       <NumberField
         label="تعداد"
-        value={productNumber}
-        onChange={setProductNumber}
+        value={numberOfProduct}
+        onChange={setNumberOfProduct}
         decimal={true}
         step={1}
         min={0}

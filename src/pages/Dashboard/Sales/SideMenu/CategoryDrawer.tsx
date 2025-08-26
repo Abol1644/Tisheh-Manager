@@ -134,12 +134,11 @@ const CategoryItem = React.memo(({
             }}
           >
             <Tooltip
-              title={isPinned ? "حذف سنجاق" : "سنجاق به بالا"}
+              title={isPinned ? "حذف علاقه مندی" : "افزودن به علاقه مندی"}
               placement="top"
               arrow
               disableInteractive
               slots={{ transition: Zoom }}
-              followCursor
             >
               <Btn
                 color="info"
@@ -561,7 +560,7 @@ export function Category({
                   fontSize: '0.75rem',
                 }}
               >
-                🔖 دسته‌های سنجاق شده
+                ✨ علاقه مندی ها
               </Typography>
             </Fade>
             {pinnedParentsList.map((parent, index) => (

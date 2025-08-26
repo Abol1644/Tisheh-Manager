@@ -66,8 +66,8 @@ export default function DeleteModal({ open, onClose, title, info, buttonText }: 
             sx={{
               width: '520px',
               height: 'auto',
-              bgcolor: 'background.paper',
-              background: 'linear-gradient(-165deg, #ff00004d, var(--background-paper) 75%)',
+              bgcolor: 'background.glass',
+              background: 'linear-gradient(-165deg, #ff00004d, var(--background-glass) 75%)',
               border: 'none',
               boxShadow: '0 20px 20px -20px var(--text-secondary)',
               p: '20px 20px',
@@ -75,6 +75,7 @@ export default function DeleteModal({ open, onClose, title, info, buttonText }: 
               overflow: 'auto',
               display: 'flex',
               flexDirection: 'column',
+              backdropFilter: 'blur(5px)',
               justifyContent: 'space-between',
               '&:focus-visible': {
                 outline: 'none'

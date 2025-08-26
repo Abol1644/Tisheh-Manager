@@ -233,12 +233,12 @@ export default React.memo(function AddProjectModal({ open, onClose }: ModalProps
                           backdropFilter: 'blur(10px) brightness(1.1)',
                         }}
                       >
-                        <Tooltip title="دریافت موقعیت کنونی" placement='top' arrow disableInteractive slots={{ transition: Zoom }} followCursor>
+                        <Tooltip title="دریافت موقعیت کنونی" placement='top' arrow disableInteractive slots={{ transition: Zoom }} >
                           <IconButton>
                             <MyLocationRoundedIcon color='info' />
                           </IconButton>
                         </Tooltip>
-                        <Tooltip title={mapTile === 'satellite' ? "نقشه خیابانی" : "نقشه ماهواره ای"} placement='top' arrow disableInteractive slots={{ transition: Zoom }} followCursor>
+                        <Tooltip title={mapTile === 'satellite' ? "نقشه خیابانی" : "نقشه ماهواره ای"} placement='top' arrow disableInteractive slots={{ transition: Zoom }} >
                           <IconButton onClick={ToggleMapTile}>
                             <PublicRoundedIcon sx={{ display: mapTile === 'satellite' ? 'none' : 'block' }} />
                             <MapRoundedIcon sx={{ display: mapTile === 'satellite' ? 'block' : 'none' }} />

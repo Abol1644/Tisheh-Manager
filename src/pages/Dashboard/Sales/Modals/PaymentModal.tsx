@@ -439,21 +439,22 @@ export function OrderEditModal({ open, onClose }: { open: boolean, onClose: () =
               sx={{
                 width: '95vw',
                 maxWidth: '900px',
-                bgcolor: 'background.paper',
-                background: 'linear-gradient(-165deg, #00ff684d, var(--background-paper) 75%)',
+                bgcolor: 'background.glass',
+                background: 'linear-gradient(-165deg, #00ff684d, var(--background-glass) 75%)',
                 borderRadius: '25px',
                 p: 2,
                 boxShadow: '0 20px 20px -20px var(--text-secondary)',
                 pointerEvents: 'auto',
                 overflow: 'auto',
                 maxHeight: '95vh',
+                backdropFilter: 'blur(5px)',
               }}
             >
               <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
                 <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   اصلاح سفارش | فروش حضوری
                 </Typography>
-                <Tooltip title="بستن" placement='top' arrow disableInteractive slots={{ transition: Zoom }} followCursor>
+                <Tooltip title="بستن" placement='top' arrow disableInteractive slots={{ transition: Zoom }}>
                   <IconButton onClick={onClose} color="error">
                     <CloseIcon />
                   </IconButton>

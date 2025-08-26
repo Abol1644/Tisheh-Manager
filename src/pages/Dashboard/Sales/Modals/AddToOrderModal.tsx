@@ -58,8 +58,8 @@ export default function AddToOrderModal({ open, onClose }: AddToOrderModalProps)
             height: '280px',
             marginTop: '-140px',
             marginLeft: '-250px',
-            bgcolor: 'background.paper',
-            background: 'linear-gradient(-165deg, #00ff684d, var(--background-paper) 75%)',
+            bgcolor: 'background.glass',
+            background: 'linear-gradient(-165deg, #00ff684d, var(--background-glass) 75%)',
             border: 'none',
             boxShadow: 0,
             p: '20px 25px ',
@@ -69,6 +69,7 @@ export default function AddToOrderModal({ open, onClose }: AddToOrderModalProps)
             flexDirection: 'column',
             justifyContent: 'space-between',
             zIndex: 1300,
+            backdropFilter: 'blur(5px)',
             '&:focus-visible': {
               outline: 'none'
             }

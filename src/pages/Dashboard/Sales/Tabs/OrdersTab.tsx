@@ -126,7 +126,7 @@ function Row(props: { row: any, index: number, deleteModal: boolean, setDeleteMo
 
         <TableCell>
           <Box sx={{ ...flex.alignCenter, ...flex.justifyAround }}>
-            <Tooltip title="پرینت سفارش" placement='top' arrow disableInteractive slots={{ transition: Zoom }} followCursor>
+            <Tooltip title="پرینت سفارش" placement='top' arrow disableInteractive slots={{ transition: Zoom }} >
               <IconButton color="info" onClick={handleOrderPrintClick}>
                 <LocalPrintshopRoundedIcon />
               </IconButton>
@@ -183,7 +183,7 @@ function Row(props: { row: any, index: number, deleteModal: boolean, setDeleteMo
                 </MenuItem>
               </MenuList>
             </Menu>
-            <Tooltip title="جزئیات سفارش" placement='top' arrow disableInteractive slots={{ transition: Zoom }} followCursor>
+            <Tooltip title="جزئیات سفارش" placement='top' arrow disableInteractive slots={{ transition: Zoom }} >
               <IconButton onClick={() => setOpen(!open)}>
                 {
                   open
@@ -245,12 +245,12 @@ function Row(props: { row: any, index: number, deleteModal: boolean, setDeleteMo
                         <TableCell>
                           <Box sx={{ ...flex.rrowBetween }}>
                             <Box>
-                              <Tooltip title='حذف مرسوله' placement='top' arrow disableInteractive slots={{ transition: Zoom }} followCursor>
+                              <Tooltip title='حذف مرسوله' placement='top' arrow disableInteractive slots={{ transition: Zoom }} >
                                 <IconButton color='error' onClick={handleDeleteToggle}>
                                   <DeleteRoundedIcon />
                                 </IconButton>
                               </Tooltip>
-                              <Tooltip title='ویرایش مرسوله' placement='top' arrow disableInteractive slots={{ transition: Zoom }} followCursor>
+                              <Tooltip title='ویرایش مرسوله' placement='top' arrow disableInteractive slots={{ transition: Zoom }} >
                                 <IconButton color='info'>
                                   <EditRoundedIcon />
                                 </IconButton>
@@ -311,7 +311,7 @@ function Row(props: { row: any, index: number, deleteModal: boolean, setDeleteMo
                               </MenuItem>
                             </MenuList>
                           </Menu>
-                          <Tooltip title='چاپ حواله' placement='top' arrow disableInteractive slots={{ transition: Zoom }} followCursor>
+                          <Tooltip title='چاپ حواله' placement='top' arrow disableInteractive slots={{ transition: Zoom }} >
                             <IconButton color="info" onClick={handleShipmentPrintClick}>
                               <LocalPrintshopRoundedIcon />
                             </IconButton>
@@ -351,12 +351,12 @@ function Row(props: { row: any, index: number, deleteModal: boolean, setDeleteMo
                             sx={{ ...width.full }}
                           />
                           <Box sx={{ ...flex.row, gap: '5px' }}>
-                            <Tooltip title="ارسال جزئیات سفارش" placement='top' arrow disableInteractive slots={{ transition: Zoom }} followCursor>
+                            <Tooltip title="ارسال جزئیات سفارش" placement='top' arrow disableInteractive slots={{ transition: Zoom }} >
                               <IconButton color="secondary" onClick={() => console.log('Send Order Details clicked')}>
                                 <SendRoundedIcon />
                               </IconButton>
                             </Tooltip>
-                            <Tooltip title="تماس با شماره" placement='top' arrow disableInteractive slots={{ transition: Zoom }} followCursor>
+                            <Tooltip title="تماس با شماره" placement='top' arrow disableInteractive slots={{ transition: Zoom }} >
                               <IconButton color="success" onClick={() => console.log('Send Order Details clicked')}>
                                 <CallRoundedIcon />
                               </IconButton>

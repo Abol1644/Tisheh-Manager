@@ -76,7 +76,7 @@ export default function BaseModal({ open, onClose, title, info, buttonText, icon
             sx={{
               width: width ? '520px' : width, 
               height: height ? 'auto' : height,
-              bgcolor: 'background.paper',
+              bgcolor: 'background.glass',
               background:
               // windowColor
               //   ? windowColor === 'success'
@@ -85,10 +85,10 @@ export default function BaseModal({ open, onClose, title, info, buttonText, icon
               //     : `'linear-gradient(-165deg, ${windowColor}, var(--background-paper) 75%)'`
               //   : 'linear-gradient(-165deg, #00ff684d, var(--background-paper) 75%)',
               windowColor === 'success'
-                ? 'linear-gradient(-165deg, #00ff684d, var(--background-paper) 75%)'
+                ? 'linear-gradient(-165deg, #00ff684d, var(--background-glass) 75%)'
                 : windowColor === 'error'
-                  ? 'linear-gradient(-165deg, #ff00004d, var(--background-paper) 75%)'
-                  : `'linear-gradient(-165deg, ${windowColor}, var(--background-paper) 75%)'`,
+                  ? 'linear-gradient(-165deg, #ff00004d, var(--background-glass) 75%)'
+                  : `'linear-gradient(-165deg, ${windowColor}, var(--background-glass) 75%)'`,
               border: 'none',
               boxShadow: '0 20px 20px -20px var(--text-secondary)',
               p: '20px 20px',
@@ -97,6 +97,7 @@ export default function BaseModal({ open, onClose, title, info, buttonText, icon
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
+              backdropFilter: 'blur(5px)',
               '&:focus-visible': {
                 outline: 'none'
               },

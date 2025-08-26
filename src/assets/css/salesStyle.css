@@ -485,3 +485,7 @@
   pointer-events: none;
   transition: opacity 0.3s ease;
 }
+
+.MuiModal-backdrop {
+  opacity: 0 !important;
+}

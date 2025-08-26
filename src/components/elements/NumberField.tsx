@@ -14,8 +14,8 @@ import { toPersianDigits } from '@/utils/persianNumbers';
 
 interface NumberFieldProps extends Omit<OutlinedInputProps, 'value' | 'onChange'> {
   label?: string;
-  value: string;
-  onChange: (value: string) => void;
+  value: number;
+  onChange: (value: number) => void;
   min?: number;
   max?: number;
   step?: number;
@@ -48,7 +48,7 @@ const NumberField: React.FC<NumberFieldProps> = ({
 
     // Allow empty
     if (val === '') {
-      onChange('0');
+      onChange(0);
       return ; 
     }
 
@@ -63,25 +63,23 @@ const NumberField: React.FC<NumberFieldProps> = ({
     if (min !== undefined && num < min) return; // ❌ Below min
     if (max !== undefined && num > max) return; // ❌ Above max
 
-    onChange(val); // ✅ Valid
+    onChange(num); // ✅ Valid
   };
 
   const increase = () => {
-    const current = parseFloat(value || '0');
-    if (isNaN(current)) return;
+    const current = value || 0;
     const stepVal = step ?? 1;
     const maxVal = max ?? Infinity;
     const newVal = Math.min(current + stepVal, maxVal);
-    onChange(newVal.toString());
+    onChange(newVal);
   };
 
   const decrease = () => {
-    const current = parseFloat(value || '0');
-    if (isNaN(current)) return;
+    const current = value || 0;
     const stepVal = step ?? 1;
     const minVal = min ?? -Infinity;
     const newVal = Math.max(current - stepVal, minVal);
-    onChange(newVal.toString());
+    onChange(newVal);
   };
 
   return (
@@ -120,7 +118,7 @@ const NumberField: React.FC<NumberFieldProps> = ({
         <OutlinedInput
           fullWidth
           {...props}
-          value={toPersianDigits(value)}
+          value={toPersianDigits(value.toString())}
           onChange={handleChange}
           inputProps={{
             inputMode: decimal ? 'decimal' : 'numeric',

@@ -113,8 +113,8 @@ export default function SabtKalaModal({ open, onClose }: SaleModalProps) {
             width: '700px',
             minHeight: '680px',
             margin: '-340px 0 0 -350px',
-            bgcolor: 'background.paper',
-            background: 'linear-gradient(-165deg, #00ff684d, var(--background-paper) 75%)',
+            bgcolor: 'var(--background-glass)',
+            background: 'linear-gradient(-165deg, #00ff684d, var(--background-glass) 75%)',
             border: 'none',
             boxShadow: 24,
             p: '20px',
@@ -123,9 +123,10 @@ export default function SabtKalaModal({ open, onClose }: SaleModalProps) {
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'space-between',
+            backdropFilter: 'blur(5px)',
             '&:focus-visible': {
               outline: 'none'
-            }
+            },
           }}
         >
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 2 }}>

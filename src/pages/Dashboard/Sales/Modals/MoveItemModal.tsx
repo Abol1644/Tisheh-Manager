@@ -62,8 +62,8 @@ export default function MoveItemModal({ open, onClose }: AddToOrderModalProps) {
             sx={{
               width: '520px',
               height: 'auto',
-              bgcolor: 'background.paper',
-              background: 'linear-gradient(-165deg, #00ff684d, var(--background-paper) 75%)',
+              bgcolor: 'background.glass',
+              background: 'linear-gradient(-165deg, #00ff684d, var(--background-glass) 75%)',
               border: 'none',
               boxShadow: '0 20px 20px -20px var(--text-secondary)',
               p: '20px 20px',
@@ -72,6 +72,7 @@ export default function MoveItemModal({ open, onClose }: AddToOrderModalProps) {
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
+              backdropFilter: 'blur(5px)',
               '&:focus-visible': {
                 outline: 'none'
               },
