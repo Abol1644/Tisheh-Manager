@@ -19,7 +19,11 @@ import {
   ToggleButtonGroup,
   ToggleButton,
   Grid,
-  InputAdornment
+  InputAdornment,
+  Menu,
+  MenuItem,
+  CircularProgress,
+  Autocomplete
 } from '@mui/material';
 
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
@@ -35,13 +39,18 @@ import MapRoundedIcon from '@mui/icons-material/MapRounded';
 import PublicRoundedIcon from '@mui/icons-material/PublicRounded';
 import DoneAllRoundedIcon from '@mui/icons-material/DoneAllRounded';
 import MarkerIcon from '@/assets/images/marker.png'
+import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded"
+import LocalPhoneRoundedIcon from "@mui/icons-material/LocalPhoneRounded"
+import StayCurrentPortraitRoundedIcon from "@mui/icons-material/StayCurrentPortraitRounded"
 
 import Btn from '@/components/elements/Btn';
 import { flex, width, height, gap } from '@/models/ReadyStyles';
 import PhoneField from '@/components/elements/PhoneField';
 import { useThemeMode } from '@/contexts/ThemeContext';
 import Map from '@/components/Map';
-import PriceField from '@/components/elements/PriceField';
+import { useSnackbar } from "@/contexts/SnackBarContext";
+
+import { getPointDetails, getPointElevation, getLocationSearch } from '@/api';
 
 interface ModalProps {
   open: boolean;
@@ -51,15 +60,150 @@ interface ModalProps {
 export default React.memo(function AddProjectModal({ open, onClose }: ModalProps) {
   const [fullScreen, setFullScreen] = React.useState(true);
   const [projectName, setProjectName] = React.useState('');
+  const [receiverName, setReceiverName] = React.useState('');
+  const [address, setAddress] = React.useState('');
   const [phoneNumber, setPhoneNumber] = React.useState('');
   const [mapTile, setMapTile] = React.useState<'street' | 'satellite'>('street');
+  const [level, setLevel] = React.useState<'first' | 'second'>('first');
+  const [phoneType, setPhoneType] = React.useState<'mobile' | 'landline'>('mobile');
   const [position, setPosition] = React.useState<[number, number] | null>(null);
+  const [elevation, setElevation] = React.useState<number | null>(null);
+  const [mapCenter, setMapCenter] = React.useState<[number, number]>([35.6892, 51.3890]);
+  const [searchResults, setSearchResults] = React.useState<any[]>([]);
+  const [isSearching, setIsSearching] = React.useState(false);
+  const [selectedLocation, setSelectedLocation] = React.useState<any>(null);
+  const [shouldFlyTo, setShouldFlyTo] = React.useState(false);
+  const [lastSearchQuery, setLastSearchQuery] = React.useState('');
+  const addressUpdateSource = React.useRef<'user' | 'map' | 'search'>('user');
   const { mode } = useThemeMode()
+  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+  const openPhoneMenu = Boolean(anchorEl);
+  const { showSnackbar } = useSnackbar();
+
+  const handlePhoneMenuClick = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+  const handlePhoneMenuClose = () => {
+    setAnchorEl(null);
+  };
+  const handleChangePhoneType = (type: 'mobile' | 'landline') => {
+    setPhoneType(type);
+    setAnchorEl(null);
+  };
 
   const closeWindow = () => {
+    // Clean up search state when closing
+    setSearchResults([]);
+    setSelectedLocation(null);
+    setIsSearching(false);
+    setLastSearchQuery('');
+    addressUpdateSource.current = 'user';
+    setAddress('');
+    setProjectName('');
+    setReceiverName('');
+    setPhoneNumber('');
+    setPosition(null);
+    setElevation(null);
     onClose();
     setFullScreen(true);
   }
+
+  const handleNextLevel = () => {
+    setLevel((prevLevel) => (prevLevel === 'first' ? 'second' : 'first'));
+  }
+
+  // Handle position changes from map clicks
+  const handleMapPositionChange = React.useCallback((newPosition: [number, number]) => {
+    setPosition(newPosition);
+    setSelectedLocation(null); // Clear selected location since user clicked manually
+    setSearchResults([]); // Clear search results
+    
+    // Set the address update source to map before updating address
+    addressUpdateSource.current = 'map';
+    
+    // Get address for the clicked location
+    getPointDetails(newPosition[1], newPosition[0])
+      .then(details => {
+        setAddress(details.formatted_address);
+      })
+      .catch(error => {
+        console.error('Error getting address for clicked location:', error);
+        setAddress(''); // Clear address if API fails
+      });
+    
+    // Get elevation for the clicked location
+    getPointElevation(newPosition[1], newPosition[0])
+      .then(elevation => {
+        setElevation(elevation.elevation);
+      })
+      .catch(error => {
+        console.error('Error getting elevation for clicked location:', error);
+        setElevation(null);
+      });
+  }, []);
+
+  // This effect is now handled by handleMapPositionChange
+
+  // Debounced search effect with duplicate prevention
+  React.useEffect(() => {
+    const trimmedAddress = address.trim();
+    
+    // Don't search if address was updated from map click or search selection
+    if (addressUpdateSource.current === 'map' || addressUpdateSource.current === 'search') {
+      // Reset the source to user for next input
+      addressUpdateSource.current = 'user';
+      return;
+    }
+    
+    // Clear results if input is too short
+    if (trimmedAddress.length <= 2) {
+      setSearchResults([]);
+      setIsSearching(false);
+      setLastSearchQuery('');
+      return;
+    }
+
+    // Don't search if we have a selected location or if it's the same query
+    if (selectedLocation || trimmedAddress === lastSearchQuery) {
+      return;
+    }
+
+    setIsSearching(true);
+    const searchTimeout = setTimeout(() => {
+      // Double-check if this search is still relevant
+      if (trimmedAddress === address.trim() && !selectedLocation) {
+        getLocationSearch(trimmedAddress, mapCenter[1], mapCenter[0])
+          .then(results => {
+            // Only update if this search is still the current one
+            if (trimmedAddress === address.trim()) {
+              const validItems = (results.items || []).filter(item => 
+                item && 
+                item.title && 
+                item.address && 
+                item.region && 
+                item.location && 
+                typeof item.location.x === 'number' && 
+                typeof item.location.y === 'number'
+              );
+              setSearchResults(validItems);
+              setLastSearchQuery(trimmedAddress);
+            }
+            setIsSearching(false);
+          })
+          .catch(error => {
+            console.error('Search error:', error);
+            setIsSearching(false);
+            if (trimmedAddress === address.trim()) {
+              setSearchResults([]);
+            }
+          });
+      } else {
+        setIsSearching(false);
+      }
+    }, 750); // Increased debounce time to 750ms for better performance
+
+    return () => clearTimeout(searchTimeout);
+  }, [address, mapCenter, selectedLocation, lastSearchQuery]);
 
   const ToggleMapTile = () => {
     if (mapTile === 'street') {
@@ -102,7 +246,7 @@ export default React.memo(function AddProjectModal({ open, onClose }: ModalProps
           >
             <Box
               sx={{
-                width: fullScreen ? 'calc(100vw - 50px)' : '900px',
+                width: fullScreen ? 'calc(100vw - 32px)' : '900px',
                 height: fullScreen ? 'calc(100vh - 50px)' : '550px',
                 bgcolor: 'background.paper',
                 background: 'linear-gradient(-165deg, #00ff684d, var(--background-paper) 75%)',
@@ -175,7 +319,7 @@ export default React.memo(function AddProjectModal({ open, onClose }: ModalProps
                         fullWidth
                       />
                       <PhoneField
-                        label="شماره تلفن"
+                        label={<span>{phoneType === 'mobile' ? 'شماره موبایل' : 'شماره تلفن ثابت'}</span>}
                         variant="outlined"
                         value={phoneNumber}
                         onChange={(e) => setPhoneNumber(e.target.value)}
@@ -183,19 +327,109 @@ export default React.memo(function AddProjectModal({ open, onClose }: ModalProps
                         InputProps={{
                           endAdornment: (
                             <InputAdornment position="end">
-                              <SettingsPhoneRoundedIcon />
+                              <IconButton
+                                aria-label="toggle password visibility"
+                                onClick={handlePhoneMenuClick}
+                                edge="end"
+                              >
+                                <MoreHorizRoundedIcon />
+                              </IconButton>
                             </InputAdornment>
                           )
                         }}
                       />
-                      <TextField
-                        id="project-name"
-                        label="آدرس"
-                        value={projectName}
-                        onChange={(e) => setProjectName(e.target.value)}
+                      <Menu
+                        id="phone-menu"
+                        anchorEl={anchorEl}
+                        open={openPhoneMenu}
+                        onClose={handlePhoneMenuClose}
+                        anchorOrigin={{
+                          vertical: 'bottom',
+                          horizontal: 'left',
+                        }}
+                        transformOrigin={{
+                          vertical: 'top',
+                          horizontal: 'left',
+                        }}
+                      >
+                        <MenuItem onClick={() => handleChangePhoneType('mobile')}>
+                          <StayCurrentPortraitRoundedIcon sx={{ mr: 1 }} />
+                          موبایل
+                        </MenuItem>
+                        <MenuItem onClick={() => handleChangePhoneType('landline')}>
+                          <LocalPhoneRoundedIcon sx={{ mr: 1 }} />
+                          خط ثابت
+                        </MenuItem>
+                      </Menu>
+                      <Autocomplete
+                        freeSolo
                         fullWidth
-                        multiline
-                        rows={fullScreen ? 12 : 8}
+                        options={searchResults}
+                        loading={isSearching}
+                        open={searchResults.length > 0 || isSearching}
+                        noOptionsText={isSearching ? "در حال جستجو..." : "نتیجه‌ای یافت نشد"}
+                        loadingText="در حال جستجو..."
+                        value={selectedLocation}
+                        inputValue={address}
+                        onInputChange={(event, newInputValue) => {
+                          setAddress(newInputValue);
+                          if (!newInputValue || newInputValue !== selectedLocation?.address) {
+                            setSelectedLocation(null);
+                            // Clear search results if input is cleared
+                            if (!newInputValue?.trim()) {
+                              setSearchResults([]);
+                            }
+                          }
+                        }}
+                        onChange={(event, newValue) => {
+                          if (newValue && typeof newValue === 'object') {
+                            const coordinates: [number, number] = [newValue.location.y, newValue.location.x];
+                            // Set the address update source to search before updating address
+                            addressUpdateSource.current = 'search';
+                            setSelectedLocation(newValue);
+                            setAddress(newValue.address);
+                            setPosition(coordinates);
+                            setMapCenter(coordinates);
+                            setSearchResults([]); // Clear search results after selection
+                            setShouldFlyTo(true);
+                            // Reset flyTo after animation
+                            setTimeout(() => setShouldFlyTo(false), 500);
+                          }
+                        }}
+                        getOptionLabel={(option) => {
+                          if (typeof option === 'string') return option;
+                          return option?.title || option?.address || '';
+                        }}
+                        renderOption={(props, option, { index }) => (
+                          <Box component="li" {...props} key={`${option.title}-${option.region}-${index}`}>
+                            <Box>
+                              <Typography variant="body2" fontWeight="bold">
+                                {option.title}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                {option.region}
+                              </Typography>
+                            </Box>
+                          </Box>
+                        )}
+                        renderInput={(params) => (
+                          <TextField
+                            {...params}
+                            label="آدرس"
+                            multiline
+                            minRows={1}
+                            maxRows={fullScreen ? 23 : 10}
+                            InputProps={{
+                              ...params.InputProps,
+                              endAdornment: (
+                                <>
+                                  {isSearching ? <CircularProgress size={20} /> : null}
+                                  {params.InputProps.endAdornment}
+                                </>
+                              ),
+                            }}
+                          />
+                        )}
                       />
                     </Box>
                   </Box>
@@ -270,16 +504,19 @@ export default React.memo(function AddProjectModal({ open, onClose }: ModalProps
                           }}
                         >
                           <Map
-                            center={[35.6892, 51.3890]}
+                            center={mapCenter}
                             zoom={14}
                             markerPosition={position ?? undefined}
-                            onPositionChange={setPosition}
+                            onPositionChange={handleMapPositionChange}
+                            onCenterChange={setMapCenter}
                             height="100%"
                             mapTile={mapTile}
                             markerType="custom"
                             customMarkerIcon={MarkerIcon}
                             markerSize={[40, 40]}
-                            lockView={true}
+                            lockView={false}
+                            flyTo={shouldFlyTo}
+                            clickable={true}
                           />
                         </Box>
                       </Box>
@@ -300,8 +537,8 @@ export default React.memo(function AddProjectModal({ open, onClose }: ModalProps
                       >
                         پردازش دوباره مسیر
                       </Btn>
-                      <Btn variant="contained" color="success" endIcon={<DoneAllRoundedIcon />}>
-                        تأیید
+                      <Btn onClick={handleNextLevel} variant="contained" color="success" endIcon={<DoneAllRoundedIcon />}>
+                        {level === 'first' ? 'مرحله بعدی' : 'تأیید'}
                       </Btn>
                     </Box>
                   </Box>

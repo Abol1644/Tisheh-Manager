@@ -18,33 +18,44 @@ interface SatelliteMapProps {
   markerPosition?: [number, number];
   markerPopup?: string;
   onPositionChange?: (position: [number, number]) => void;
+  onCenterChange?: (center: [number, number]) => void; // Callback for center changes
   height?: string;
-  mapTile?: 'street' | 'satellite' | 'vector-light' | 'vector-dark' | 'vector-streets' | 'terrain';
+  mapTile?: 'street' | 'satellite';
   customMarkerIcon?: string; // Path to custom marker image
   markerSize?: [number, number]; // [width, height]
   markerColor?: string; // Color for default marker (if no custom icon)
   markerType?: 'default' | 'custom' | 'svg-pin' | 'svg-circle'; // Marker type
   clickable?: boolean; // Whether map is clickable to add/move markers
   lockView?: boolean; // Whether to lock the view and prevent auto-centering
+  flyTo?: boolean; // Whether to use fly animation for center changes
 }
 
 // کامپوننت داخلی برای تغییر مرکز نقشه
-const ChangeView: React.FC<{ center: [number, number]; zoom: number }> = ({ center, zoom }) => {
+const ChangeView: React.FC<{ center: [number, number]; zoom: number; flyTo?: boolean }> = ({ center, zoom, flyTo = false }) => {
   const map = useMap();
+  const [isFlying, setIsFlying] = useState(false);
   
   useEffect(() => {
-    // Only change view if center or zoom actually changed
+    // Don't interfere if we're currently flying
+    if (isFlying) return;
+    
+    // Only change center if it actually changed
     const currentCenter = map.getCenter();
-    const currentZoom = map.getZoom();
     
     if (
       Math.abs(currentCenter.lat - center[0]) > 0.0001 || 
-      Math.abs(currentCenter.lng - center[1]) > 0.0001 || 
-      currentZoom !== zoom
+      Math.abs(currentCenter.lng - center[1]) > 0.0001
     ) {
-      map.setView(center, zoom);
+      if (flyTo) {
+        setIsFlying(true);
+        map.flyTo(center, zoom, { duration: 2 });
+        // Reset flying state after animation completes
+        setTimeout(() => setIsFlying(false), 4000);
+      } else {
+        map.panTo(center); // Use panTo instead of setView to preserve zoom
+      }
     }
-  }, [map, center, zoom]);
+  }, [map, center, zoom, flyTo, isFlying]);
   
   return null;
 };
@@ -68,31 +79,34 @@ const MapEventHandler: React.FC<{ onMapClick: (e: L.LeafletMouseEvent) => void }
   return null;
 };
 
-// کامپوننت برای handle کردن tile errors
-const TileErrorHandler: React.FC<{ onTileError: () => void }> = ({ onTileError }) => {
+
+// کامپوننت برای track کردن center changes
+const MapCenterTracker: React.FC<{ onCenterChange: (center: [number, number]) => void }> = ({ onCenterChange }) => {
   const map = useMap();
   
   useEffect(() => {
-    const handleTileError = () => {
-      onTileError();
+    const handleMoveEnd = () => {
+      const center = map.getCenter();
+      onCenterChange([center.lat, center.lng]);
     };
     
-    map.on('tileerror', handleTileError);
+    map.on('moveend', handleMoveEnd);
     
     return () => {
-      map.off('tileerror', handleTileError);
+      map.off('moveend', handleMoveEnd);
     };
-  }, [map, onTileError]);
+  }, [map, onCenterChange]);
   
   return null;
 };
 
 const Map: React.FC<SatelliteMapProps> = ({
   center = [35.6892, 51.3890], // تهران
-  zoom = 13,
+  zoom = 22,
   markerPosition,
   markerPopup = 'موقعیت انتخاب شده',
   onPositionChange,
+  onCenterChange,
   height = '400px',
   mapTile = 'street',
   customMarkerIcon,
@@ -101,9 +115,9 @@ const Map: React.FC<SatelliteMapProps> = ({
   markerType = 'default',
   clickable = true,
   lockView = false,
+  flyTo = false,
 }) => {
   const [position, setPosition] = useState<[number, number] | null>(markerPosition || null);
-  const [tileError, setTileError] = useState(false);
 
   // Create SVG marker icons
   const createSVGIcon = (type: string, color: string, size: [number, number]) => {
@@ -175,9 +189,10 @@ const Map: React.FC<SatelliteMapProps> = ({
       center={center}
       zoom={zoom}
       style={{ height: '100%', width: '100%', }}
+      zoomControl={true}
     >
       {/* Google Satellite */}
-      {mapTile === 'satellite' && !tileError ? (
+      {mapTile === 'satellite' ? (
         <TileLayer
           key="google-satellite"
           url="https://{s}.google.com/vt?lyrs=s&x={x}&y={y}&z={z}"
@@ -185,56 +200,8 @@ const Map: React.FC<SatelliteMapProps> = ({
           subdomains={["mt0", "mt1", "mt2", "mt3"]}
           attribution='&copy; Google'
         />
-      ) : mapTile === 'satellite' && tileError ? (
-        <TileLayer
-          key="esri-satellite"
-          url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-          maxZoom={19}
-          attribution='&copy; <a href="https://www.esri.com/">Esri</a>'
-        />
-      ) 
-      /* Vector Light Theme (Carto Light) */
-      : mapTile === 'vector-light' ? (
-        <TileLayer
-          key="vector-light"
-          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-          maxZoom={20}
-          subdomains={["a", "b", "c", "d"]}
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-        />
-      ) 
-      /* Vector Dark Theme (Carto Dark) */
-      : mapTile === 'vector-dark' ? (
-        <TileLayer
-          key="vector-dark"
-          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-          maxZoom={20}
-          subdomains={["a", "b", "c", "d"]}
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-        />
-      ) 
-      /* Terrain */
-      : mapTile === 'terrain' ? (
-        <TileLayer
-          key="terrain"
-          url="https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png"
-          maxZoom={17}
-          subdomains={["a", "b", "c"]}
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="https://opentopomap.org">OpenTopoMap</a>'
-        />
-      ) 
-      /* Vector Streets (Carto) */
-      : mapTile === 'vector-streets' ? (
-        <TileLayer
-          key="vector-streets"
-          url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-          maxZoom={20}
-          subdomains={["a", "b", "c", "d"]}
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-        />
-      ) 
-      /* Google Street (fallback) */
-      : mapTile === 'street' && !tileError ? (
+      ) : (
+        /* Google Street */
         <TileLayer
           key="google-street"
           url="https://{s}.google.com/vt?lyrs=m&x={x}&y={y}&z={z}&hl=fa"
@@ -242,27 +209,16 @@ const Map: React.FC<SatelliteMapProps> = ({
           subdomains={["mt0", "mt1", "mt2", "mt3"]}
           attribution='&copy; Google'
         />
-      ) 
-      /* OpenStreetMap (final fallback) */
-      : (
-        <TileLayer
-          key="openstreetmap"
-          url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-          maxZoom={19}
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        />
       )}
       
       {/* Change View Component - only if not locked */}
-      {!lockView && <ChangeView center={center} zoom={zoom} />}
+      {!lockView && <ChangeView center={center} zoom={zoom} flyTo={flyTo} />}
       
       {/* Map Event Handler - only if clickable */}
       {clickable && onPositionChange && <MapEventHandler onMapClick={handleMapClick} />}
       
-      {/* Tile Error Handler - for both satellite and street tiles */}
-      {!tileError && (
-        <TileErrorHandler onTileError={() => setTileError(true)} />
-      )}
+      {/* Map Center Tracker - track center changes */}
+      {onCenterChange && <MapCenterTracker onCenterChange={onCenterChange} />}
       
       {/* Marker */}
       {position && (

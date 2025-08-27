@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import React, { useEffect, useState } from 'react'
 
-import Box from '@mui/material/Box';
+import { Box } from '@mui/material';
 import Alert from '@mui/material/Alert';
 import MuiCard from '@mui/material/Card';
 import Button from '@mui/material/Button';
@@ -15,6 +15,8 @@ import DarkModeIcon from "@mui/icons-material/DarkMode";
 import Brightness7Icon from "@mui/icons-material/Brightness7";
 import CircularProgress from '@mui/material/CircularProgress';
 import LoginRoundedIcon from '@mui/icons-material/LoginRounded';
+import Visibility from '@mui/icons-material/Visibility';
+import VisibilityOff from '@mui/icons-material/VisibilityOff';
 
 import type { User } from '@/models/Users';
 import favLogo from '@/assets/favicon.svg?react';
@@ -69,6 +71,7 @@ export default function SignIn({ onLoginSuccess }: SignInProps) {
   const [loginSuccess, setLoginSuccess] = React.useState(false);
   const [snack, setSnack] = useState<{ open: boolean, msg: string, type: 'success' | 'error' }>({ open: false, msg: '', type: 'success' });
   const [open, setOpen] = React.useState(false);
+  const [showPassword, setShowPassword] = React.useState(false);
   const navigate = useNavigate();
   const { login } = useAuth();
 
@@ -163,7 +166,7 @@ export default function SignIn({ onLoginSuccess }: SignInProps) {
           <Box
             component="form"
             onSubmit={handleSubmit}
-            noValidate
+            {...({ noValidate: true } as any)}
             sx={{
               display: 'flex',
               flexDirection: 'column',
@@ -207,7 +210,7 @@ export default function SignIn({ onLoginSuccess }: SignInProps) {
                 error={passwordError}
                 helperText={passwordErrorMessage}
                 id="password"
-                type="password"
+                type={showPassword ? "text" : "password"}
                 name="password"
                 placeholder="رمز عبور"
                 autoComplete={loginSuccess ? "current-password" : "off"}
@@ -225,6 +228,19 @@ export default function SignIn({ onLoginSuccess }: SignInProps) {
                   '& .MuiInputBase-root, .MuiInputBase-input, .MuiOutlinedInput-input:-webkit-autofill': {
                     borderRadius: '42px',
                   }
+                }}
+                InputProps={{
+                  endAdornment: (
+                    <IconButton
+                      aria-label={showPassword ? "مخفی کردن رمز عبور" : "نمایش رمز عبور"}
+                      onClick={() => setShowPassword((show) => !show)}
+                      edge="end"
+                      tabIndex={-1}
+                      size="small"
+                    >
+                      {showPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  )
                 }}
               />
             </FormControl>

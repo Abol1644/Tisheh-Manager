@@ -33,3 +33,25 @@ export const getConnectedProject = async (BranchCenterDelivery:boolean, id:numbe
   }
 };
 
+export const addProject = async (
+  title: string,
+  address: string,
+  longitude: number,
+  latitude: number,
+): Promise<Project> => {
+  try {
+    const response = await apiClient.post<Project>('/Projects/Add', {
+      title: title,
+      address: address,
+      longitude: longitude,
+      latitude: latitude,
+    });
+    console.log("Add Project responce: " , response.data)
+    return response.data;
+  } catch (error: any) {
+    console.error('Add Project API error: ', error);
+
+    const serverMessage = error.response?.data || 'Add Project failed';
+    throw new Error(serverMessage);
+  }
+};

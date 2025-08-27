@@ -84,7 +84,6 @@ export function OrderConfirm() {
 
   React.useEffect(() => {
     if (selectedItem && !selectedUnit && availableUnits.length > 0) {
-      // Find the base unit that matches valueIdBase, fallback to first unit if not found
       const baseUnit = availableUnits.find(unit => unit.valueId === selectedItem.valueIdBase) || availableUnits[0];
       setSelectedUnit(baseUnit);
     }
@@ -103,7 +102,7 @@ export function OrderConfirm() {
     const unit = availableUnits.find(u => u.valueTitle === title);
     if (unit) {
       setSelectedUnit(unit);
-      setSelectedItem(unit); // Update the entire selected item, not just the unit
+      setSelectedItem(unit);
     }
   };
 
