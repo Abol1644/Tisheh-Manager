@@ -50,7 +50,8 @@ import { useThemeMode } from '@/contexts/ThemeContext';
 import Map from '@/components/Map';
 import { useSnackbar } from "@/contexts/SnackBarContext";
 
-import { getPointDetails, getPointElevation, getLocationSearch } from '@/api';
+import { getPointDetails, getPointElevation, getLocationSearch, addProject } from '@/api';
+import { Fullscreen } from '@mui/icons-material';
 
 interface ModalProps {
   open: boolean;
@@ -74,6 +75,7 @@ export default React.memo(function AddProjectModal({ open, onClose }: ModalProps
   const [selectedLocation, setSelectedLocation] = React.useState<any>(null);
   const [shouldFlyTo, setShouldFlyTo] = React.useState(false);
   const [lastSearchQuery, setLastSearchQuery] = React.useState('');
+  const [searchQuery, setSearchQuery] = React.useState('');
   const addressUpdateSource = React.useRef<'user' | 'map' | 'search'>('user');
   const { mode } = useThemeMode()
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
@@ -97,6 +99,7 @@ export default React.memo(function AddProjectModal({ open, onClose }: ModalProps
     setSelectedLocation(null);
     setIsSearching(false);
     setLastSearchQuery('');
+    setSearchQuery('');
     addressUpdateSource.current = 'user';
     setAddress('');
     setProjectName('');
@@ -110,17 +113,26 @@ export default React.memo(function AddProjectModal({ open, onClose }: ModalProps
 
   const handleNextLevel = () => {
     setLevel((prevLevel) => (prevLevel === 'first' ? 'second' : 'first'));
+    setMapTile('satellite')
   }
+
+  React.useEffect(() => {
+    if (level === 'second') {
+      setMapTile('satellite');
+    } else {
+      setMapTile('street');
+    }
+  }, [level]);
 
   // Handle position changes from map clicks
   const handleMapPositionChange = React.useCallback((newPosition: [number, number]) => {
     setPosition(newPosition);
     setSelectedLocation(null); // Clear selected location since user clicked manually
     setSearchResults([]); // Clear search results
-    
+
     // Set the address update source to map before updating address
     addressUpdateSource.current = 'map';
-    
+
     // Get address for the clicked location
     getPointDetails(newPosition[1], newPosition[0])
       .then(details => {
@@ -130,7 +142,7 @@ export default React.memo(function AddProjectModal({ open, onClose }: ModalProps
         console.error('Error getting address for clicked location:', error);
         setAddress(''); // Clear address if API fails
       });
-    
+
     // Get elevation for the clicked location
     getPointElevation(newPosition[1], newPosition[0])
       .then(elevation => {
@@ -144,66 +156,59 @@ export default React.memo(function AddProjectModal({ open, onClose }: ModalProps
 
   // This effect is now handled by handleMapPositionChange
 
-  // Debounced search effect with duplicate prevention
+  // Debounced search effect for search query only
   React.useEffect(() => {
-    const trimmedAddress = address.trim();
-    
-    // Don't search if address was updated from map click or search selection
-    if (addressUpdateSource.current === 'map' || addressUpdateSource.current === 'search') {
-      // Reset the source to user for next input
-      addressUpdateSource.current = 'user';
-      return;
-    }
-    
+    const trimmedQuery = searchQuery.trim();
+
     // Clear results if input is too short
-    if (trimmedAddress.length <= 2) {
+    if (trimmedQuery.length <= 2) {
       setSearchResults([]);
       setIsSearching(false);
       setLastSearchQuery('');
       return;
     }
 
-    // Don't search if we have a selected location or if it's the same query
-    if (selectedLocation || trimmedAddress === lastSearchQuery) {
+    // Don't search if it's the same query
+    if (trimmedQuery === lastSearchQuery) {
       return;
     }
 
     setIsSearching(true);
     const searchTimeout = setTimeout(() => {
       // Double-check if this search is still relevant
-      if (trimmedAddress === address.trim() && !selectedLocation) {
-        getLocationSearch(trimmedAddress, mapCenter[1], mapCenter[0])
+      if (trimmedQuery === searchQuery.trim()) {
+        getLocationSearch(trimmedQuery, mapCenter[1], mapCenter[0])
           .then(results => {
             // Only update if this search is still the current one
-            if (trimmedAddress === address.trim()) {
-              const validItems = (results.items || []).filter(item => 
-                item && 
-                item.title && 
-                item.address && 
-                item.region && 
-                item.location && 
-                typeof item.location.x === 'number' && 
+            if (trimmedQuery === searchQuery.trim()) {
+              const validItems = (results.items || []).filter(item =>
+                item &&
+                item.title &&
+                item.address &&
+                item.region &&
+                item.location &&
+                typeof item.location.x === 'number' &&
                 typeof item.location.y === 'number'
               );
               setSearchResults(validItems);
-              setLastSearchQuery(trimmedAddress);
+              setLastSearchQuery(trimmedQuery);
             }
             setIsSearching(false);
           })
           .catch(error => {
             console.error('Search error:', error);
             setIsSearching(false);
-            if (trimmedAddress === address.trim()) {
+            if (trimmedQuery === searchQuery.trim()) {
               setSearchResults([]);
             }
           });
       } else {
         setIsSearching(false);
       }
-    }, 750); // Increased debounce time to 750ms for better performance
+    }, 750);
 
     return () => clearTimeout(searchTimeout);
-  }, [address, mapCenter, selectedLocation, lastSearchQuery]);
+  }, [searchQuery, mapCenter, lastSearchQuery]);
 
   const ToggleMapTile = () => {
     if (mapTile === 'street') {
@@ -361,75 +366,15 @@ export default React.memo(function AddProjectModal({ open, onClose }: ModalProps
                           خط ثابت
                         </MenuItem>
                       </Menu>
-                      <Autocomplete
-                        freeSolo
+                      <TextField
+                        id="address-display"
+                        label="آدرس"
+                        value={address}
+                        onChange={(e) => setAddress(e.target.value)}
                         fullWidth
-                        options={searchResults}
-                        loading={isSearching}
-                        open={searchResults.length > 0 || isSearching}
-                        noOptionsText={isSearching ? "در حال جستجو..." : "نتیجه‌ای یافت نشد"}
-                        loadingText="در حال جستجو..."
-                        value={selectedLocation}
-                        inputValue={address}
-                        onInputChange={(event, newInputValue) => {
-                          setAddress(newInputValue);
-                          if (!newInputValue || newInputValue !== selectedLocation?.address) {
-                            setSelectedLocation(null);
-                            // Clear search results if input is cleared
-                            if (!newInputValue?.trim()) {
-                              setSearchResults([]);
-                            }
-                          }
-                        }}
-                        onChange={(event, newValue) => {
-                          if (newValue && typeof newValue === 'object') {
-                            const coordinates: [number, number] = [newValue.location.y, newValue.location.x];
-                            // Set the address update source to search before updating address
-                            addressUpdateSource.current = 'search';
-                            setSelectedLocation(newValue);
-                            setAddress(newValue.address);
-                            setPosition(coordinates);
-                            setMapCenter(coordinates);
-                            setSearchResults([]); // Clear search results after selection
-                            setShouldFlyTo(true);
-                            // Reset flyTo after animation
-                            setTimeout(() => setShouldFlyTo(false), 500);
-                          }
-                        }}
-                        getOptionLabel={(option) => {
-                          if (typeof option === 'string') return option;
-                          return option?.title || option?.address || '';
-                        }}
-                        renderOption={(props, option, { index }) => (
-                          <Box component="li" {...props} key={`${option.title}-${option.region}-${index}`}>
-                            <Box>
-                              <Typography variant="body2" fontWeight="bold">
-                                {option.title}
-                              </Typography>
-                              <Typography variant="caption" color="text.secondary">
-                                {option.region}
-                              </Typography>
-                            </Box>
-                          </Box>
-                        )}
-                        renderInput={(params) => (
-                          <TextField
-                            {...params}
-                            label="آدرس"
-                            multiline
-                            minRows={1}
-                            maxRows={fullScreen ? 23 : 10}
-                            InputProps={{
-                              ...params.InputProps,
-                              endAdornment: (
-                                <>
-                                  {isSearching ? <CircularProgress size={20} /> : null}
-                                  {params.InputProps.endAdornment}
-                                </>
-                              ),
-                            }}
-                          />
-                        )}
+                        multiline
+                        minRows={1}
+                        maxRows={fullScreen ? 23 : 10}
                       />
                     </Box>
                   </Box>
@@ -437,6 +382,7 @@ export default React.memo(function AddProjectModal({ open, onClose }: ModalProps
                     <Box
                       className='neshan-container'
                       sx={{
+                        position: 'relative',
                         borderRadius: '12px',
                         border: '2px solid var(--border-main)',
                         flex: 1,
@@ -466,7 +412,8 @@ export default React.memo(function AddProjectModal({ open, onClose }: ModalProps
                           width: '50px',
                           border: '2px solid var(--border-main)',
                           borderRadius: '30px',
-                          backdropFilter: 'blur(10px) brightness(1.1)',
+                          backdropFilter: mode === 'dark' ? 'blur(5px) brightness(0.8)' : 'blur(5px) brightness(1.1)',
+                          bgcolor: 'var(--background-glass)'
                         }}
                       >
                         <Tooltip title="دریافت موقعیت کنونی" placement='top' arrow disableInteractive slots={{ transition: Zoom }} >
@@ -476,10 +423,101 @@ export default React.memo(function AddProjectModal({ open, onClose }: ModalProps
                         </Tooltip>
                         <Tooltip title={mapTile === 'satellite' ? "نقشه خیابانی" : "نقشه ماهواره ای"} placement='top' arrow disableInteractive slots={{ transition: Zoom }} >
                           <IconButton onClick={ToggleMapTile}>
-                            <PublicRoundedIcon sx={{ display: mapTile === 'satellite' ? 'none' : 'block', fill: 'var(--text-dark)' }} />
+                            <PublicRoundedIcon sx={{ display: mapTile === 'satellite' ? 'none' : 'block' }} />
                             <MapRoundedIcon sx={{ display: mapTile === 'satellite' ? 'block' : 'none' }} />
                           </IconButton>
                         </Tooltip>
+                      </Box>
+                      <Box
+                        sx={{
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          px: 2, py: 2,
+                          zIndex: 1200,
+                          width: fullScreen ? '350px' : '250px',
+                        }}
+                      >
+                        <Autocomplete
+                          freeSolo
+                          fullWidth
+                          options={searchResults}
+                          loading={isSearching}
+                          open={searchResults.length > 0 || isSearching}
+                          noOptionsText={isSearching ? "در حال جستجو..." : "نتیجه‌ای یافت نشد"}
+                          loadingText="در حال جستجو..."
+                          value={selectedLocation}
+                          inputValue={searchQuery}
+                          onInputChange={(event, newInputValue) => {
+                            setSearchQuery(newInputValue);
+                            if (!newInputValue || newInputValue !== selectedLocation?.title) {
+                              setSelectedLocation(null);
+                              // Clear search results if input is cleared
+                              if (!newInputValue?.trim()) {
+                                setSearchResults([]);
+                              }
+                            }
+                          }}
+                          onChange={(event, newValue) => {
+                            if (newValue && typeof newValue === 'object') {
+                              const coordinates: [number, number] = [newValue.location.y, newValue.location.x];
+                              // Set the address update source to search before updating address
+                              addressUpdateSource.current = 'search';
+                              setSelectedLocation(newValue);
+                              setAddress(newValue.address);
+                              setPosition(coordinates);
+                              setMapCenter(coordinates);
+                              setSearchResults([]); // Clear search results after selection
+                              setSearchQuery(newValue.title); // Update search query to selected title
+                              setShouldFlyTo(true);
+                              // Reset flyTo after animation
+                              setTimeout(() => setShouldFlyTo(false), 500);
+                            }
+                          }}
+                          getOptionLabel={(option) => {
+                            if (typeof option === 'string') return option;
+                            return option?.title || option?.address || '';
+                          }}
+                          renderOption={(props, option, { index }) => (
+                            <Box component="li" {...props} key={`${option.title}-${option.region}-${index}`}>
+                              <Box>
+                                <Typography variant="body2" fontWeight="bold">
+                                  {option.title}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                  {option.region}
+                                </Typography>
+                              </Box>
+                            </Box>
+                          )}
+                          renderInput={(params) => (
+                            <TextField
+                              {...params}
+                              label="جست و جو"
+                              size={fullScreen ? 'medium' : 'small'}
+                              sx={{
+                                borderRadius: '12px',
+                                backdropFilter: mode === 'dark' ? 'blur(5px) brightness(0.8)' : 'blur(5px) brightness(1.1)',
+                                bgcolor: 'var(--background-glass)',
+                                '& .MuiOutlinedInput-root': {
+                                  '& fieldset': {
+                                    borderColor: 'var(--border-main)',
+                                    borderWidth: '2px',
+                                  },
+                                }
+                              }}
+                              InputProps={{
+                                ...params.InputProps,
+                                endAdornment: (
+                                  <>
+                                    {isSearching ? <CircularProgress size={20} /> : null}
+                                    {params.InputProps.endAdornment}
+                                  </>
+                                ),
+                              }}
+                            />
+                          )}
+                        />
                       </Box>
                       <Box
                         sx={{
@@ -537,7 +575,13 @@ export default React.memo(function AddProjectModal({ open, onClose }: ModalProps
                       >
                         پردازش دوباره مسیر
                       </Btn>
-                      <Btn onClick={handleNextLevel} variant="contained" color="success" endIcon={<DoneAllRoundedIcon />}>
+                      <Btn
+                        onClick={handleNextLevel}
+                        variant="contained"
+                        color="success"
+                        endIcon={<DoneAllRoundedIcon />}
+                        disabled={position === null}
+                      >
                         {level === 'first' ? 'مرحله بعدی' : 'تأیید'}
                       </Btn>
                     </Box>

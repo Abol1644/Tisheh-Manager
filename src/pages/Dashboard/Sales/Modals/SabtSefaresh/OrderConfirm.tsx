@@ -158,7 +158,7 @@ export function OrderConfirm() {
       .then(data => {
         const list = Array.isArray(data) ? data : [data];
         setTransportListSale(list);
-        console.log("✔ ~ OrderConfirm ~ list:", list)
+        // console.log("✔ ~ OrderConfirm ~ list:", list)
 
         // Update distance store with listDistance from transport API response
         if (list.length > 0 && list[0].listDistance) {
@@ -254,7 +254,7 @@ export function ShipmentTable({
 }) {
   const { toPersianPrice } = usePersianNumbers();
   const Costs = filterVehicleCosts(transportList, false, false);
-  console.log("🦈 ~ ShipmentTable ~ Costs:", transportList)
+  // console.log("🦈 ~ ShipmentTable ~ Costs:", transportList)
   const groupedCosts = groupTransportByVehicleAndAlternate(Costs);
   const displayItems = Object.values(groupedCosts).sort((a, b) => {
     const getOrder = (item: (typeof groupedCosts)[string]) => {
@@ -264,7 +264,7 @@ export function ShipmentTable({
     };
     return getOrder(a) - getOrder(b);
   });
-  console.log("😅 ~ ShipmentTable ~ displayItems:", displayItems)
+  // console.log("😅 ~ ShipmentTable ~ displayItems:", displayItems)
 
   return (
     <Box className="income-modal-table-container" sx={{ mb: 1 }}>
@@ -307,7 +307,7 @@ export function ShipmentTable({
                 const sumPrice = (group.fare?.fullFare ?? 0) +
                   group.costs.reduce((sum, c) => sum + (c.priceVehiclesCost || 0), 0);
                 const displayWeight = toPersianDigits(group.capacity * (selectedItem?.unitRatio || 1));
-                console.log("💵 ~ displayWeight:", group.capacity, selectedUnit?.unitRatio)
+                const loadAndUnloadCosts = (group.fare?.loadingCost || 0) + (group.fare?.unloadingCost || 0);
                 return (
                   <TableRow
                     key={`${group.vehicleId}-${Boolean(group.alternate)}-${Boolean(group.transit)}`}
@@ -398,6 +398,32 @@ export function ShipmentTable({
                                   </Typography>
                                   <Typography variant="body2">
                                     {toPersianPrice(group.fare.coefficientRoadTypeFare)} ریال
+                                  </Typography>
+                                </Box>
+                              </>
+                            )}
+                            {group.fare?.costsCompany > 0 && (
+                              <>
+                                <Divider variant="middle" sx={{ opacity: 0.4, my: 1, borderColor: 'background.paper' }} />
+                                <Box sx={{ ...flex.rowBetween }}>
+                                  <Typography variant="body2">
+                                    هزینه کارخانه:
+                                  </Typography>
+                                  <Typography variant="body2">
+                                    {toPersianPrice(group.fare.costsCompany)} ریال
+                                  </Typography>
+                                </Box>
+                              </>
+                            )}
+                            {group.fare?.loadingCost > 0 || group.fare?.unloadingCost > 0 && (
+                              <>
+                                <Divider variant="middle" sx={{ opacity: 0.4, my: 1, borderColor: 'background.paper' }} />
+                                <Box sx={{ ...flex.rowBetween }}>
+                                  <Typography variant="body2">
+                                    هزینه بارگیری و تخلیه:
+                                  </Typography>
+                                  <Typography variant="body2">
+                                    {toPersianPrice(loadAndUnloadCosts)} ریال
                                   </Typography>
                                 </Box>
                               </>

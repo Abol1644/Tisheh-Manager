@@ -25,6 +25,9 @@ export interface TransportList {
       fareDelay: number;
       comission: number;
       coefficientRoadTypeFare: number;
+      costsCompany: number;
+      loadingCost: number;
+      unloadingCost: number;
     };
     sumLoadingItemVehicleShipp: number;
     categoryMid: string;

@@ -26,7 +26,7 @@ export const usePriceCalculator = (
       activateAlternate,
       activateWarehouse,
       promotionMajor,
-      promotionTimeKeeper, // not used here, but could be added
+      promotionTimeKeeper,
       priceWarehouse,
       priceAlternate,
       priceTransit,
@@ -64,8 +64,12 @@ export const usePriceCalculator = (
       capacity >= lowestNumberOfDiscount2 &&
       percentageDiscount2 > 0;
 
-    // Apply discount logic first if conditions are met
-    if (qualifiesForDiscountTier1) {
+    if (selectedTransport?.transit) {
+      basePrice = priceTransit;
+    } else if (selectedTransport?.alternate) {
+      basePrice = priceAlternate;
+    }
+    else if (qualifiesForDiscountTier1) {
       basePrice = discountPriceWarehouse;
       disPrice = priceWarehouse - discountPriceWarehouse;
     } else if (qualifiesForDiscountTier2) {
@@ -75,16 +79,10 @@ export const usePriceCalculator = (
       basePrice = discountPriceWarehouse2;
       disPrice = priceWarehouse - discountPriceWarehouse2;
     }
-    // === 2. If no warehouse discount, fallback to standard pricing modes ===
-    // else if (activatePreSell) {
+    // else if (selectedTransport?.pre) {
     //   basePrice = pricePreSell;
-    // } else if (activateTransit) {
-    //   basePrice = priceTransit;
-    // } else if (activateAlternate) {
-    //   basePrice = priceAlternate;
     // }
     else {
-      // Default to regular warehouse price
       basePrice = priceWarehouse;
     }
 
@@ -92,9 +90,11 @@ export const usePriceCalculator = (
     let transportCostPerUnit = 0;
     if (selectedTransport && capacity > 0) {
       const totalTransportCost =
+        // (selectedTransport.fare?.fullFare ?? 0) +
         (selectedTransport.fare?.fullFare ?? 0) +
         (selectedTransport.priceVehiclesCost ?? 0);
       transportCostPerUnit = totalTransportCost / capacity;
+
     }
 
     // === 4. Final result: base price + per-unit transport ===
