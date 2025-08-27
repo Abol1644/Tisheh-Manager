@@ -1,3 +1,4 @@
+// @ts-check
 import React from 'react';
 
 import {
@@ -33,6 +34,7 @@ import MyLocationRoundedIcon from '@mui/icons-material/MyLocationRounded';
 import MapRoundedIcon from '@mui/icons-material/MapRounded';
 import PublicRoundedIcon from '@mui/icons-material/PublicRounded';
 import DoneAllRoundedIcon from '@mui/icons-material/DoneAllRounded';
+import MarkerIcon from '@/assets/images/marker.png'
 
 import Btn from '@/components/elements/Btn';
 import { flex, width, height, gap } from '@/models/ReadyStyles';
@@ -50,7 +52,7 @@ export default React.memo(function AddProjectModal({ open, onClose }: ModalProps
   const [fullScreen, setFullScreen] = React.useState(true);
   const [projectName, setProjectName] = React.useState('');
   const [phoneNumber, setPhoneNumber] = React.useState('');
-  const [mapTile, setMapTile] = React.useState('street');
+  const [mapTile, setMapTile] = React.useState<'street' | 'satellite'>('street');
   const [position, setPosition] = React.useState<[number, number] | null>(null);
   const { mode } = useThemeMode()
 
@@ -65,7 +67,6 @@ export default React.memo(function AddProjectModal({ open, onClose }: ModalProps
     } else {
       setMapTile('street');
     }
-    console.log(mapTile);
   }
 
   return (
@@ -275,9 +276,10 @@ export default React.memo(function AddProjectModal({ open, onClose }: ModalProps
                             onPositionChange={setPosition}
                             height="100%"
                             mapTile={mapTile}
-                            markerType="svg-pin"
-                            markerColor="#00ff68"
-                            markerSize={[32, 48]}
+                            markerType="custom"
+                            customMarkerIcon={MarkerIcon}
+                            markerSize={[40, 40]}
+                            lockView={true}
                           />
                         </Box>
                       </Box>
