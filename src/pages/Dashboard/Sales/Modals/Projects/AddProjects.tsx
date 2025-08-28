@@ -114,6 +114,20 @@ export default React.memo(function AddProjectModal({ open, onClose }: ModalProps
   const handleNextLevel = () => {
     setLevel((prevLevel) => (prevLevel === 'first' ? 'second' : 'first'));
     setMapTile('satellite')
+    if (level === 'second') {
+      addProject(
+        projectName,
+        address,
+        position ? position[0] : 0,
+        position ? position[1] : 0,
+        elevation ? elevation : 0
+      ).then(() => {
+        showSnackbar('پروژه با موفقیت اضافه شد', 'success');
+      }).catch((error) => {
+        console.error('Error adding project:', error);
+        showSnackbar('افزودن پروژه ناموفق بود', 'error');
+      });
+    }
   }
 
   React.useEffect(() => {
@@ -137,6 +151,7 @@ export default React.memo(function AddProjectModal({ open, onClose }: ModalProps
     getPointDetails(newPosition[1], newPosition[0])
       .then(details => {
         setAddress(details.formatted_address);
+        setProjectName(details.route_name);
       })
       .catch(error => {
         console.error('Error getting address for clicked location:', error);
@@ -319,8 +334,8 @@ export default React.memo(function AddProjectModal({ open, onClose }: ModalProps
                       <TextField
                         id="project-name"
                         label="تحویل گیرنده"
-                        value={projectName}
-                        onChange={(e) => setProjectName(e.target.value)}
+                        value={receiverName}
+                        onChange={(e) => setReceiverName(e.target.value)}
                         fullWidth
                       />
                       <PhoneField

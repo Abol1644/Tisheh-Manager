@@ -34,10 +34,11 @@ interface SatelliteMapProps {
 const ChangeView: React.FC<{ center: [number, number]; zoom: number; flyTo?: boolean }> = ({ center, zoom, flyTo = false }) => {
   const map = useMap();
   const [isFlying, setIsFlying] = useState(false);
+  const lastProgrammaticCenter = React.useRef<[number, number]>(center);
   
   useEffect(() => {
-    // Don't interfere if we're currently flying
-    if (isFlying) return;
+    // Only respond to flyTo changes, not regular center changes
+    if (!flyTo) return;
     
     // Only change center if it actually changed
     const currentCenter = map.getCenter();
@@ -46,16 +47,16 @@ const ChangeView: React.FC<{ center: [number, number]; zoom: number; flyTo?: boo
       Math.abs(currentCenter.lat - center[0]) > 0.0001 || 
       Math.abs(currentCenter.lng - center[1]) > 0.0001
     ) {
-      if (flyTo) {
-        setIsFlying(true);
-        map.flyTo(center, zoom, { duration: 2 });
-        // Reset flying state after animation completes
-        setTimeout(() => setIsFlying(false), 4000);
-      } else {
-        map.panTo(center); // Use panTo instead of setView to preserve zoom
-      }
+      // Don't start new flyTo if we're already flying
+      if (isFlying) return;
+      
+      setIsFlying(true);
+      lastProgrammaticCenter.current = center;
+      map.flyTo(center, zoom, { duration: 2 });
+      // Reset flying state after animation completes
+      setTimeout(() => setIsFlying(false), 4000);
     }
-  }, [map, center, zoom, flyTo, isFlying]);
+  }, [map, center, zoom, flyTo]);
   
   return null;
 };

@@ -17,6 +17,7 @@ export interface GeoFence {
 
 export interface PointDetails {
   formatted_address: string;
+  route_name: string;
 }
 
 export interface PointElevation {
