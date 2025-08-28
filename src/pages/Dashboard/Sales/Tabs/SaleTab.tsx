@@ -9,6 +9,7 @@ import { Cart } from '@/pages/Dashboard/Sales/SabadKharid';
 import CreateAccountModal from '@/pages/Dashboard/Sales/Modals/Account/CreateAccount';
 import ConnectToProjectModal from '@/pages/Dashboard/Sales/Modals/Account/ConnectToProject';
 import AddProjectModal from '@/pages/Dashboard/Sales/Modals/Projects/AddProjects';
+import DeleteProjectModal from '@/pages/Dashboard/Sales/Modals/Projects/DeleteProject';
 import BaseModal from '@/pages/Dashboard/Sales/Modals/BaseModal';
 
 import {
@@ -343,17 +344,9 @@ export default function Sale() {
         open={modals.projectEdit}
         onClose={() => closeModal('projectEdit')}
       />
-      <BaseModal
+      <DeleteProjectModal
         open={modals.projectDelete}
         onClose={() => closeModal('projectDelete')}
-        title='حذف پروژه'
-        buttonText='حذف'
-        info='پروژه مورد نظر حذف شود؟'
-        width='400px'
-        windowColor='error'
-        buttonColor='warning'
-        buttonEndIcon={<DeleteForeverRoundedIcon />}
-        buttonFunc={() => closeModal('projectDelete')}
       />
       <BaseModal
         open={modals.projectDisconnect}

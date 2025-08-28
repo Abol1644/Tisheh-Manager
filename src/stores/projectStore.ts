@@ -13,8 +13,8 @@ interface ProjectState {
   setLoading: (loading: boolean) => void;
   addProjectToUnconnectedList: (project: Project) => void;
   addProjectToConnectedList: (project: Project) => void;
-  replaceOptimisticProject: (optimisticId: number, realProject: Project) => void;
-  removeProjectFromUnconnected: (projectId: number) => void;
+  replaceProject: (updatedProject: Project) => void;
+  eraseProject: (projectId: number) => void;
 }
 
 export const useProjectStore = create<ProjectState>((set) => ({
@@ -26,24 +26,28 @@ export const useProjectStore = create<ProjectState>((set) => ({
   setUnconnectedProjects: (projects) => set({ unconnectedProjects: projects }),
   setConnectedProjects: (projects) => set({ connectedProjects: projects }),
   setLoading: (loading) => set({ loading }),
-  // Optimistic update function to add new project to unconnected list
+  // Add new project to unconnected list after successful API call
   addProjectToUnconnectedList: (project) => set((state) => ({
     unconnectedProjects: [...state.unconnectedProjects, project]
   })),
-  // Optimistic update function to add new project to connected list
+  // Add new project to connected list after successful API call
   addProjectToConnectedList: (project) => set((state) => ({
     connectedProjects: [...state.connectedProjects, project]
   })),
-  // Replace optimistic project with real one from server
-  replaceOptimisticProject: (optimisticId, realProject) => set((state) => ({
-    unconnectedProjects: state.unconnectedProjects.map(project => 
-      project.id === optimisticId ? realProject : project
-    )
+  // Replace/overwrite existing project in both lists after successful edit API call
+  replaceProject: (updatedProject) => set((state) => ({
+    unconnectedProjects: state.unconnectedProjects.map(p => 
+      p.id === updatedProject.id ? updatedProject : p
+    ),
+    connectedProjects: state.connectedProjects.map(p => 
+      p.id === updatedProject.id ? updatedProject : p
+    ),
+    selectedProject: state.selectedProject?.id === updatedProject.id ? updatedProject : state.selectedProject
   })),
-  // Remove project from unconnected list (for rollback on failure)
-  removeProjectFromUnconnected: (projectId) => set((state) => ({
-    unconnectedProjects: state.unconnectedProjects.filter(project => 
-      project.id !== projectId
-    )
+  // Delete project from both lists after successful delete API call
+  eraseProject: (projectId) => set((state) => ({
+    unconnectedProjects: state.unconnectedProjects.filter(p => p.id !== projectId),
+    connectedProjects: state.connectedProjects.filter(p => p.id !== projectId),
+    selectedProject: state.selectedProject?.id === projectId ? null : state.selectedProject
   })),
 }));

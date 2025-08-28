@@ -6,33 +6,41 @@ import {
   Box,
   IconButton,
   Tooltip,
-  TextField,
-  Button,
   Slide,
   Backdrop,
-  Paper,
   Zoom
 } from '@mui/material';
 
 import Btn from '@/components/elements/Btn';
 import CloseIcon from '@mui/icons-material/Close';
-import LocalShippingRoundedIcon from '@mui/icons-material/LocalShippingRounded';
 import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
 
-import usePersianNumbers from '@/hooks/usePersianNumbers';
-import NumberField from '@/components/elements/NumberField';
+import { findProject, deleteProject } from '@/api';
+import { useProjectStore } from '@/stores';
+import { useSnackbar } from '@/contexts/SnackBarContext';
 
-interface AddToOrderModalProps {
+interface DeleteProjectModalProps {
   open: boolean;
   onClose: () => void;
-  buttonFunc?: () => void;
-  title?: string;
-  info?: string;
-  buttonText?: string;
 }
 
-export default function DeleteModal({ open, onClose, title, info, buttonText, buttonFunc }: AddToOrderModalProps) {
-  const [orderNumber, setOrderNumber] = React.useState('');
+export default function DeleteProjectModal({ open, onClose }: DeleteProjectModalProps) {
+  const { selectedProject, eraseProject } = useProjectStore();
+  const { showSnackbar } = useSnackbar();
+
+  const handleDeleteProject = ()  => {
+    showSnackbar('delteing', 'success');
+    if (selectedProject) {
+      deleteProject(selectedProject.id).then(() => {
+        eraseProject(selectedProject.id);
+        showSnackbar('پروژه با موفقیت حذف شد', 'success');
+        onClose();
+      }).catch((error) => {
+        console.error('Error deleting project:', error);
+        showSnackbar('حذف پروژه ناموفق بود', 'error');
+      });
+    }
+  }
 
   return (
     <Modal
@@ -96,7 +104,7 @@ export default function DeleteModal({ open, onClose, title, info, buttonText, bu
                 sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '8px' }}
               >
                 <DeleteRoundedIcon />
-                {title}
+                حذف پروژه
               </Typography>
               <Tooltip title="بستن" placement='top' arrow disableInteractive slots={{ transition: Zoom }} >
                 <IconButton
@@ -110,7 +118,7 @@ export default function DeleteModal({ open, onClose, title, info, buttonText, bu
             </Box>
             <Box sx={{ width: '100%', mt: 4 }}>
               <Typography variant="subtitle1" sx={{ mb: 1, }}>
-                {info}
+                آیا میخواهید پروژه پاک شود؟
               </Typography>
               <Box
                 sx={{
@@ -120,8 +128,8 @@ export default function DeleteModal({ open, onClose, title, info, buttonText, bu
                   width: '100%'
                 }}
               >
-                <Btn variant="contained" color="error" endIcon={<DeleteRoundedIcon />} onClick={buttonFunc ?? onClose} sx={{ height: '42px', mt: 1, justifySelf: 'end' }}>
-                  {buttonText}
+                <Btn variant="contained" color="error" endIcon={<DeleteRoundedIcon />} onClick={handleDeleteProject} sx={{ height: '42px', mt: 1, justifySelf: 'end' }}>
+                  حذف
                 </Btn>
               </Box>
             </Box>

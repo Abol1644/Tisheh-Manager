@@ -5,20 +5,12 @@ import {
   Typography,
   Modal,
   Box,
-  Divider,
-  Checkbox,
-  FormControlLabel,
   IconButton,
   Tooltip,
   TextField,
-  Button,
   Slide,
   Backdrop,
-  Paper,
   Zoom,
-  ToggleButtonGroup,
-  ToggleButton,
-  Grid,
   InputAdornment,
   Menu,
   MenuItem,
@@ -32,8 +24,6 @@ import CloseFullscreenRoundedIcon from '@mui/icons-material/CloseFullscreenRound
 import AddHomeWorkRoundedIcon from '@mui/icons-material/AddHomeWorkRounded';
 import ReplayRoundedIcon from '@mui/icons-material/ReplayRounded';
 import WhereToVoteRoundedIcon from '@mui/icons-material/WhereToVoteRounded';
-import NearMeRoundedIcon from '@mui/icons-material/NearMeRounded';
-import SettingsPhoneRoundedIcon from '@mui/icons-material/SettingsPhoneRounded';
 import MyLocationRoundedIcon from '@mui/icons-material/MyLocationRounded';
 import MapRoundedIcon from '@mui/icons-material/MapRounded';
 import PublicRoundedIcon from '@mui/icons-material/PublicRounded';
@@ -51,9 +41,9 @@ import Map from '@/components/Map';
 import { useSnackbar } from "@/contexts/SnackBarContext";
 
 // Added import for project store to enable optimistic updates
-import { getPointDetails, getPointElevation, getLocationSearch, addProject } from '@/api';
+import { getPointDetails, getPointElevation, getLocationSearch, addProject, editProject, findProject } from '@/api';
 import { useProjectStore } from '@/stores/';
-import { Fullscreen } from '@mui/icons-material';
+import { Project } from '@/models/';
 
 interface ModalProps {
   open: boolean;
@@ -62,6 +52,7 @@ interface ModalProps {
 
 export default React.memo(function AddProjectModal({ open, onClose }: ModalProps) {
   const [fullScreen, setFullScreen] = React.useState(true);
+  const [project, setProject] = React.useState<Project | null>(null);
   const [projectName, setProjectName] = React.useState('');
   const [receiverName, setReceiverName] = React.useState('');
   const [address, setAddress] = React.useState('');
@@ -69,6 +60,8 @@ export default React.memo(function AddProjectModal({ open, onClose }: ModalProps
   const [mapTile, setMapTile] = React.useState<'street' | 'satellite'>('street');
   const [level, setLevel] = React.useState<'first' | 'second'>('first');
   const [phoneType, setPhoneType] = React.useState<'mobile' | 'landline'>('mobile');
+  const [buttonText, setButtonText] = React.useState<'تأیید' | 'مرحله بعدی'>('مرحله بعدی');
+  const [formMode, setFormMode] = React.useState<'edit' | 'create'>('create');
   const [position, setPosition] = React.useState<[number, number] | null>(null);
   const [elevation, setElevation] = React.useState<number | null>(null);
   const [mapCenter, setMapCenter] = React.useState<[number, number]>([35.6892, 51.3890]);
@@ -79,12 +72,15 @@ export default React.memo(function AddProjectModal({ open, onClose }: ModalProps
   const [lastSearchQuery, setLastSearchQuery] = React.useState('');
   const [searchQuery, setSearchQuery] = React.useState('');
   const addressUpdateSource = React.useRef<'user' | 'map' | 'search'>('user');
+  const [findingProject, setFindingProject] = React.useState(false);
+  const [openProjectDelete, setOpenProjectDelete] = React.useState(false);
+  const [confirmProjectDelete, setConfirmProjectDelete] = React.useState(false);
   // Added project store for optimistic updates after project creation
   const { mode } = useThemeMode()
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const openPhoneMenu = Boolean(anchorEl);
   const { showSnackbar } = useSnackbar();
-  const { addProjectToUnconnectedList, replaceOptimisticProject, removeProjectFromUnconnected } = useProjectStore();
+  const { addProjectToUnconnectedList, selectedProject, replaceProject } = useProjectStore();
 
   const handlePhoneMenuClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -117,48 +113,45 @@ export default React.memo(function AddProjectModal({ open, onClose }: ModalProps
 
   // Updated to include optimistic update to project store after successful API call
   const handleNextLevel = () => {
-    setLevel((prevLevel) => (prevLevel === 'first' ? 'second' : 'first'));
-    setMapTile('satellite')
-    if (level === 'second') {
-      // Create optimistic project object
-      const optimisticId = Date.now(); // Temporary ID
-      const optimisticProject = {
-        id: optimisticId,
-        title: projectName,
-        address,
-        longitude: position ? position[0] : 0,
-        latitude: position ? position[1] : 0,
-        elevation: elevation || 0,
-        recipientName: receiverName,
-        recipientNumber: phoneNumber,
-        // Add other required Project fields with default values
-      };
-
-      // Optimistic update: Add immediately to UI
-      addProjectToUnconnectedList(optimisticProject);
-      showSnackbar('پروژه در حال اضافه شدن...', 'info');
-      closeWindow(); // Close modal immediately
-
-      // Make API call in background
-      addProject(
-        projectName,
-        address,
-        position ? position[0] : 0,
-        position ? position[1] : 0,
-        elevation ? elevation : 0,
-        receiverName,
-        phoneNumber,
-        0,
-      ).then((newProject) => {
-        // Replace optimistic project with real one from server
-        replaceOptimisticProject(optimisticId, newProject);
-        showSnackbar('پروژه با موفقیت اضافه شد', 'success');
-      }).catch((error) => {
-        console.error('Error adding project:', error);
-        // Remove optimistic project on failure
-        removeProjectFromUnconnected(optimisticId);
-        showSnackbar('افزودن پروژه ناموفق بود', 'error');
-      });
+    if (formMode === 'create') {
+      setLevel((prevLevel) => (prevLevel === 'first' ? 'second' : 'first'));
+      setButtonText((prevText) => (prevText === 'تأیید' ? 'مرحله بعدی' : 'تأیید'));
+      setMapTile('satellite')
+      if (level === 'second') {
+        addProject(
+          projectName,
+          address,
+          position ? position[0] : 0,
+          position ? position[1] : 0,
+          elevation ? elevation : 0,
+          receiverName,
+          phoneNumber,
+          0,
+        ).then((newProject) => {
+          addProjectToUnconnectedList(newProject);
+          showSnackbar('پروژه با موفقیت اضافه شد', 'success');
+          closeWindow();
+        }).catch((error) => {
+          console.error('Error adding project:', error);
+          showSnackbar('افزودن پروژه ناموفق بود', 'error');
+        });
+      }
+    } else {
+      if (selectedProject?.id && project) {
+        const updatedProject = { ...project, title: projectName };
+        editProject(
+          updatedProject
+        ).then((updatedProject) => {
+          replaceProject(updatedProject);
+          showSnackbar('پروژه با موفقیت ویرایش شد', 'success');
+          closeWindow();
+        }).catch((error) => {
+          console.error('Error editing project:', error);
+          showSnackbar('ویرایش پروژه ناموفق بود', 'error');
+        });
+      } else {
+        console.error("Error: Project doesn't have an ID");
+      }
     }
   }
 
@@ -169,6 +162,31 @@ export default React.memo(function AddProjectModal({ open, onClose }: ModalProps
       setMapTile('street');
     }
   }, [level]);
+
+  React.useEffect(() => {
+    if (open && selectedProject) {
+      setFormMode('edit');
+      setButtonText('تأیید');
+      console.log("finding project");
+      setFindingProject(true);
+      showSnackbar('درحال دریافت اطلاعات پروژه', 'info');
+      findProject(selectedProject.id).then((foundProject) => {
+        if (foundProject) {
+          setProject(foundProject);
+          setFindingProject(false);
+          showSnackbar('اطلاعات پروزه دریافت شد', 'success');
+          setAddress(foundProject.address);
+          setProjectName(foundProject.title);
+          setReceiverName(foundProject.recipientName ?? '');
+          setPhoneNumber(foundProject.recipientNumber ?? '');
+          setPosition([foundProject.longitude, foundProject.latitude]);
+          setElevation(foundProject.elevation);
+        } else {
+          console.error("Error: Project not found");
+        }
+      });
+    }
+  }, [open]);
 
   // Handle position changes from map clicks
   const handleMapPositionChange = React.useCallback((newPosition: [number, number]) => {
@@ -369,6 +387,13 @@ export default React.memo(function AddProjectModal({ open, onClose }: ModalProps
                         value={receiverName}
                         onChange={(e) => setReceiverName(e.target.value)}
                         fullWidth
+                        InputProps={{
+                          endAdornment: (
+                            <>
+                              {findingProject ? <CircularProgress size={20} /> : null}
+                            </>
+                          ),
+                        }}
                       />
                       <PhoneField
                         label={<span>{phoneType === 'mobile' ? 'شماره موبایل' : 'شماره تلفن ثابت'}</span>}
@@ -629,7 +654,7 @@ export default React.memo(function AddProjectModal({ open, onClose }: ModalProps
                         endIcon={<DoneAllRoundedIcon />}
                         disabled={position === null}
                       >
-                        {level === 'first' ? 'مرحله بعدی' : 'تأیید'}
+                        {buttonText}
                       </Btn>
                     </Box>
                   </Box>

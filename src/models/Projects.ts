@@ -2,8 +2,8 @@ export interface Project {
   id: number;
   codeAccConnect: number;
   title: string;
-  postalCode: string | null;
-  nationalId: string | null;
+  postalCode: number | 0;
+  nationalId: number | 0;
   longitude: number;
   latitude: number;
   elevation: number;
@@ -11,4 +11,7 @@ export interface Project {
   recipientName: string | null;
   recipientNumber: string | null;
   systemy: boolean;
+  dateTime: string | null;
+  userIdMng: number | null;
+  userIpMng: string | null;
 }

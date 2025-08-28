@@ -372,6 +372,7 @@ export function ProductSelect(props: any) {
     async (value: any) => {
       const project = value as Project | null;
       setSelectedProject(project);
+      console.log("🚀 ~ ProductSelect ~ project:", project)
       if (!project) {
         setSelectedWarehouse(null);
         return;
@@ -748,18 +749,21 @@ export function ProductSelect(props: any) {
                 icon: <EditRoundedIcon color="info" sx={{ mr: 1 }} />,
                 onClick: () => props.openModal("accountAdd"),
                 menuClassName: "details-account-menu-item",
+                menuItemDisabled: !selectedAccount,
               },
               {
                 label: "ارتباط با پروژه‌های باز",
                 icon: <AddLinkRoundedIcon color="info" sx={{ mr: 1 }} />,
                 onClick: () => props.openModal("connectToProject"),
                 menuClassName: "connect-account-menu-item",
+                menuItemDisabled: !selectedAccount,
               },
               {
                 label: "حذف حساب",
                 icon: <DeleteRoundedIcon color="error" sx={{ mr: 1 }} />,
                 onClick: () => props.openModal("accountDelete"),
                 menuClassName: "delete-account-menu-item",
+                menuItemDisabled: !selectedAccount,
               },
             ]}
           />
@@ -786,18 +790,21 @@ export function ProductSelect(props: any) {
                 icon: <EditRoundedIcon color="info" sx={{ mr: 1 }} />,
                 onClick: () => props.openModal("projectEdit"),
                 menuClassName: "details-account-menu-item",
+                menuItemDisabled: !selectedProject,
               },
               {
                 label: "قطع ارتباط با پروژه",
                 icon: <LinkOffRoundedIcon color="info" sx={{ mr: 1 }} />,
                 onClick: () => props.openModal("projectDisconnect"),
                 menuClassName: "connect-account-menu-item",
+                menuItemDisabled: !selectedProject,
               },
               {
                 label: "حذف پروژه",
                 icon: <DeleteRoundedIcon color="error" sx={{ mr: 1 }} />,
                 onClick: () => props.openModal("projectDelete"),
                 menuClassName: "delete-account-menu-item",
+                menuItemDisabled: !selectedProject,
               },
             ]}
           />

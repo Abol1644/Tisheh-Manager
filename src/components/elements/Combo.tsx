@@ -44,6 +44,7 @@ interface ComboProps {
     icon?: React.ReactNode;
     onClick: () => void;
     menuClassName?: string;
+    menuItemDisabled?: boolean;
   }[];
   menuIcon?: React.ReactNode;
 
@@ -108,7 +109,7 @@ export default function Combo({
     getOptionLabel,
     onChange: (_event: any, newValue: any) => onChange?.(newValue),
 
-    isOptionEqualToValue: (option, value) => {
+    isOptionEqualToValue: (option:any, value:any) => {
       if (!value) return false;
       return getOptionValue(option) === getOptionValue(value);
     },
@@ -195,6 +196,7 @@ export default function Combo({
                 <MenuItem
                   className={item.menuClassName}
                   key={index}
+                  disabled={item.menuItemDisabled}
                   onClick={() => handleMenuItemClick(item.onClick)}
                   sx={{ display: "flex", alignItems: "center", gap: 1 }}
                 >

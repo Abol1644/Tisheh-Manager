@@ -16,7 +16,7 @@ interface SnackbarMessage {
 }
 
 interface SnackbarContextType {
-  showSnackbar: (message: string, severity: AlertColor, duration?: number, icon?: ReactNode) => string;
+  showSnackbar: (message: string, severity: AlertColor, duration?: number, icon?: ReactNode, open?: boolean) => string;
   closeSnackbarById: (id: string) => void;
 }
 
@@ -38,9 +38,9 @@ export const SnackbarProvider: React.FC<SnackbarProviderProps> = ({ children }) 
   const [snackbars, setSnackbars] = useState<SnackbarMessage[]>([]);
   const maxSnack = 3;
 
-  const showSnackbar = (message: string, severity: AlertColor, duration: number = 5000, icon?: ReactNode): string => {
+  const showSnackbar = (message: string, severity: AlertColor, duration: number = 5000, icon?: ReactNode, open: boolean = true): string => {
     const id = Date.now().toString();
-    const newSnackbar = { id, message, severity, duration, icon, open: true };
+    const newSnackbar = { id, message, severity, duration, icon, open };
     
     setSnackbars(prev => {
       const updated = [...prev, newSnackbar];
