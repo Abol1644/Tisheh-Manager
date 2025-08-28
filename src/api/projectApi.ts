@@ -39,6 +39,9 @@ export const addProject = async (
   longitude: number,
   latitude: number,
   elevation: number,
+  recipientName: string,
+  recipientNumber: string,
+  nationalId: number
 ): Promise<Project> => {
   try {
     const response = await apiClient.post<Project>('/Projects/Add', {
@@ -46,7 +49,9 @@ export const addProject = async (
       address: address,
       longitude: longitude,
       latitude: latitude,
-      elevation: elevation
+      elevation: elevation,
+      recipientName: recipientName,
+      recipientNumber: recipientNumber,
     });
     console.log("Add Project responce: " , response.data)
     return response.data;

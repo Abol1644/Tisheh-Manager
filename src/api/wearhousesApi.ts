@@ -6,7 +6,7 @@ export const getWarehouses = async (): Promise<Warehouse[]> => {
     const response = await apiClient.get<Warehouse[]>(
       "Warehouses/GetAll"
     );
-    console.log("wearhouses Gotten:", response.data);
+    // console.log("wearhouses Gotten:", response.data);
     return response.data;
   } catch (error: any) {
     console.error("Get wearhouses API error: ", error);

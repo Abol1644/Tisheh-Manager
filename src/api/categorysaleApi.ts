@@ -6,7 +6,7 @@ export const getSaleCategories = async (): Promise<CategorySale[]> => {
     const response = await apiClient.get<CategorySale[]>(
       'Category/GetAllCategorySale'
     );
-    console.log('CategorySale Gottne: ', response.data)
+    // console.log('CategorySale Gottne: ', response.data)
     return response.data;
   } catch (error: any) {
     console.error("Find CategorySale API error: ", error);

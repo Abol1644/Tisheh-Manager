@@ -26,7 +26,7 @@ export const loginApi = async (
 export const getOrgans = async (): Promise<Organ[]> => {
   try {
     const response = await apiClient.get<Organ[]>('/Organs/GetAll');
-    console.log('Organs:', response.data )
+    // console.log('Organs:', response.data )
     return response.data;
   } catch (error: any) {
     console.error('Get organs API error: ', error);

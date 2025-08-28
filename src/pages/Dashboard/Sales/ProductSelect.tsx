@@ -40,6 +40,7 @@ import DoneAllRoundedIcon from '@mui/icons-material/DoneAllRounded';
 import ErrorOutlineRoundedIcon from '@mui/icons-material/ErrorOutlineRounded';
 import InfoRoundedIcon from '@mui/icons-material/InfoRounded';
 
+// Updated imports to use the enhanced project store
 import { useOrgansStore } from '@/stores/organStore';
 import { useProductsStore, useProjectStore, useAccountStore, useBranchDeliveryStore, useDistanceStore } from '@/stores/';
 import { useSnackbar } from "@/contexts/SnackBarContext";
@@ -100,12 +101,20 @@ export function ProductSelect(props: any) {
   const [initDone, setInitDone] = useState(false);
   const [alternateShow, setAlternateShow] = useState(false);
   const [dis3show, setDis3Show] = useState(false);
+  // Replaced local project state with global project store
   const [Account, setAccount] = useState<Account[]>([]);
-  const [Project, setProject] = useState<Project[]>([]);
   const [Warehouse, setWarehouse] = useState<Warehouse[]>([]);
-  const { selectedProject, setSelectedProject } = useProjectStore();
+  const { 
+    selectedProject, 
+    setSelectedProject,
+    unconnectedProjects,
+    connectedProjects,
+    loading: projectsLoading,
+    setUnconnectedProjects,
+    setConnectedProjects,
+    setLoading: setProjectsLoading
+  } = useProjectStore();
   const { selectedAccount, setSelectedAccount } = useAccountStore();
-  const [connectedProjects, setConnectedProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFetchingDistance, setIsFetchingDistance] = useState(false);
   const { mode } = useThemeMode();
@@ -181,11 +190,14 @@ export function ProductSelect(props: any) {
       .finally(() => { setLoading(false) });
   }, []);
 
+  // Updated to use global project store for unconnected projects - only fetch if store is empty
   React.useEffect(() => {
-    setLoading(true);
+    if (unconnectedProjects.length > 0) return; // Don't fetch if we already have data
+    
+    setProjectsLoading(true);
     getUnConnectedProjects()
       .then((projects) => {
-        setProject(projects);
+        setUnconnectedProjects(projects);
       })
       .catch((error) => {
         let errorMessage = 'خطا در دریافت پروژه ها';
@@ -196,8 +208,8 @@ export function ProductSelect(props: any) {
         }
         showSnackbar(errorMessage, 'error', 5000, <ErrorOutlineRoundedIcon />);
       })
-      .finally(() => setLoading(false));
-  }, []);
+      .finally(() => setProjectsLoading(false));
+  }, [unconnectedProjects.length, setUnconnectedProjects, setProjectsLoading, showSnackbar]);
 
   React.useEffect(() => {
     if (!selectedProject || isBranchDelivery || isFetchingDistance) {
@@ -277,9 +289,10 @@ export function ProductSelect(props: any) {
       });
   }, [isBranchDelivery, setSelectedWarehouse]);
 
+  // Updated filteredProjects to use global project store instead of local state
   const filteredProjects = useMemo(() => {
     if (!selectedAccount) {
-      return Project.filter(
+      return unconnectedProjects.filter(
         (project) =>
           project.codeAccConnect === null &&
           (!isBranchDelivery ? project.id !== 1 : true)
@@ -288,15 +301,16 @@ export function ProductSelect(props: any) {
     return connectedProjects.filter((project) => {
       return !isBranchDelivery ? project.id !== 1 : true;
     });
-  }, [Project, selectedAccount, isBranchDelivery, connectedProjects]);
+  }, [unconnectedProjects, selectedAccount, isBranchDelivery, connectedProjects]);
 
   const handleAccountChange = useCallback(async (value: any) => {
     const account = value as Account | null;
     setSelectedAccount(account);
     setSelectedProject(null);
     setSelectedWarehouse(null);
+    // Updated to use global project store for connected projects
     if (account) {
-      setLoading(true);
+      setProjectsLoading(true);
       try {
         const projects = await getConnectedProject(true, parseInt(account.codeAcc));
         setConnectedProjects(projects);
@@ -311,7 +325,7 @@ export function ProductSelect(props: any) {
         }
         showSnackbar(errorMessage, 'error', 5000, <ErrorOutlineRoundedIcon />);
       } finally {
-        setLoading(false);
+        setProjectsLoading(false);
       }
     } else {
       setConnectedProjects([]);
@@ -756,7 +770,7 @@ export function ProductSelect(props: any) {
             options={filteredProjects}
             value={selectedProject}
             onChange={handleProjectChange}
-            loading={loading}
+            loading={projectsLoading}
             loadingText="در حال بارگذاری..."
             noOptionsText="هیچ گزینه‌ای موجود نیست"
             menu={true}

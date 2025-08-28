@@ -50,7 +50,9 @@ import { useThemeMode } from '@/contexts/ThemeContext';
 import Map from '@/components/Map';
 import { useSnackbar } from "@/contexts/SnackBarContext";
 
+// Added import for project store to enable optimistic updates
 import { getPointDetails, getPointElevation, getLocationSearch, addProject } from '@/api';
+import { useProjectStore } from '@/stores/';
 import { Fullscreen } from '@mui/icons-material';
 
 interface ModalProps {
@@ -77,10 +79,12 @@ export default React.memo(function AddProjectModal({ open, onClose }: ModalProps
   const [lastSearchQuery, setLastSearchQuery] = React.useState('');
   const [searchQuery, setSearchQuery] = React.useState('');
   const addressUpdateSource = React.useRef<'user' | 'map' | 'search'>('user');
+  // Added project store for optimistic updates after project creation
   const { mode } = useThemeMode()
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const openPhoneMenu = Boolean(anchorEl);
   const { showSnackbar } = useSnackbar();
+  const { addProjectToUnconnectedList, replaceOptimisticProject, removeProjectFromUnconnected } = useProjectStore();
 
   const handlePhoneMenuClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -111,20 +115,48 @@ export default React.memo(function AddProjectModal({ open, onClose }: ModalProps
     setFullScreen(true);
   }
 
+  // Updated to include optimistic update to project store after successful API call
   const handleNextLevel = () => {
     setLevel((prevLevel) => (prevLevel === 'first' ? 'second' : 'first'));
     setMapTile('satellite')
     if (level === 'second') {
+      // Create optimistic project object
+      const optimisticId = Date.now(); // Temporary ID
+      const optimisticProject = {
+        id: optimisticId,
+        title: projectName,
+        address,
+        longitude: position ? position[0] : 0,
+        latitude: position ? position[1] : 0,
+        elevation: elevation || 0,
+        recipientName: receiverName,
+        recipientNumber: phoneNumber,
+        // Add other required Project fields with default values
+      };
+
+      // Optimistic update: Add immediately to UI
+      addProjectToUnconnectedList(optimisticProject);
+      showSnackbar('پروژه در حال اضافه شدن...', 'info');
+      closeWindow(); // Close modal immediately
+
+      // Make API call in background
       addProject(
         projectName,
         address,
         position ? position[0] : 0,
         position ? position[1] : 0,
-        elevation ? elevation : 0
-      ).then(() => {
+        elevation ? elevation : 0,
+        receiverName,
+        phoneNumber,
+        0,
+      ).then((newProject) => {
+        // Replace optimistic project with real one from server
+        replaceOptimisticProject(optimisticId, newProject);
         showSnackbar('پروژه با موفقیت اضافه شد', 'success');
       }).catch((error) => {
         console.error('Error adding project:', error);
+        // Remove optimistic project on failure
+        removeProjectFromUnconnected(optimisticId);
         showSnackbar('افزودن پروژه ناموفق بود', 'error');
       });
     }
