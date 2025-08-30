@@ -797,7 +797,7 @@ export function ProductSelect(props: any) {
                 icon: <LinkOffRoundedIcon color="info" sx={{ mr: 1 }} />,
                 onClick: () => props.openModal("projectDisconnect"),
                 menuClassName: "connect-account-menu-item",
-                menuItemDisabled: !selectedProject,
+                menuItemDisabled: !selectedProject || !selectedAccount,
               },
               {
                 label: "حذف پروژه",

@@ -41,7 +41,14 @@ import Map from '@/components/Map';
 import { useSnackbar } from "@/contexts/SnackBarContext";
 
 // Added import for project store to enable optimistic updates
-import { getPointDetails, getPointElevation, getLocationSearch, addProject, editProject, findProject } from '@/api';
+import {
+  getPointDetails,
+  getPointElevation,
+  getLocationSearch,
+  addProject,
+  editProject,
+  findProject,
+} from '@/api';
 import { useProjectStore } from '@/stores/';
 import { Project } from '@/models/';
 
