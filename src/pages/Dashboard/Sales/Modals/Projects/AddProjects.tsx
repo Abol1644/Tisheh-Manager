@@ -55,9 +55,10 @@ import { Project } from '@/models/';
 interface ModalProps {
   open: boolean;
   onClose: () => void;
+  formMode: 'create' | 'edit';
 }
 
-export default React.memo(function AddProjectModal({ open, onClose }: ModalProps) {
+export default React.memo(function AddProjectModal({ open, onClose, formMode }: ModalProps) {
   const [fullScreen, setFullScreen] = React.useState(true);
   const [project, setProject] = React.useState<Project | null>(null);
   const [projectName, setProjectName] = React.useState('');
@@ -68,7 +69,6 @@ export default React.memo(function AddProjectModal({ open, onClose }: ModalProps
   const [level, setLevel] = React.useState<'first' | 'second'>('first');
   const [phoneType, setPhoneType] = React.useState<'mobile' | 'landline'>('mobile');
   const [buttonText, setButtonText] = React.useState<'تأیید' | 'مرحله بعدی'>('مرحله بعدی');
-  const [formMode, setFormMode] = React.useState<'edit' | 'create'>('create');
   const [position, setPosition] = React.useState<[number, number] | null>(null);
   const [elevation, setElevation] = React.useState<number | null>(null);
   const [mapCenter, setMapCenter] = React.useState<[number, number]>([35.6892, 51.3890]);
@@ -158,8 +158,7 @@ export default React.memo(function AddProjectModal({ open, onClose }: ModalProps
   }, [level]);
 
   React.useEffect(() => {
-    if (open && selectedProject) {
-      setFormMode('edit');
+    if (open && formMode === 'edit' && selectedProject) {
       setButtonText('تأیید');
       console.log("finding project");
       setFindingProject(true);
@@ -173,14 +172,18 @@ export default React.memo(function AddProjectModal({ open, onClose }: ModalProps
           setProjectName(foundProject.title);
           setReceiverName(foundProject.recipientName ?? '');
           setPhoneNumber(foundProject.recipientNumber ?? '');
-          setPosition([foundProject.longitude, foundProject.latitude]);
+          setPosition([foundProject.latitude, foundProject.longitude]);
+          setMapCenter([foundProject.latitude, foundProject.longitude]);
           setElevation(foundProject.elevation);
+          setShouldFlyTo(true);
+          // Reset flyTo after animation
+          setTimeout(() => setShouldFlyTo(false), 3000);
         } else {
           console.error("Error: Project not found");
         }
       });
     }
-  }, [open]);
+  }, [open, formMode, selectedProject]);
 
   // Handle position changes from map clicks
   const handleMapPositionChange = React.useCallback((newPosition: [number, number]) => {
@@ -341,7 +344,7 @@ export default React.memo(function AddProjectModal({ open, onClose }: ModalProps
               >
                 <Typography variant='h6' sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '8px' }}>
                   <AddHomeWorkRoundedIcon />
-                  افزودن پروژه
+                  {formMode === 'create' ? 'افزودن پروژه' : 'ویرایش پروژه'}
                 </Typography>
                 <Box>
                   <IconButton

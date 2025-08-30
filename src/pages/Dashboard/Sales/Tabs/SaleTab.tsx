@@ -32,7 +32,7 @@ import { height } from '@/models/ReadyStyles';
 import { getSaleCategories, getItemPrice, getCartList, getCart } from '@/api';
 import { CategorySale, ItemResaultPrice, ListCart, Warehouse } from '@/models';
 
-import { useProductsStore } from '@/stores';
+import { useProductsStore, useProjectStore } from '@/stores';
 
 const MemoizedProductSelect = React.memo(ProductSelect);
 const MemoizedCart = React.memo(Cart);
@@ -64,6 +64,7 @@ export default function Sale() {
   const [categories, setCategories] = useState<CategorySale[]>([]);
   const [listCart, setListCart] = useState<ListCart[]>([]);
   const { setSelectedCategory } = useProductsStore();
+  const { setSelectedProject } = useProjectStore();
   const [loading, setLoading] = useState(true);
 
   const handleCategorySelect = useCallback((category: CategorySale | null) => {
@@ -342,10 +343,12 @@ export default function Sale() {
       <AddProjectModal
         open={modals.projectAdd}
         onClose={() => closeModal('projectAdd')}
+        formMode="create"
       />
       <AddProjectModal
         open={modals.projectEdit}
         onClose={() => closeModal('projectEdit')}
+        formMode="edit"
       />
       <DeleteProjectModal
         open={modals.projectDelete}
