@@ -71,6 +71,7 @@ export default React.memo(function AddProjectModal({ open, onClose, formMode }: 
   const [buttonText, setButtonText] = React.useState<'تأیید' | 'مرحله بعدی'>('مرحله بعدی');
   const [position, setPosition] = React.useState<[number, number] | null>(null);
   const [elevation, setElevation] = React.useState<number | null>(null);
+  const [originalPosition, setOriginalPosition] = React.useState<[number, number] | null>(null);
   const [mapCenter, setMapCenter] = React.useState<[number, number]>([35.6892, 51.3890]);
   const [searchResults, setSearchResults] = React.useState<any[]>([]);
   const [isSearching, setIsSearching] = React.useState(false);
@@ -101,6 +102,7 @@ export default React.memo(function AddProjectModal({ open, onClose, formMode }: 
     setPhoneNumber('');
     setPosition(null);
     setElevation(null);
+    setOriginalPosition(null);
     onClose();
     setFullScreen(true);
   }
@@ -132,8 +134,23 @@ export default React.memo(function AddProjectModal({ open, onClose, formMode }: 
       }
     } else {
       if (selectedProject?.id && project) {
-        const updatedProject = { ...project, title: projectName };
+        // Check if location has changed
+        const locationChanged = originalPosition && position && 
+          (originalPosition[0] !== position[0] || originalPosition[1] !== position[1]);
+        
+        const updatedProject = { 
+          ...project, 
+          title: projectName,
+          recipientName: receiverName,
+          recipientNumber: phoneNumber,
+          address: address,
+          longitude: position ? position[0] : project.longitude,
+          latitude: position ? position[1] : project.latitude,
+          elevation: elevation !== null ? elevation : project.elevation
+        };
+        
         editProject(
+          Boolean(locationChanged),
           updatedProject
         ).then((updatedProject) => {
           replaceProject(updatedProject);
@@ -173,6 +190,7 @@ export default React.memo(function AddProjectModal({ open, onClose, formMode }: 
           setReceiverName(foundProject.recipientName ?? '');
           setPhoneNumber(foundProject.recipientNumber ?? '');
           setPosition([foundProject.longitude, foundProject.latitude]);
+          setOriginalPosition([foundProject.longitude, foundProject.latitude]);
           setMapCenter([foundProject.longitude, foundProject.latitude]);
           setElevation(foundProject.elevation);
           setShouldFlyTo(true);

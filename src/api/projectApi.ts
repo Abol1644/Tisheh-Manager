@@ -94,9 +94,9 @@ export const findProject = async (projectId: number): Promise<Project> => {
   }
 };
 
-export const editProject = async (project: Project): Promise<Project> => {
+export const editProject = async (newLocation: boolean, project: Project): Promise<Project> => {
   try {
-    const response = await apiClient.put<Project>("/Projects/UpdatePut", {
+    const response = await apiClient.put<Project>(`/Projects/UpdatePut?NewLocation=${newLocation}`, {
       id: project.id,
       title: project.title,
       address: project.address,
