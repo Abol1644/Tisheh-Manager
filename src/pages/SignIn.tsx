@@ -63,7 +63,7 @@ export default function SignIn({ onLoginSuccess }: SignInProps) {
   const [phoneErrorMessage, setPhoneErrorMessage] = React.useState('');
   const [passwordError, setPasswordError] = React.useState(false);
   const [passwordErrorMessage, setPasswordErrorMessage] = React.useState('');
-  const { mode, toggleDark } = useThemeMode();
+  const { mode, toggleMode } = useThemeMode();
   const [loading, setLoading] = React.useState(false);
   const [snackOpen, setSnackOpen] = React.useState(false);
   const [snackError, setSnackError] = React.useState('');
@@ -124,10 +124,10 @@ export default function SignIn({ onLoginSuccess }: SignInProps) {
         }}
       >
         <DotGrid
-          dotSize={10}
+          dotSize={5}
           gap={15}
-          baseColor="#5227FF"
-          activeColor="#5227FF"
+          baseColor={mode === 'dark' ? "#4d3700" : "#ffb800"}
+          activeColor={mode === 'dark' ? "#ffb800" : "#4d3700"}
           proximity={120}
           shockRadius={250}
           shockStrength={5}
@@ -135,6 +135,22 @@ export default function SignIn({ onLoginSuccess }: SignInProps) {
           returnDuration={1.5}
         />
       </Box>
+      <IconButton
+        onClick={toggleMode}
+        sx={{
+          bgcolor: "background.default",
+          color: "text.primary",
+          boxShadow: '0 0 10px rgba(0, 0, 0, 0.2)',
+          transition: "all 0.3s ease-in-out",
+          position: 'absolute',
+          top: 28, right: 28,
+          '&:hover': {
+            transform: 'scale(1.05)',
+          }
+        }}
+      >
+        {mode === "light" ? <DarkModeIcon /> : <Brightness7Icon />}
+      </IconButton>
       <Box
         className='signin-container'
         sx={{
@@ -158,13 +174,13 @@ export default function SignIn({ onLoginSuccess }: SignInProps) {
             margin: 'auto',
             transition: 'all 0.3s ease',
             backgroundColor: 'transparent',
-            backdropFilter: 'blur(10px) brightness(0.9)',
+            backdropFilter: mode === 'dark' ? 'blur(5px) brightness(3)' : 'blur(4px)',
             // border: '1px solid rgba(255, 255, 255, 0.23)',
-            boxShadow: '0 30px 10px -20px rgba(0, 0, 0, 0.23)',
+            boxShadow: '0 30px 10px -20px rgba(0, 0, 0, 0.23), inset 0 0 15px 5px var(--border-main)',
             position: 'relative',
           }}
         >
-          <Typography variant="h5" sx={{ mb: 2, textAlign: 'center', width: '100%', color: 'text.light' }}>
+          <Typography variant="h5" sx={{ mb: 2, textAlign: 'center', width: '100%' }}>
             ورود به حساب کاربری
           </Typography>
           <Box
