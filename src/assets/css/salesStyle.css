@@ -46,6 +46,18 @@
   }
 }
 
+@keyframes refresh {
+  from {
+    transform: rotate(0deg);
+    filter: blur(0.8px) drop-shadow(0 0 6px rgba(0, 0, 0, 0.5));
+  }
+
+  to {
+    transform: rotate(-1440deg);
+    filter: blur(0px) drop-shadow(0 0 2px rgba(0, 0, 0, 0.2));
+  }
+}
+
 .sales-tabs {
   margin: 0 auto 0 auto;
   padding: 2px 10px;
@@ -354,6 +366,17 @@
 
 .delete-account-menu-item:hover svg {
   animation: delete 1s ease;
+}
+
+.recalculate-menu-item svg {
+  transition: all 0.3s ease;
+  filter: blur(0) drop-shadow(0 0 0 rgba(0, 0, 0, 0));
+  will-change: filter, transform;
+}
+
+.recalculate-menu-item:hover svg {
+  animation: refresh 1s cubic-bezier(0.2, 0.0, 0.2, 1);
+  /* Fast start, smooth finish for motion feel */
 }
 
 .connect-account-menu-item svg {

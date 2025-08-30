@@ -802,9 +802,9 @@ export function ProductSelect(props: any) {
               },
               {
                 label: "محاسبه دوباره مسیر",
-                icon: <CachedRoundedIcon color="error" sx={{ mr: 1 }} />,
+                icon: <CachedRoundedIcon color="success" sx={{ mr: 1 }} />,
                 onClick: () => props.openModal("projectRecalculate"),
-                menuClassName: "delete-account-menu-item",
+                menuClassName: "recalculate-menu-item",
                 menuItemDisabled: !selectedProject,
               },
               {

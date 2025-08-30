@@ -128,7 +128,7 @@ export default function RecalculateProjectModal({ open, onClose }: DeleteProject
                   width: '100%'
                 }}
               >
-                <Btn variant="contained" color="error" endIcon={<CachedRoundedIcon />} onClick={handleRecalculateProject} sx={{ height: '42px', mt: 1, justifySelf: 'end' }}>
+                <Btn variant="contained" color="success" endIcon={<CachedRoundedIcon />} onClick={handleRecalculateProject} sx={{ height: '42px', mt: 1, justifySelf: 'end' }}>
                   محاسبه دوباره
                 </Btn>
               </Box>

@@ -172,8 +172,8 @@ export default React.memo(function AddProjectModal({ open, onClose, formMode }: 
           setProjectName(foundProject.title);
           setReceiverName(foundProject.recipientName ?? '');
           setPhoneNumber(foundProject.recipientNumber ?? '');
-          setPosition([foundProject.latitude, foundProject.longitude]);
-          setMapCenter([foundProject.latitude, foundProject.longitude]);
+          setPosition([foundProject.longitude, foundProject.latitude]);
+          setMapCenter([foundProject.longitude, foundProject.latitude]);
           setElevation(foundProject.elevation);
           setShouldFlyTo(true);
           // Reset flyTo after animation
