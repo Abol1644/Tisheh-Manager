@@ -10,6 +10,8 @@ import CreateAccountModal from '@/pages/Dashboard/Sales/Modals/Account/CreateAcc
 import ConnectToProjectModal from '@/pages/Dashboard/Sales/Modals/Account/ConnectToProject';
 import AddProjectModal from '@/pages/Dashboard/Sales/Modals/Projects/AddProjects';
 import DeleteProjectModal from '@/pages/Dashboard/Sales/Modals/Projects/DeleteProject';
+import ConnectProjectModal from '@/pages/Dashboard/Sales/Modals/Projects/ConnectProject';
+import DisconnectProjectModal from '@/pages/Dashboard/Sales/Modals/Projects/DisconnectProject';
 import BaseModal from '@/pages/Dashboard/Sales/Modals/BaseModal';
 
 import {
@@ -55,6 +57,7 @@ export default function Sale() {
     projectAdd: false,
     projectEdit: false,
     projectDelete: false,
+    projectConnect: false,
     projectDisconnect: false,
   });
 
@@ -347,6 +350,14 @@ export default function Sale() {
       <DeleteProjectModal
         open={modals.projectDelete}
         onClose={() => closeModal('projectDelete')}
+      />
+      <ConnectProjectModal
+        open={modals.projectConnect}
+        onClose={() => closeModal('projectConnect')}
+      />
+      <DisconnectProjectModal
+        open={modals.projectDisconnect}
+        onClose={() => closeModal('projectDisconnect')}
       />
       <BaseModal
         open={modals.projectDisconnect}

@@ -754,7 +754,7 @@ export function ProductSelect(props: any) {
               {
                 label: "ارتباط با پروژه‌های باز",
                 icon: <AddLinkRoundedIcon color="info" sx={{ mr: 1 }} />,
-                onClick: () => props.openModal("connectToProject"),
+                onClick: () => props.openModal("projectConnect"),
                 menuClassName: "connect-account-menu-item",
                 menuItemDisabled: !selectedAccount,
               },
