@@ -16,6 +16,20 @@ export const getUnConnectedProjects = async (): Promise<Project[]> => {
   }
 };
 
+export const getAllProjects = async (): Promise<Project[]> => {
+  console.log("Getting All Projects");
+  try {
+    const response = await apiClient.get<Project[]>(
+      "Projects/GetAll"
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error("Get All Projects API error: ", error);
+    const serverMessage = error.response?.data || "Failed to fetch All Projects";
+    throw new Error(serverMessage);
+  }
+};
+
 export const getConnectedProject = async (
   BranchCenterDelivery: boolean,
   id: number
@@ -173,7 +187,8 @@ export const disconnectProject = async (
 ): Promise<Project> => {
   try {
     const updatedProject = { ...project };
-    
+    console.log("🚀 ~ disconnectProject ~ updatedProject:", updatedProject);
+
     if (!updatedProject.codeAccConnect) {
       updatedProject.codeAccConnect = "";
       return updatedProject;
@@ -186,6 +201,7 @@ export const disconnectProject = async (
     );
     
     const response = await apiClient.post("/Accounts/UpdatePutConnectProjects", [updatedProject]);
+    console.log("🚀 ~ disconnectProject ~ response:", response)
     return updatedProject;
   } catch (error: any) {
     console.error("Disconnect Project API error:", error);

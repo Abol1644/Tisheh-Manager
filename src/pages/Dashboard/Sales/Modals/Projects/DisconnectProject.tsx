@@ -20,14 +20,23 @@ import { useProjectStore, useAccountStore } from '@/stores';
 import { useSnackbar } from '@/contexts/SnackBarContext';
 
 export default function DisconnectProjectModal({ open, onClose }: { open: boolean, onClose: () => void }) {
-  const { selectedProject } = useProjectStore();
+  const { selectedProject, addProjectToUnconnectedList, setConnectedProjects, connectedProjects } = useProjectStore();
   const { selectedAccount } = useAccountStore();
   const { showSnackbar } = useSnackbar();
 
   const handleDisconnectProject = () => {
     showSnackbar('disconnecting', 'success');
     if (selectedProject && selectedAccount) {
-      disconnectProject(selectedProject, selectedAccount).then(() => {
+      disconnectProject(selectedProject, selectedAccount).then((disconnectedProject) => {
+        // Update store: add to unconnected list and remove from connected list
+        addProjectToUnconnectedList(disconnectedProject);
+        
+        // Remove disconnected project from connected list
+        const remainingConnectedProjects = connectedProjects.filter(
+          project => project.id !== selectedProject.id
+        );
+        setConnectedProjects(remainingConnectedProjects);
+        
         showSnackbar('پروژه با موفقیت قطع شد', 'success');
         onClose();
       }).catch((error) => {
@@ -115,7 +124,7 @@ export default function DisconnectProjectModal({ open, onClose }: { open: boolea
             </Box>
             <Box sx={{ width: '100%', mt: 4 }}>
               <Typography variant="subtitle1" sx={{ mb: 1, }}>
-                آیا میخواهید پروژه به حساب متصل شود؟
+                مطمئن به قطع ارتباط از پروژه مورد نظر هستید؟
               </Typography>
               <Box
                 sx={{

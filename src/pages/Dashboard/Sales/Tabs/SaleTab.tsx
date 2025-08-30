@@ -359,19 +359,6 @@ export default function Sale() {
         open={modals.projectDisconnect}
         onClose={() => closeModal('projectDisconnect')}
       />
-      <BaseModal
-        open={modals.projectDisconnect}
-        onClose={() => closeModal('projectDisconnect')}
-        title='قطع ارتباط از حساب'
-        buttonText='قطع'
-        info='مطمئن به قطع ارتباط از پروژه مورد نظر هستید؟'
-        width='400px'
-        windowColor='error'
-        buttonColor='warning'
-        buttonEndIcon={<LinkOffRoundedIcon />}
-        icon={<LinkOffRoundedIcon />}
-        buttonFunc={() => closeModal('projectDisconnect')}
-      />
     </>
   );
 }
