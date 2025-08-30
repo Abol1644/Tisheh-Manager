@@ -615,18 +615,6 @@ export default React.memo(function AddProjectModal({ open, onClose, formMode }: 
                         انصراف
                       </Btn>
                       <Btn
-                        variant='contained'
-                        color='secondary'
-                        endIcon={
-                          <Box className='location-icon-button' sx={{ ...flex.alignCenter }}>
-                            <WhereToVoteRoundedIcon className='location-icon' sx={{ position: 'absolute' }} />
-                            <ReplayRoundedIcon className='reload-icon' />
-                          </Box>
-                        }
-                      >
-                        پردازش دوباره مسیر
-                      </Btn>
-                      <Btn
                         onClick={handleNextLevel}
                         variant="contained"
                         color="success"
