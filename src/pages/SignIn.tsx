@@ -27,10 +27,10 @@ import rawLogoDark from '@/assets/images/Raw-Dark.png';
 import rawLogoLight from "@/assets/images/Raw-Light.png";
 import backgroundPaper from "@/assets/images/paper-texture.jpg";
 import Btn from '@/components/elements/Btn';
-import Silk from '@/components/elements/Silk'
 import { position } from 'stylis';
 import { flex, width, height } from '@/models/ReadyStyles';
 import zIndex from '@mui/material/styles/zIndex';
+import DotGrid from '@/components/elements/DotGrid';
 
 const Card = styled(MuiCard)(({ theme }) => ({
   display: 'flex',
@@ -123,12 +123,16 @@ export default function SignIn({ onLoginSuccess }: SignInProps) {
           zIndex: '0'
         }}
       >
-        <Silk
-          speed={6}
-          scale={0.8}
-          color="#fbb800"
-          noiseIntensity={2}
-          rotation={30}
+        <DotGrid
+          dotSize={10}
+          gap={15}
+          baseColor="#5227FF"
+          activeColor="#5227FF"
+          proximity={120}
+          shockRadius={250}
+          shockStrength={5}
+          resistance={750}
+          returnDuration={1.5}
         />
       </Box>
       <Box

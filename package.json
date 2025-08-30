@@ -27,6 +27,7 @@
     "axios": "^1.9.0",
     "dayjs": "^1.11.13",
     "framer-motion": "^12.23.6",
+    "gsap": "^3.13.0",
     "jalaliday": "^3.1.0",
     "jwt-decode": "^4.0.0",
     "leaflet": "^1.9.4",
@@ -41,7 +42,6 @@
     "react-window": "^1.8.11",
     "styled-components": "^6.1.18",
     "tailwindcss": "^4.1.6",
-    "three": "^0.179.1",
     "zustand": "^5.0.7"
   },
   "devDependencies": {
