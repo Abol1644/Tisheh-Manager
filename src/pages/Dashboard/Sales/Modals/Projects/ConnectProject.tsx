@@ -254,22 +254,31 @@ export function AllProjectsTable({ projects, selectedProjects, onSelectionChange
   loading: boolean;
 }) {
   const [searchQuery, setSearchQuery] = useState('');
+  const [showOnlyConnected, setShowOnlyConnected] = useState(false);
 
-  // Filter projects based on search query
+  // Filter projects based on search query and connection status
   const filteredProjects = useMemo(() => {
-    if (!searchQuery.trim()) {
-      return projects;
+    let filtered = projects;
+
+    // Filter by connection status first
+    if (showOnlyConnected) {
+      filtered = filtered.filter(project => selectedProjects.includes(project.id));
     }
-    
-    const query = searchQuery.trim();
-    return projects.filter(project => {
-      const title = project.title || '';
-      const address = project.address || '';
-      
-      // For Persian text, just use includes without toLowerCase
-      return title.includes(query) || address.includes(query);
-    });
-  }, [projects, searchQuery]);
+
+    // Then filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.trim();
+      filtered = filtered.filter(project => {
+        const title = project.title || '';
+        const address = project.address || '';
+        
+        // For Persian text, just use includes without toLowerCase
+        return title.includes(query) || address.includes(query);
+      });
+    }
+
+    return filtered;
+  }, [projects, searchQuery, showOnlyConnected, selectedProjects]);
 
   const handleSelectAll = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.checked) {
@@ -301,22 +310,35 @@ export function AllProjectsTable({ projects, selectedProjects, onSelectionChange
   const isIndeterminate = filteredSelectedProjects.length > 0 && filteredSelectedProjects.length < filteredProjects.length;
 
   return (
-    <Box className="income-modal-table-container" sx={{ mb: 1 }}>
-      <TextField
-        placeholder="جستجو در پروژه‌ها..."
-        value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
-        size="small"
-        fullWidth
-        sx={{ mb: 2 }}
-        InputProps={{
-          startAdornment: (
-            <InputAdornment position="start">
-              <SearchIcon />
-            </InputAdornment>
-          ),
-        }}
-      />
+    <React.Fragment>
+      <Box sx={{ ...flex.rowCenter, ...gap.ten, mb: 2 }}>
+        <TextField
+          placeholder="جستجو در پروژه‌ها..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          fullWidth
+          type="search"
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon />
+              </InputAdornment>
+            ),
+          }}
+        />
+        <FormControlLabel
+          label="فقط پروژه‌های متصل"
+          sx={{ whiteSpace: 'nowrap' }}
+          control={
+            <Checkbox
+              checked={showOnlyConnected}
+              onChange={(event) => setShowOnlyConnected(event.target.checked)}
+              color="primary"
+            />
+          }
+        />
+      </Box>
+      <Box className="income-modal-table-container" sx={{ mb: 1 }}>
       <TableContainer sx={{ maxHeight: '400px', overflow: 'auto' }} className="income-modal-table">
         <Table size="small" stickyHeader>
           <TableHead>
@@ -390,5 +412,6 @@ export function AllProjectsTable({ projects, selectedProjects, onSelectionChange
         </Table>
       </TableContainer>
     </Box>
+    </React.Fragment>
   );
 }
