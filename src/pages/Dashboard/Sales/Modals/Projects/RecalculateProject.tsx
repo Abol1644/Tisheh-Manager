@@ -13,41 +13,32 @@ import {
 
 import Btn from '@/components/elements/Btn';
 import CloseIcon from '@mui/icons-material/Close';
-import LinkOffRoundedIcon from "@mui/icons-material/LinkOffRounded";
+import CachedRoundedIcon from "@mui/icons-material/CachedRounded"
 
-import { findProject, disconnectProject } from '@/api';
-import { useProjectStore, useAccountStore } from '@/stores';
+import { findProject, reCalculateProject } from '@/api';
+import { useProjectStore } from '@/stores';
 import { useSnackbar } from '@/contexts/SnackBarContext';
 
-export default function DisconnectProjectModal({ open, onClose }: { open: boolean, onClose: () => void }) {
-  const { selectedProject, addProjectToUnconnectedList, setConnectedProjects, connectedProjects, setSelectedProject } = useProjectStore();
-  const { selectedAccount } = useAccountStore();
+interface DeleteProjectModalProps {
+  open: boolean;
+  onClose: () => void;
+}
+
+export default function RecalculateProjectModal({ open, onClose }: DeleteProjectModalProps) {
+  const { selectedProject, eraseProject } = useProjectStore();
   const { showSnackbar } = useSnackbar();
 
-  const handleDisconnectProject = () => {
-    showSnackbar('disconnecting', 'success');
-    if (selectedProject && selectedAccount) {
-      disconnectProject(selectedProject, selectedAccount).then((disconnectedProject) => {
-        // Update store: add to unconnected list and remove from connected list
-        addProjectToUnconnectedList(disconnectedProject);
-        
-        // Remove disconnected project from connected list
-        const remainingConnectedProjects = connectedProjects.filter(
-          project => project.id !== selectedProject.id
-        );
-        setConnectedProjects(remainingConnectedProjects);
-        
-        // Clear the selected project since it's been disconnected
-        setSelectedProject(null);
-        
-        showSnackbar('پروژه با موفقیت قطع شد', 'success');
+  const handleRecalculateProject = ()  => {
+    showSnackbar('در حال محاسبه مجدد', 'success');
+    if (selectedProject) {
+      reCalculateProject(selectedProject).then(() => {
+        eraseProject(selectedProject.id);
+        showSnackbar('محاسبه مجدد موفقیت آمیز بود', 'success');
         onClose();
       }).catch((error) => {
-        console.error('Error disconnecting project:', error);
-        showSnackbar('قطع کردن پروژه ناموفق بود', 'error');
+        console.error('Error calculating project:', error);
+        showSnackbar('محاسبه مجدد ناموفق بود', 'error');
       });
-    } else {
-      showSnackbar('پروژه یا حساب انتخاب نشده است', 'error');
     }
   }
 
@@ -85,7 +76,7 @@ export default function DisconnectProjectModal({ open, onClose }: { open: boolea
               width: '520px',
               height: 'auto',
               bgcolor: 'background.glass',
-              background: 'linear-gradient(-165deg, #ff00004d, var(--background-glass) 75%)',
+              background: 'linear-gradient(-165deg, #00ff684d, var(--background-glass) 75%)',
               border: 'none',
               boxShadow: 'inset 0 0 10px 1px rgba(255, 255, 255, 0.2), 0px 11px 15px -7px rgba(0,0,0,0.2),0px 24px 38px 3px rgba(0,0,0,0.14),0px 9px 46px 8px rgba(0,0,0,0.12)',
               p: '20px 20px',
@@ -112,8 +103,8 @@ export default function DisconnectProjectModal({ open, onClose }: { open: boolea
                 variant='h6'
                 sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '8px' }}
               >
-                <LinkOffRoundedIcon />
-                اتصال پروژه به حساب
+                <CachedRoundedIcon />
+                محاسبه دوباره
               </Typography>
               <Tooltip title="بستن" placement='top' arrow disableInteractive slots={{ transition: Zoom }} >
                 <IconButton
@@ -127,7 +118,7 @@ export default function DisconnectProjectModal({ open, onClose }: { open: boolea
             </Box>
             <Box sx={{ width: '100%', mt: 4 }}>
               <Typography variant="subtitle1" sx={{ mb: 1, }}>
-                مطمئن به قطع ارتباط از پروژه مورد نظر هستید؟
+                مسیر پروژه، مسافت و ارتفاع دوباره محاسبه می‌شود
               </Typography>
               <Box
                 sx={{
@@ -137,8 +128,8 @@ export default function DisconnectProjectModal({ open, onClose }: { open: boolea
                   width: '100%'
                 }}
               >
-                <Btn variant="contained" color="error" endIcon={<LinkOffRoundedIcon />} onClick={handleDisconnectProject} sx={{ height: '42px', mt: 1, justifySelf: 'end' }}>
-                  قطع اتصال
+                <Btn variant="contained" color="error" endIcon={<CachedRoundedIcon />} onClick={handleRecalculateProject} sx={{ height: '42px', mt: 1, justifySelf: 'end' }}>
+                  محاسبه دوباره
                 </Btn>
               </Box>
             </Box>

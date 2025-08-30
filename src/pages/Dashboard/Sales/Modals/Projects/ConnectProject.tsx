@@ -339,7 +339,7 @@ export function AllProjectsTable({ projects, selectedProjects, onSelectionChange
         />
       </Box>
       <Box className="income-modal-table-container" sx={{ mb: 1 }}>
-      <TableContainer sx={{ maxHeight: '400px', overflow: 'auto' }} className="income-modal-table">
+      <TableContainer sx={{ maxHeight: '380px', overflow: 'auto' }} className="income-modal-table">
         <Table size="small" stickyHeader>
           <TableHead>
             <TableRow
@@ -357,7 +357,7 @@ export function AllProjectsTable({ projects, selectedProjects, onSelectionChange
               </TableCell>
               <TableCell>عنوان</TableCell>
               <TableCell>آدرس</TableCell>
-              <TableCell align='center'>وضعیت</TableCell>
+              <TableCell align='center'>اتصال</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -392,7 +392,7 @@ export function AllProjectsTable({ projects, selectedProjects, onSelectionChange
                         variant="caption" 
                         color={selectedProjects.includes(project.id) ? 'success.main' : 'text.secondary'}
                       >
-                        {selectedProjects.includes(project.id) ? 'متصل' : 'قطع'}
+                        {selectedProjects.includes(project.id) ? 'متصل' : 'باز'}
                       </Typography>
                     </TableCell>
                   </TableRow>

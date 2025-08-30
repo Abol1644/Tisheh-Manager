@@ -39,6 +39,7 @@ import ScaleRoundedIcon from '@mui/icons-material/ScaleRounded';
 import DoneAllRoundedIcon from '@mui/icons-material/DoneAllRounded';
 import ErrorOutlineRoundedIcon from '@mui/icons-material/ErrorOutlineRounded';
 import InfoRoundedIcon from '@mui/icons-material/InfoRounded';
+import CachedRoundedIcon from "@mui/icons-material/CachedRounded"
 
 // Updated imports to use the enhanced project store
 import { useOrgansStore } from '@/stores/organStore';
@@ -752,7 +753,7 @@ export function ProductSelect(props: any) {
                 menuItemDisabled: !selectedAccount,
               },
               {
-                label: "ارتباط با پروژه‌های باز",
+                label: "مدیریت پروژه ها",
                 icon: <AddLinkRoundedIcon color="info" sx={{ mr: 1 }} />,
                 onClick: () => props.openModal("projectConnect"),
                 menuClassName: "connect-account-menu-item",
@@ -798,6 +799,13 @@ export function ProductSelect(props: any) {
                 onClick: () => props.openModal("projectDisconnect"),
                 menuClassName: "connect-account-menu-item",
                 menuItemDisabled: !selectedProject || !selectedAccount,
+              },
+              {
+                label: "محاسبه دوباره مسیر",
+                icon: <CachedRoundedIcon color="error" sx={{ mr: 1 }} />,
+                onClick: () => props.openModal("projectRecalculate"),
+                menuClassName: "delete-account-menu-item",
+                menuItemDisabled: !selectedProject,
               },
               {
                 label: "حذف پروژه",

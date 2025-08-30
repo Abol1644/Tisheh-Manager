@@ -12,6 +12,7 @@ import AddProjectModal from '@/pages/Dashboard/Sales/Modals/Projects/AddProjects
 import DeleteProjectModal from '@/pages/Dashboard/Sales/Modals/Projects/DeleteProject';
 import ConnectProjectModal from '@/pages/Dashboard/Sales/Modals/Projects/ConnectProject';
 import DisconnectProjectModal from '@/pages/Dashboard/Sales/Modals/Projects/DisconnectProject';
+import RecalculateProjectModal from '@/pages/Dashboard/Sales/Modals/Projects/RecalculateProject';
 import BaseModal from '@/pages/Dashboard/Sales/Modals/BaseModal';
 
 import {
@@ -59,6 +60,7 @@ export default function Sale() {
     projectDelete: false,
     projectConnect: false,
     projectDisconnect: false,
+    projectRecalculate: false,
   });
 
   const [categories, setCategories] = useState<CategorySale[]>([]);
@@ -357,6 +359,10 @@ export default function Sale() {
       <ConnectProjectModal
         open={modals.projectConnect}
         onClose={() => closeModal('projectConnect')}
+      />
+      <RecalculateProjectModal
+        open={modals.projectRecalculate}
+        onClose={() => closeModal('projectRecalculate')}
       />
       <DisconnectProjectModal
         open={modals.projectDisconnect}

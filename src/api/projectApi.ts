@@ -123,6 +123,23 @@ export const editProject = async (project: Project): Promise<Project> => {
   }
 };
 
+export const reCalculateProject = async (project: Project): Promise<Project> => {
+  try {
+    const response = await apiClient.put<Project>("/Projects/UpdateProccessingDistance", {
+      projectId: project.id,
+      longitude: project.longitude,
+      latitude: project.latitude,
+      elevation: project.elevation,
+    });
+    console.log("✏ Edit Project responce: " , response.data)
+    return response.data;
+  } catch (error: any) {
+    console.error("Edit Project API error: ", error);
+
+    const serverMessage = error.response?.data || "Edit Project failed";
+    throw new Error(serverMessage);
+  }
+};
 
 export const deleteProjects = async (projectIds: number[]): Promise<void> => {
   try {
