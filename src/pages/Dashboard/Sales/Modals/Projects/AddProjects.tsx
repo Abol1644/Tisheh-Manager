@@ -84,21 +84,8 @@ export default React.memo(function AddProjectModal({ open, onClose }: ModalProps
   const [confirmProjectDelete, setConfirmProjectDelete] = React.useState(false);
   // Added project store for optimistic updates after project creation
   const { mode } = useThemeMode()
-  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
-  const openPhoneMenu = Boolean(anchorEl);
   const { showSnackbar } = useSnackbar();
   const { addProjectToUnconnectedList, selectedProject, replaceProject } = useProjectStore();
-
-  const handlePhoneMenuClick = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
-  const handlePhoneMenuClose = () => {
-    setAnchorEl(null);
-  };
-  const handleChangePhoneType = (type: 'mobile' | 'landline') => {
-    setPhoneType(type);
-    setAnchorEl(null);
-  };
 
   const closeWindow = () => {
     // Clean up search state when closing
@@ -403,48 +390,12 @@ export default React.memo(function AddProjectModal({ open, onClose }: ModalProps
                         }}
                       />
                       <PhoneField
-                        label={<span>{phoneType === 'mobile' ? 'شماره موبایل' : 'شماره تلفن ثابت'}</span>}
+                        label="شماره تماس"
                         variant="outlined"
                         value={phoneNumber}
                         onChange={(e) => setPhoneNumber(e.target.value)}
                         fullWidth
-                        InputProps={{
-                          endAdornment: (
-                            <InputAdornment position="end">
-                              <IconButton
-                                aria-label="toggle password visibility"
-                                onClick={handlePhoneMenuClick}
-                                edge="end"
-                              >
-                                <MoreHorizRoundedIcon />
-                              </IconButton>
-                            </InputAdornment>
-                          )
-                        }}
                       />
-                      <Menu
-                        id="phone-menu"
-                        anchorEl={anchorEl}
-                        open={openPhoneMenu}
-                        onClose={handlePhoneMenuClose}
-                        anchorOrigin={{
-                          vertical: 'bottom',
-                          horizontal: 'left',
-                        }}
-                        transformOrigin={{
-                          vertical: 'top',
-                          horizontal: 'left',
-                        }}
-                      >
-                        <MenuItem onClick={() => handleChangePhoneType('mobile')}>
-                          <StayCurrentPortraitRoundedIcon sx={{ mr: 1 }} />
-                          موبایل
-                        </MenuItem>
-                        <MenuItem onClick={() => handleChangePhoneType('landline')}>
-                          <LocalPhoneRoundedIcon sx={{ mr: 1 }} />
-                          خط ثابت
-                        </MenuItem>
-                      </Menu>
                       <TextField
                         id="address-display"
                         label="آدرس"
