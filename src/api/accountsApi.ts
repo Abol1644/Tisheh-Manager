@@ -41,7 +41,8 @@ export const addSaleAccount = async (
   genderId: number,
   nationalId: string,
   foreignNational: boolean,
-  phoneNumbers: string[]
+  phoneNumbers: string[],
+  phoneNumberDescriptions: string[],
 ): Promise<Account> => {
   try {
     // Convert Persian digits to English digits
@@ -61,7 +62,7 @@ export const addSaleAccount = async (
 
     const accountsSaleContactDetails = phoneNumbers
       .filter(phoneNumber => phoneNumber && phoneNumber.trim() !== '')
-      .map((phoneNumber) => {
+      .map((phoneNumber, index) => {
         const englishNumber = convertPersianToEnglish(phoneNumber);
         console.log("Converting phone number:", phoneNumber, "->", englishNumber);
         
@@ -75,11 +76,11 @@ export const addSaleAccount = async (
         console.log("Final numberId:", numberId, "Original:", englishNumber);
         
         return {
-          ididentity: 0,
           countryNumber: 98,
-          provinceNumber: 0,
+          provinceNumber: 21,
           numberId: 1,
-          numberDescription: null
+          numberDescription: englishNumber,
+          description: phoneNumberDescriptions[index] || ''
         };
       });
 
@@ -88,7 +89,7 @@ export const addSaleAccount = async (
       title: title,
       description: description,
       contactId: 0,
-      contactGroupId: 0,
+      contactGroupId: 1,
       codeAccConnect: 0,
       genderId: genderId,
       nationalId: nationalId,

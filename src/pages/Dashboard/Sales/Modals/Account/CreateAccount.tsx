@@ -29,13 +29,10 @@ import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
 import { TransitionGroup } from 'react-transition-group'; // Import TransitionGroup
 
 import Btn from '@/components/elements/Btn';
-import { flex, width, height } from '@/models/ReadyStyles';
+import { flex, width, height, gap } from '@/models/ReadyStyles';
 import PhoneField from '@/components/elements/PhoneField';
 import { addSaleAccount } from '@/api/accountsApi';
 import { useSnackbar } from '@/contexts/SnackBarContext';
-
-const MemoTextField = React.memo(TextField);
-const MemoPhoneField = React.memo(PhoneField);
 
 interface AccountModalProps {
   open: boolean;
@@ -64,8 +61,7 @@ export default React.memo(function CreateAccountModal({ open, onClose }: Account
   const [formFields, setFormFields] = React.useState<FormField[]>(() => [
     { id: generateId(), phoneNumber: '', infoText: '', phoneNumberError: false, phoneNumberHelperText: '' },
   ]);
-  console.log("🚀 ~ CreateAccountModal ~ formFields:", formFields)
-  
+
   const { showSnackbar } = useSnackbar();
 
   const handleCheckChange = React.useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
@@ -110,7 +106,6 @@ export default React.memo(function CreateAccountModal({ open, onClose }: Account
     id: string,
   ) => {
     const { value } = event.target;
-    console.log("handlePhoneNumberChange called with:", value, "for id:", id);
     setFormFields((prev) =>
       prev.map((field) => {
         if (field.id === id) {
@@ -140,7 +135,7 @@ export default React.memo(function CreateAccountModal({ open, onClose }: Account
 
   const handleSave = async () => {
     setLoading(true);
-    
+
     try {
       // Map gender to genderId
       const genderMap: Record<string, number> = {
@@ -149,9 +144,9 @@ export default React.memo(function CreateAccountModal({ open, onClose }: Account
         'company': 3
       };
 
-      // Extract phone numbers
+      // Extract phone numbers and descriptions
       const phoneNumbers = formFields.map(field => field.phoneNumber);
-      console.log("🔢 ~ handleSave ~ phoneNumbers:", phoneNumbers)
+      const phoneNumberDescriptions = formFields.map(field => field.infoText);
 
       await addSaleAccount(
         accountTitle,
@@ -159,7 +154,8 @@ export default React.memo(function CreateAccountModal({ open, onClose }: Account
         genderMap[gender] || 1,
         checked ? '' : nationalId,
         checked,
-        phoneNumbers
+        phoneNumbers,
+        phoneNumberDescriptions
       );
       showSnackbar('حساب با موفقیت ایجاد شد', 'success');
       handleCancel(); // Reset form and close
@@ -203,7 +199,7 @@ export default React.memo(function CreateAccountModal({ open, onClose }: Account
   //   }
 
   //   setLoading(true);
-    
+
   //   try {
   //     // Map gender to genderId
   //     const genderMap: Record<string, number> = {
@@ -319,7 +315,7 @@ export default React.memo(function CreateAccountModal({ open, onClose }: Account
                     <ToggleButton sx={{ width: '60px', borderRadius: '12px' }} value="women">خانم</ToggleButton>
                     <ToggleButton sx={{ width: '60px', borderRadius: '12px' }} value="company">شرکت</ToggleButton>
                   </ToggleButtonGroup>
-                  <MemoTextField
+                  <TextField
                     id="account-title"
                     label="عنوان حساب"
                     value={accountTitle}
@@ -359,7 +355,6 @@ export default React.memo(function CreateAccountModal({ open, onClose }: Account
                                 }
                                 value={field.phoneNumber}
                                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                                  console.log("TextField onChange:", e.target.value, "for field:", field.id);
                                   handlePhoneNumberChange(e, field.id);
                                 }}
                                 error={field.phoneNumberError}
@@ -368,7 +363,7 @@ export default React.memo(function CreateAccountModal({ open, onClose }: Account
                               />
                             </Grid>
                             <Grid sx={{ ...flex.one }}>
-                              <MemoTextField
+                              <TextField
                                 margin="dense"
                                 label={
                                   formFields.length === 1
@@ -407,18 +402,15 @@ export default React.memo(function CreateAccountModal({ open, onClose }: Account
                     </TransitionGroup>
                   </Box>
                   <Divider sx={{ m: 2 }} />
-                  <Box sx={{ ...flex.column, ...width.full }}>
-                    <Box sx={{ ...flex.row, gap: '10px' }}>
-                      <MemoTextField
-                        id="national-id"
-                        label="کد ملی"
-                        value={nationalId}
-                        onChange={(e) => setNationalId(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                        sx={{ ...flex.half }}
-                        disabled={checked}
-                      />
-
-                    </Box>
+                  <Box sx={{ ...flex.row, ...width.full, ...gap.ten }}>
+                    <TextField
+                      id="national-id"
+                      label="کد ملی"
+                      value={nationalId}
+                      onChange={(e) => setNationalId(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                      sx={{ ...width.half }}
+                      disabled={checked}
+                    />
                     <FormControlLabel
                       label="اتباع خارجی"
                       control={
@@ -427,12 +419,13 @@ export default React.memo(function CreateAccountModal({ open, onClose }: Account
                           onChange={handleCheckChange}
                         />
                       }
-                      sx={{ width: 'fit-content', mt: 1 }}
+                      sx={{ ...width.half }}
                     />
+
                   </Box>
                 </Box>
                 <Divider sx={{ mt: 2, mx: 2 }} />
-                <MemoTextField
+                <TextField
                   id="account-description"
                   label="توضیحات حساب"
                   value={accountDescription}
@@ -445,11 +438,11 @@ export default React.memo(function CreateAccountModal({ open, onClose }: Account
                   <Btn variant='contained' color='error' onClick={handleCancel} sx={{ px: 4 }}>
                     انصراف
                   </Btn>
-                  <Btn 
-                    variant='contained' 
-                    color='success' 
-                    onClick={handleSave} 
-                    endIcon={<DoneAllRoundedIcon />} 
+                  <Btn
+                    variant='contained'
+                    color='success'
+                    onClick={handleSave}
+                    endIcon={<DoneAllRoundedIcon />}
                     disabled={loading}
                     sx={{ px: 4 }}
                   >
