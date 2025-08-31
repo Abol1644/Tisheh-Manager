@@ -17,7 +17,8 @@ import {
   Zoom,
   ToggleButtonGroup,
   ToggleButton,
-  Grid
+  Grid,
+  CircularProgress
 } from '@mui/material';
 
 import CloseIcon from '@mui/icons-material/Close';
@@ -355,7 +356,7 @@ export default React.memo(function CreateAccountModal({ open, onClose }: { open:
                           onChange={handleCheckChange}
                         />
                       }
-                      sx={{ ...width.half }}
+                      
                     />
 
                   </Box>
@@ -378,11 +379,11 @@ export default React.memo(function CreateAccountModal({ open, onClose }: { open:
                     variant='contained'
                     color='success'
                     onClick={handleSave}
-                    endIcon={<DoneAllRoundedIcon />}
+                    endIcon={loading ? <CircularProgress size={24} color='inherit' /> : <DoneAllRoundedIcon />}
                     disabled={loading}
                     sx={{ px: 4 }}
                   >
-                    {loading ? 'در حال ایجاد...' : 'ایجاد'}
+                    ایجاد
                   </Btn>
                 </Box>
               </Box>
