@@ -122,13 +122,8 @@ export const editProject = async (newLocation: boolean, project: Project): Promi
 
 export const reCalculateProject = async (project: Project): Promise<Project> => {
   try {
-    const response = await apiClient.put<Project>("/Projects/UpdateProccessingDistance", {
-      projectId: project.id,
-      longitude: project.longitude,
-      latitude: project.latitude,
-      elevation: project.elevation,
-    });
-    console.log("✏ Edit Project responce: " , response.data)
+    const response = await apiClient.put<Project>(`/Projects/UpdateProccessingDistance?ProjectId=${project.id}&Latitude=${project.latitude}&Longitude=${project.longitude}&Elevation=${project.elevation}`);
+    console.log("✏ Edit Project responce: ", response)
     return response.data;
   } catch (error: any) {
     console.error("Edit Project API error: ", error);
@@ -181,7 +176,7 @@ export const connectProject = async (
       .split(',')
       .filter(code => code.trim() !== '');
     
-    if (!currentCodes.includes(account.codeAcc)) {
+    if (!currentCodes.includes(account.codeAcc.toString())) {
       updatedProject.codeAccConnect += account.codeAcc + ",";
     }
     
@@ -241,7 +236,7 @@ export const connectMultipleProjects = async (
         .split(',')
         .filter(code => code.trim() !== '');
       
-      if (!currentCodes.includes(account.codeAcc)) {
+      if (!currentCodes.includes(account.codeAcc.toString())) {
         updatedProject.codeAccConnect += account.codeAcc + ",";
       }
       
