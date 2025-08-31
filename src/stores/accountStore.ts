@@ -8,6 +8,7 @@ interface AccountState {
   setSelectedAccount: (account: Account | null) => void;
   addAccount: (account: Account) => void;
   eraseAccount: (accountId: string) => void;
+  replaceAccount: (updatedAccount: Account) => void;
 }
 
 export const useAccountStore = create<AccountState>((set, get) => ({
@@ -23,5 +24,11 @@ export const useAccountStore = create<AccountState>((set, get) => ({
     selectedAccount: state.selectedAccount && state.selectedAccount.codeAcc === accountId 
       ? null 
       : state.selectedAccount
+  })),
+  replaceAccount: (updatedAccount) => set((state) => ({
+    accounts: state.accounts.map(acc => 
+      acc.codeAcc === updatedAccount.codeAcc ? updatedAccount : acc
+    ),
+    selectedAccount: state.selectedAccount?.codeAcc === updatedAccount.codeAcc ? updatedAccount : state.selectedAccount
   })),
 }));

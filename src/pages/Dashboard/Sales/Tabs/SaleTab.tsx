@@ -54,6 +54,7 @@ export default function Sale() {
 
   const [modals, setModals] = useState({
     accountAdd: false,
+    accountEdit: false,
     accountDelete: false,
     connectToProject: false,
     projectAdd: false,
@@ -326,6 +327,12 @@ export default function Sale() {
       <CreateAccountModal
         open={modals.accountAdd}
         onClose={() => closeModal('accountAdd')}
+        formMode="create"
+      />
+      <CreateAccountModal
+        open={modals.accountEdit}
+        onClose={() => closeModal('accountEdit')}
+        formMode="edit"
       />
       <ConnectToProjectModal
         open={modals.connectToProject}

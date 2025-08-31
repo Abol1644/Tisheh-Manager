@@ -81,9 +81,6 @@ export const addProject = async (
 
 export const findProject = async (projectId: number): Promise<Project> => {
   try {
-    // const response = await apiClient.post<Project>("/Projects/Find", {
-    //   Id: projectId,
-    // });
     const response = await apiClient.post<Project>(`/Projects/Find?Id=${projectId}`);
     return response.data;
   } catch (error: any) {

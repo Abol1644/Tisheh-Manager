@@ -27,13 +27,20 @@ import ContactsRoundedIcon from '@mui/icons-material/ContactsRounded';
 import DoneAllRoundedIcon from '@mui/icons-material/DoneAllRounded';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
-import { TransitionGroup } from 'react-transition-group'; 
+import { TransitionGroup } from 'react-transition-group';
 
 import Btn from '@/components/elements/Btn';
 import { flex, width, height, gap } from '@/models/ReadyStyles';
-import { addSaleAccount } from '@/api/accountsApi';
+import { addSaleAccount, editAccount, findAccount } from '@/api/accountsApi';
 import { useSnackbar } from '@/contexts/SnackBarContext';
 import { useAccountStore } from '@/stores';
+import { Account, AccountSale } from '@/models';
+
+interface ModalProps {
+  open: boolean;
+  onClose: () => void;
+  formMode: 'create' | 'edit';
+}
 
 interface FormField {
   id: string;
@@ -47,19 +54,21 @@ function generateId() {
   return `${Date.now()}-${Math.floor(Math.random() * 1000000)}`;
 }
 
-export default React.memo(function CreateAccountModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+export default React.memo(function CreateAccountModal({ open, onClose, formMode }: ModalProps) {
   const [gender, setGender] = React.useState('men');
   const [checked, setChecked] = React.useState(false);
   const [accountTitle, setAccountTitle] = React.useState('');
   const [nationalId, setNationalId] = React.useState('');
   const [accountDescription, setAccountDescription] = React.useState('');
   const [loading, setLoading] = React.useState(false);
+  const [findingAccount, setFindingAccount] = React.useState(false);
+  const [account, setAccount] = React.useState<AccountSale | null>(null);
   const [formFields, setFormFields] = React.useState<FormField[]>(() => [
     { id: generateId(), phoneNumber: '', infoText: '', phoneNumberError: false, phoneNumberHelperText: '' },
   ]);
 
   const { showSnackbar } = useSnackbar();
-  const { addAccount } = useAccountStore();
+  const { selectedAccount, addAccount, replaceAccount } = useAccountStore();
 
   const handleCheckChange = React.useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     setChecked(event.target.checked);
@@ -89,6 +98,7 @@ export default React.memo(function CreateAccountModal({ open, onClose }: { open:
     setNationalId('');
     setAccountDescription('');
     setLoading(false);
+    setFindingAccount(false);
     setFormFields([
       { id: generateId(), phoneNumber: '', infoText: '', phoneNumberError: false, phoneNumberHelperText: '' },
     ]);
@@ -133,8 +143,39 @@ export default React.memo(function CreateAccountModal({ open, onClose }: { open:
   const handleSave = async () => {
     setLoading(true);
 
-    try {
-      // Map gender to genderId
+    if (formMode === 'create') {
+      try {
+        // Map gender to genderId
+        const genderMap: Record<string, number> = {
+          'men': 1,
+          'women': 2,
+          'company': 3
+        };
+
+        // Extract phone numbers and descriptions
+        const phoneNumbers = formFields.map(field => field.phoneNumber);
+        const phoneNumberDescriptions = formFields.map(field => field.infoText);
+
+        await addSaleAccount(
+          accountTitle,
+          accountDescription,
+          genderMap[gender] || 1,
+          checked ? '' : nationalId,
+          checked,
+          phoneNumbers,
+          phoneNumberDescriptions
+        ).then((account) => {
+          addAccount(account);
+          showSnackbar('حساب با موفقیت ایجاد شد', 'success');
+          handleCancel();
+        });
+      } catch (error: any) {
+        console.error('Error creating account:', error);
+        showSnackbar(error.message || 'خطا در ایجاد حساب', 'error');
+      } finally {
+        setLoading(false);
+      }
+    } else {
       const genderMap: Record<string, number> = {
         'men': 1,
         'women': 2,
@@ -145,26 +186,92 @@ export default React.memo(function CreateAccountModal({ open, onClose }: { open:
       const phoneNumbers = formFields.map(field => field.phoneNumber);
       const phoneNumberDescriptions = formFields.map(field => field.infoText);
 
-      await addSaleAccount(
-        accountTitle,
-        accountDescription,
-        genderMap[gender] || 1,
-        checked ? '' : nationalId,
-        checked,
-        phoneNumbers,
-        phoneNumberDescriptions
-      ).then((account) => {
-        addAccount(account);
-        showSnackbar('حساب با موفقیت ایجاد شد', 'success');
+      const updatedAccount = {
+        ...account,
+        title: accountTitle,
+        description: accountDescription,
+        genderId: genderMap[gender] || 1,
+        nationalId: nationalId,
+        foreignNational: checked,
+        accountsSaleContactDetails: phoneNumbers.map((phoneNumber, index) => ({
+          ...account?.accountsSaleContactDetails[index],
+          countryNumber: 98,
+          provinceNumber: 21,
+          numberId: 1,
+          numberDescription: parseInt(phoneNumber),
+          description: phoneNumberDescriptions[index] || null
+        }))
+      };
+      console.log("⬆ ~ handleSave ~ updatedAccount:", updatedAccount)
+      // editAccount(updatedAccount).then((updatedAccount) => {
+      editAccount(account).then((updatedAccount) => {
+        console.log("💕 ~ handleSave ~ updatedAccount:", updatedAccount)
+        replaceAccount(updatedAccount);
+        showSnackbar('حساب با موفقیت ویرایش شد', 'success');
+        setLoading(false);
         handleCancel();
+      }).catch((error) => {
+        console.error('Error editing account:', error);
+        showSnackbar(error.message || 'خطا در ویرایش حساب', 'error');
+        setLoading(false);
       });
-    } catch (error: any) {
-      console.error('Error creating account:', error);
-      showSnackbar(error.message || 'خطا در ایجاد حساب', 'error');
-    } finally {
-      setLoading(false);
+
     }
   };
+
+  React.useEffect(() => {
+    if (open && formMode === 'edit' && selectedAccount && selectedAccount.codeAcc) {
+      console.log("finding account");
+      setFindingAccount(true);
+      showSnackbar('درحال دریافت اطلاعات حساب', 'info');
+      findAccount(selectedAccount.codeAcc).then((foundAccount) => {
+        console.log("🚀 ~ CreateAccountModal ~ foundAccount:", foundAccount)
+        if (foundAccount) {
+          setAccount(foundAccount);
+          
+          // Fill form fields with found account data
+          setAccountTitle(foundAccount.title || '');
+          setAccountDescription(foundAccount.description || '');
+          setNationalId(foundAccount.nationalId || '');
+          setChecked(foundAccount.foreignNational || false);
+          
+          // Map genderId to gender string
+          const genderIdMap: Record<number, string> = {
+            1: 'men',
+            2: 'women', 
+            3: 'company'
+          };
+          setGender(genderIdMap[foundAccount.genderId] || 'men');
+          
+          // Fill phone numbers and descriptions
+          if (foundAccount.accountsSaleContactDetails && foundAccount.accountsSaleContactDetails.length > 0) {
+            const contactFields = foundAccount.accountsSaleContactDetails.map(contact => ({
+              id: generateId(),
+              phoneNumber: contact.numberDescription?.toString() || '',
+              infoText: contact.description || '',
+              phoneNumberError: false,
+              phoneNumberHelperText: ''
+            }));
+            setFormFields(contactFields);
+          } else {
+            // If no contact details, keep default empty field
+            setFormFields([
+              { id: generateId(), phoneNumber: '', infoText: '', phoneNumberError: false, phoneNumberHelperText: '' }
+            ]);
+          }
+          
+          setFindingAccount(false);
+          showSnackbar('اطلاعات حساب دریافت شد', 'success');
+        } else {
+          console.error("Error: Account not found");
+        }
+      }).catch((error) => {
+        setFindingAccount(false);
+        showSnackbar('خطا در دریافت اطلاعات حساب', 'error');
+        console.error("Error finding account:", error);
+      });
+    }
+  }, [open, formMode, selectedAccount]);
 
   return (
     <React.Fragment>
@@ -370,7 +477,7 @@ export default React.memo(function CreateAccountModal({ open, onClose }: { open:
                   minRows={1}
                 />
                 <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', mt: 1, height: '46px' }}>
-                  <Btn variant='contained' color='error' onClick={handleCancel} sx={{ px: 4 }}>
+                  <Btn variant='contained' color='error' onClick={handleCancel} sx={{ px: 2 }}>
                     انصراف
                   </Btn>
                   <Btn
@@ -379,9 +486,9 @@ export default React.memo(function CreateAccountModal({ open, onClose }: { open:
                     onClick={handleSave}
                     endIcon={loading ? <CircularProgress size={24} color='inherit' /> : <DoneAllRoundedIcon />}
                     disabled={loading}
-                    sx={{ px: 4 }}
+                    sx={{ px: 2 }}
                   >
-                    ایجاد
+                    {formMode === 'create' ? 'ایجاد' : 'ویرایش'}
                   </Btn>
                 </Box>
               </Box>

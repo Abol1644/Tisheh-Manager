@@ -308,6 +308,7 @@ export function ProductSelect(props: any) {
   const handleAccountChange = useCallback(async (value: any) => {
     const account = value as Account | null;
     setSelectedAccount(account);
+    console.log("🚀 ~ ProductSelect ~ account:", account)
     setSelectedProject(null);
     setSelectedWarehouse(null);
     // Updated to use global project store for connected projects
@@ -749,7 +750,7 @@ export function ProductSelect(props: any) {
               {
                 label: "ویرایش حساب",
                 icon: <EditRoundedIcon color="info" sx={{ mr: 1 }} />,
-                onClick: () => props.openModal("accountAdd"),
+                onClick: () => props.openModal("accountEdit"),
                 menuClassName: "details-account-menu-item",
                 menuItemDisabled: !selectedAccount,
               },
