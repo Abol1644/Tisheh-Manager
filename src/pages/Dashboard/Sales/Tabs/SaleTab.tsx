@@ -7,6 +7,7 @@ import { TabPanel, CustomTab } from '@/pages/Dashboard/Sales/SideMenu/SideMenu';
 import { ProductSelect } from '@/pages/Dashboard/Sales/ProductSelect';
 import { Cart } from '@/pages/Dashboard/Sales/SabadKharid';
 import CreateAccountModal from '@/pages/Dashboard/Sales/Modals/Account/CreateAccount';
+import DeleteAccountModal from '@/pages/Dashboard/Sales/Modals/Account/DeleteAccount';
 import ConnectToProjectModal from '@/pages/Dashboard/Sales/Modals/Account/ConnectToProject';
 import AddProjectModal from '@/pages/Dashboard/Sales/Modals/Projects/AddProjects';
 import DeleteProjectModal from '@/pages/Dashboard/Sales/Modals/Projects/DeleteProject';
@@ -330,17 +331,9 @@ export default function Sale() {
         open={modals.connectToProject}
         onClose={() => closeModal('connectToProject')}
       />
-      <BaseModal
+      <DeleteAccountModal
         open={modals.accountDelete}
         onClose={() => closeModal('accountDelete')}
-        title='حذف حساب'
-        buttonText='حذف'
-        info='حساب مورد نظر حذف شود؟'
-        width='400px'
-        windowColor='error'
-        buttonColor='warning'
-        buttonEndIcon={<DeleteForeverRoundedIcon />}
-        buttonFunc={() => closeModal('accountDelete')}
       />
       <AddProjectModal
         open={modals.projectAdd}

@@ -34,6 +34,7 @@ export default function DeleteAccountModal({ open, onClose }: DeleteAccountModal
       deleteAccount(selectedAccount.codeAcc).then(() => {
         eraseAccount(selectedAccount.codeAcc);
         showSnackbar('حساب با موفقیت حذف شد', 'success');
+        onClose();
       }).catch((error) => {
         console.error('Error deleting account:', error);
         showSnackbar('حذف حساب ناموفق بود', 'error');
