@@ -176,7 +176,7 @@ export default function SignIn({ onLoginSuccess }: SignInProps) {
             backgroundColor: 'transparent',
             backdropFilter: mode === 'dark' ? 'blur(5px) brightness(3)' : 'blur(4px)',
             // border: '1px solid rgba(255, 255, 255, 0.23)',
-            boxShadow: '0 30px 10px -20px rgba(0, 0, 0, 0.23), inset 0 0 15px 5px var(--border-main)',
+            boxShadow: '0 30px 10px -20px rgba(0, 0, 0, 0.23), inset 0 0 10px 0px var(--border-main)',
             position: 'relative',
           }}
         >

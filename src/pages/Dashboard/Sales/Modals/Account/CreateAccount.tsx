@@ -31,6 +31,8 @@ import { TransitionGroup } from 'react-transition-group'; // Import TransitionGr
 import Btn from '@/components/elements/Btn';
 import { flex, width, height } from '@/models/ReadyStyles';
 import PhoneField from '@/components/elements/PhoneField';
+import { addSaleAccount } from '@/api/accountsApi';
+import { useSnackbar } from '@/contexts/SnackBarContext';
 
 const MemoTextField = React.memo(TextField);
 const MemoPhoneField = React.memo(PhoneField);
@@ -55,9 +57,16 @@ function generateId() {
 export default React.memo(function CreateAccountModal({ open, onClose }: AccountModalProps) {
   const [gender, setGender] = React.useState('men');
   const [checked, setChecked] = React.useState(false);
+  const [accountTitle, setAccountTitle] = React.useState('');
+  const [nationalId, setNationalId] = React.useState('');
+  const [accountDescription, setAccountDescription] = React.useState('');
+  const [loading, setLoading] = React.useState(false);
   const [formFields, setFormFields] = React.useState<FormField[]>(() => [
     { id: generateId(), phoneNumber: '', infoText: '', phoneNumberError: false, phoneNumberHelperText: '' },
   ]);
+  console.log("🚀 ~ CreateAccountModal ~ formFields:", formFields)
+  
+  const { showSnackbar } = useSnackbar();
 
   const handleCheckChange = React.useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     setChecked(event.target.checked);
@@ -81,6 +90,12 @@ export default React.memo(function CreateAccountModal({ open, onClose }: Account
 
   const handleCancel = () => {
     onClose();
+    setGender('men');
+    setChecked(false);
+    setAccountTitle('');
+    setNationalId('');
+    setAccountDescription('');
+    setLoading(false);
     setFormFields([
       { id: generateId(), phoneNumber: '', infoText: '', phoneNumberError: false, phoneNumberHelperText: '' },
     ]);
@@ -95,29 +110,15 @@ export default React.memo(function CreateAccountModal({ open, onClose }: Account
     id: string,
   ) => {
     const { value } = event.target;
+    console.log("handlePhoneNumberChange called with:", value, "for id:", id);
     setFormFields((prev) =>
       prev.map((field) => {
         if (field.id === id) {
-          const numericValue = value.replace(/\D/g, '');
-          let phoneNumberError = false;
-          let phoneNumberHelperText = '';
-
-          if (numericValue.length > 0 && numericValue.length !== 11) {
-            phoneNumberError = true;
-            phoneNumberHelperText = 'Phone number must be exactly 11 digits.';
-          } else if (numericValue.length === 11) {
-            phoneNumberError = false;
-            phoneNumberHelperText = '';
-          } else {
-            phoneNumberError = false;
-            phoneNumberHelperText = '';
-          }
-
           return {
             ...field,
-            phoneNumber: numericValue,
-            phoneNumberError,
-            phoneNumberHelperText,
+            phoneNumber: value, // Store the raw input value
+            phoneNumberError: false,
+            phoneNumberHelperText: '',
           };
         }
         return field;
@@ -137,28 +138,100 @@ export default React.memo(function CreateAccountModal({ open, onClose }: Account
     );
   };
 
-  const handleSave = () => {
-    const hasErrors = formFields.some(
-      (field) => field.phoneNumber.length !== 11 || field.phoneNumberError,
-    );
+  const handleSave = async () => {
+    setLoading(true);
+    
+    try {
+      // Map gender to genderId
+      const genderMap: Record<string, number> = {
+        'men': 1,
+        'women': 2,
+        'company': 3
+      };
 
-    if (hasErrors) {
-      const updatedFields = formFields.map((field) => {
-        if (field.phoneNumber.length !== 11) {
-          return {
-            ...field,
-            phoneNumberError: true,
-            phoneNumberHelperText: 'Phone number must be exactly 11 digits.',
-          };
-        }
-        return field;
-      });
-      setFormFields(updatedFields);
-      return;
+      // Extract phone numbers
+      const phoneNumbers = formFields.map(field => field.phoneNumber);
+      console.log("🔢 ~ handleSave ~ phoneNumbers:", phoneNumbers)
+
+      await addSaleAccount(
+        accountTitle,
+        accountDescription,
+        genderMap[gender] || 1,
+        checked ? '' : nationalId,
+        checked,
+        phoneNumbers
+      );
+      showSnackbar('حساب با موفقیت ایجاد شد', 'success');
+      handleCancel(); // Reset form and close
+    } catch (error: any) {
+      console.error('Error creating account:', error);
+      showSnackbar(error.message || 'خطا در ایجاد حساب', 'error');
+    } finally {
+      setLoading(false);
     }
-
-    onClose();
   };
+
+  // const handleSaveWithValidation = async () => {
+  //   // Validation
+  //   const hasErrors = formFields.some(
+  //     (field) => field.phoneNumber.length !== 11 || field.phoneNumberError,
+  //   );
+
+  //   if (!accountTitle.trim()) {
+  //     showSnackbar('عنوان حساب الزامی است', 'error');
+  //     return;
+  //   }
+
+  //   if (!checked && (!nationalId.trim() || nationalId.length !== 10)) {
+  //     showSnackbar('کد ملی باید 10 رقم باشد', 'error');
+  //     return;
+  //   }
+
+  //   if (hasErrors) {
+  //     const updatedFields = formFields.map((field) => {
+  //       if (field.phoneNumber.length !== 11) {
+  //         return {
+  //           ...field,
+  //           phoneNumberError: true,
+  //           phoneNumberHelperText: 'شماره تلفن باید 11 رقم باشد',
+  //         };
+  //       }
+  //       return field;
+  //     });
+  //     setFormFields(updatedFields);
+  //     return;
+  //   }
+
+  //   setLoading(true);
+    
+  //   try {
+  //     // Map gender to genderId
+  //     const genderMap: Record<string, number> = {
+  //       'men': 1,
+  //       'women': 2,
+  //       'company': 3
+  //     };
+
+  //     // Extract phone numbers
+  //     const phoneNumbers = formFields.map(field => field.phoneNumber);
+
+  //     await addSaleAccount(
+  //       accountTitle,
+  //       accountDescription,
+  //       genderMap[gender] || 1,
+  //       checked ? '' : nationalId,
+  //       checked,
+  //       phoneNumbers
+  //     );
+  //     showSnackbar('حساب با موفقیت ایجاد شد', 'success');
+  //     handleCancel(); // Reset form and close
+  //   } catch (error: any) {
+  //     console.error('Error creating account:', error);
+  //     showSnackbar(error.message || 'خطا در ایجاد حساب', 'error');
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   return (
     <React.Fragment>
@@ -249,6 +322,8 @@ export default React.memo(function CreateAccountModal({ open, onClose }: Account
                   <MemoTextField
                     id="account-title"
                     label="عنوان حساب"
+                    value={accountTitle}
+                    onChange={(e) => setAccountTitle(e.target.value)}
                     sx={{ width: '100%' }}
                   />
                 </Box>
@@ -274,7 +349,7 @@ export default React.memo(function CreateAccountModal({ open, onClose }: Account
                         <Slide key={field.id} direction="right" mountOnEnter unmountOnExit>
                           <Grid container spacing={1.5} alignItems="center">
                             <Grid sx={{ ...flex.one }}>
-                              <MemoPhoneField
+                              <TextField
                                 autoFocus={index === 0}
                                 margin="dense"
                                 label={
@@ -283,9 +358,10 @@ export default React.memo(function CreateAccountModal({ open, onClose }: Account
                                     : `شماره (${index + 1})`
                                 }
                                 value={field.phoneNumber}
-                                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                                  handlePhoneNumberChange(e, field.id)
-                                }
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                                  console.log("TextField onChange:", e.target.value, "for field:", field.id);
+                                  handlePhoneNumberChange(e, field.id);
+                                }}
                                 error={field.phoneNumberError}
                                 helperText={field.phoneNumberHelperText}
                                 fullWidth
@@ -334,10 +410,12 @@ export default React.memo(function CreateAccountModal({ open, onClose }: Account
                   <Box sx={{ ...flex.column, ...width.full }}>
                     <Box sx={{ ...flex.row, gap: '10px' }}>
                       <MemoTextField
-                        id="account-title"
+                        id="national-id"
                         label="کد ملی"
+                        value={nationalId}
+                        onChange={(e) => setNationalId(e.target.value.replace(/\D/g, '').slice(0, 10))}
                         sx={{ ...flex.half }}
-                        disabled={checked && true}
+                        disabled={checked}
                       />
 
                     </Box>
@@ -357,14 +435,25 @@ export default React.memo(function CreateAccountModal({ open, onClose }: Account
                 <MemoTextField
                   id="account-description"
                   label="توضیحات حساب"
-                  variant='standard'
-                  sx={{ width: '100%' }}
+                  value={accountDescription}
+                  onChange={(e) => setAccountDescription(e.target.value)}
+                  sx={{ mt: 2, width: '100%' }}
                   multiline
-                  rows={3}
+                  minRows={1}
                 />
-                <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1, height: '46px' }}>
-                  <Btn variant='contained' color='success' onClick={handleSave} endIcon={<DoneAllRoundedIcon />} sx={{ px: 4 }}>
-                    ایجاد
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', mt: 1, height: '46px' }}>
+                  <Btn variant='contained' color='error' onClick={handleCancel} sx={{ px: 4 }}>
+                    انصراف
+                  </Btn>
+                  <Btn 
+                    variant='contained' 
+                    color='success' 
+                    onClick={handleSave} 
+                    endIcon={<DoneAllRoundedIcon />} 
+                    disabled={loading}
+                    sx={{ px: 4 }}
+                  >
+                    {loading ? 'در حال ایجاد...' : 'ایجاد'}
                   </Btn>
                 </Box>
               </Box>
