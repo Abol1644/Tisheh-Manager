@@ -173,6 +173,8 @@ export function ProductSelect(props: any) {
   }, [initDone, selectedWarehouse, setCategoryEnable]);
 
   React.useEffect(() => {
+    if (accounts.length > 0) return; // Don't fetch if we already have accounts
+    
     setLoading(true);
     getSaleAccounts()
       .then((accounts) => {
@@ -188,7 +190,7 @@ export function ProductSelect(props: any) {
         showSnackbar(errorMessage, 'error', 5000, <ErrorOutlineRoundedIcon />);
       })
       .finally(() => { setLoading(false) });
-  }, [setAccounts, showSnackbar]);
+  }, [accounts.length, setAccounts, showSnackbar]);
 
   // Updated to use global project store for unconnected projects - only fetch if store is empty
   React.useEffect(() => {

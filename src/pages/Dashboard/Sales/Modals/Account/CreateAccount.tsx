@@ -356,9 +356,7 @@ export default React.memo(function CreateAccountModal({ open, onClose }: { open:
                           onChange={handleCheckChange}
                         />
                       }
-                      
                     />
-
                   </Box>
                 </Box>
                 <Divider sx={{ mt: 2, mx: 2 }} />
