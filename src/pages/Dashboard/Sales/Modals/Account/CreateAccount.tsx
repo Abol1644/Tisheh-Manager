@@ -26,18 +26,13 @@ import ContactsRoundedIcon from '@mui/icons-material/ContactsRounded';
 import DoneAllRoundedIcon from '@mui/icons-material/DoneAllRounded';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
-import { TransitionGroup } from 'react-transition-group'; // Import TransitionGroup
+import { TransitionGroup } from 'react-transition-group'; 
 
 import Btn from '@/components/elements/Btn';
 import { flex, width, height, gap } from '@/models/ReadyStyles';
-import PhoneField from '@/components/elements/PhoneField';
 import { addSaleAccount } from '@/api/accountsApi';
 import { useSnackbar } from '@/contexts/SnackBarContext';
-
-interface AccountModalProps {
-  open: boolean;
-  onClose: () => void;
-}
+import { useAccountStore } from '@/stores';
 
 interface FormField {
   id: string;
@@ -51,7 +46,7 @@ function generateId() {
   return `${Date.now()}-${Math.floor(Math.random() * 1000000)}`;
 }
 
-export default React.memo(function CreateAccountModal({ open, onClose }: AccountModalProps) {
+export default React.memo(function CreateAccountModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [gender, setGender] = React.useState('men');
   const [checked, setChecked] = React.useState(false);
   const [accountTitle, setAccountTitle] = React.useState('');
@@ -63,6 +58,7 @@ export default React.memo(function CreateAccountModal({ open, onClose }: Account
   ]);
 
   const { showSnackbar } = useSnackbar();
+  const { addAccount } = useAccountStore();
 
   const handleCheckChange = React.useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     setChecked(event.target.checked);
@@ -111,7 +107,7 @@ export default React.memo(function CreateAccountModal({ open, onClose }: Account
         if (field.id === id) {
           return {
             ...field,
-            phoneNumber: value, // Store the raw input value
+            phoneNumber: value,
             phoneNumberError: false,
             phoneNumberHelperText: '',
           };
@@ -156,9 +152,11 @@ export default React.memo(function CreateAccountModal({ open, onClose }: Account
         checked,
         phoneNumbers,
         phoneNumberDescriptions
-      );
-      showSnackbar('حساب با موفقیت ایجاد شد', 'success');
-      handleCancel(); // Reset form and close
+      ).then((account) => {
+        addAccount(account);
+        showSnackbar('حساب با موفقیت ایجاد شد', 'success');
+        handleCancel();
+      });
     } catch (error: any) {
       console.error('Error creating account:', error);
       showSnackbar(error.message || 'خطا در ایجاد حساب', 'error');
@@ -166,68 +164,6 @@ export default React.memo(function CreateAccountModal({ open, onClose }: Account
       setLoading(false);
     }
   };
-
-  // const handleSaveWithValidation = async () => {
-  //   // Validation
-  //   const hasErrors = formFields.some(
-  //     (field) => field.phoneNumber.length !== 11 || field.phoneNumberError,
-  //   );
-
-  //   if (!accountTitle.trim()) {
-  //     showSnackbar('عنوان حساب الزامی است', 'error');
-  //     return;
-  //   }
-
-  //   if (!checked && (!nationalId.trim() || nationalId.length !== 10)) {
-  //     showSnackbar('کد ملی باید 10 رقم باشد', 'error');
-  //     return;
-  //   }
-
-  //   if (hasErrors) {
-  //     const updatedFields = formFields.map((field) => {
-  //       if (field.phoneNumber.length !== 11) {
-  //         return {
-  //           ...field,
-  //           phoneNumberError: true,
-  //           phoneNumberHelperText: 'شماره تلفن باید 11 رقم باشد',
-  //         };
-  //       }
-  //       return field;
-  //     });
-  //     setFormFields(updatedFields);
-  //     return;
-  //   }
-
-  //   setLoading(true);
-
-  //   try {
-  //     // Map gender to genderId
-  //     const genderMap: Record<string, number> = {
-  //       'men': 1,
-  //       'women': 2,
-  //       'company': 3
-  //     };
-
-  //     // Extract phone numbers
-  //     const phoneNumbers = formFields.map(field => field.phoneNumber);
-
-  //     await addSaleAccount(
-  //       accountTitle,
-  //       accountDescription,
-  //       genderMap[gender] || 1,
-  //       checked ? '' : nationalId,
-  //       checked,
-  //       phoneNumbers
-  //     );
-  //     showSnackbar('حساب با موفقیت ایجاد شد', 'success');
-  //     handleCancel(); // Reset form and close
-  //   } catch (error: any) {
-  //     console.error('Error creating account:', error);
-  //     showSnackbar(error.message || 'خطا در ایجاد حساب', 'error');
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
 
   return (
     <React.Fragment>

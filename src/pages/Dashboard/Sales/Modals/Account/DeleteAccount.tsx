@@ -15,8 +15,8 @@ import Btn from '@/components/elements/Btn';
 import CloseIcon from '@mui/icons-material/Close';
 import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
 
-import { findProject, deleteProject } from '@/api';
-import { useProjectStore } from '@/stores';
+import { deleteAccount } from '@/api';
+import { useAccountStore } from '@/stores';
 import { useSnackbar } from '@/contexts/SnackBarContext';
 
 interface DeleteAccountModalProps {
@@ -25,19 +25,18 @@ interface DeleteAccountModalProps {
 }
 
 export default function DeleteAccountModal({ open, onClose }: DeleteAccountModalProps) {
-  const { selectedProject, eraseProject } = useProjectStore();
+  const { selectedAccount, eraseAccount } = useAccountStore();
   const { showSnackbar } = useSnackbar();
 
-  const handleDeleteProject = ()  => {
-    showSnackbar('delteing', 'success');
-    if (selectedProject) {
-      deleteProject(selectedProject.id).then(() => {
-        eraseProject(selectedProject.id);
-        showSnackbar('پروژه با موفقیت حذف شد', 'success');
-        onClose();
+  const handleDeleteAccount = ()  => {
+    showSnackbar('Deleting account...', 'success');
+    if (selectedAccount) {
+      deleteAccount(selectedAccount.codeAcc).then(() => {
+        eraseAccount(selectedAccount.codeAcc);
+        showSnackbar('حساب با موفقیت حذف شد', 'success');
       }).catch((error) => {
-        console.error('Error deleting project:', error);
-        showSnackbar('حذف پروژه ناموفق بود', 'error');
+        console.error('Error deleting account:', error);
+        showSnackbar('حذف حساب ناموفق بود', 'error');
       });
     }
   }
@@ -104,7 +103,7 @@ export default function DeleteAccountModal({ open, onClose }: DeleteAccountModal
                 sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '8px' }}
               >
                 <DeleteRoundedIcon />
-                حذف پروژه
+                حذف حساب
               </Typography>
               <Tooltip title="بستن" placement='top' arrow disableInteractive slots={{ transition: Zoom }} >
                 <IconButton
@@ -118,7 +117,7 @@ export default function DeleteAccountModal({ open, onClose }: DeleteAccountModal
             </Box>
             <Box sx={{ width: '100%', mt: 4 }}>
               <Typography variant="subtitle1" sx={{ mb: 1, }}>
-                آیا میخواهید پروژه پاک شود؟
+                آیا میخواهید حساب پاک شود؟
               </Typography>
               <Box
                 sx={{
@@ -128,7 +127,7 @@ export default function DeleteAccountModal({ open, onClose }: DeleteAccountModal
                   width: '100%'
                 }}
               >
-                <Btn variant="contained" color="error" endIcon={<DeleteRoundedIcon />} onClick={handleDeleteProject} sx={{ height: '42px', mt: 1, justifySelf: 'end' }}>
+                <Btn variant="contained" color="error" endIcon={<DeleteRoundedIcon />} onClick={handleDeleteAccount} sx={{ height: '42px', mt: 1, justifySelf: 'end' }}>
                   حذف
                 </Btn>
               </Box>

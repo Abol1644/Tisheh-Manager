@@ -25,6 +25,7 @@ export const getCustomerAccounts = async (
 
 export const getSaleAccounts = async (): Promise<Account[]> => {
   try {
+    console.warn("Get Sale Accounts API");
     const response = await apiClient.get<Account[]>("/Accounts/GetAllSale");
     return response.data;
   } catch (error: any) {
@@ -101,6 +102,20 @@ export const addSaleAccount = async (
     console.error("Add Sale Account API error: ", error);
     
     const serverMessage = error.response?.data || "Failed to add Sale Account";
+    throw new Error(serverMessage);
+  }
+};
+
+export const deleteAccount = async (accountId: string): Promise<void> => {
+  try {
+    const accountIdInt = parseInt(accountId);
+    const response = await apiClient.delete<void>("/Accounts/Delete", {
+      data: [accountIdInt],
+    });
+    console.log("🗑️ Delete Account response:", response.data);
+  } catch (error: any) {
+    console.error("Delete Account API error:", error);
+    const serverMessage = error.response?.data || "Delete Account failed";
     throw new Error(serverMessage);
   }
 };

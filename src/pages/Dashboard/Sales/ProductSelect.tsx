@@ -103,7 +103,6 @@ export function ProductSelect(props: any) {
   const [alternateShow, setAlternateShow] = useState(false);
   const [dis3show, setDis3Show] = useState(false);
   // Replaced local project state with global project store
-  const [Account, setAccount] = useState<Account[]>([]);
   const [Warehouse, setWarehouse] = useState<Warehouse[]>([]);
   const { 
     selectedProject, 
@@ -115,7 +114,7 @@ export function ProductSelect(props: any) {
     setConnectedProjects,
     setLoading: setProjectsLoading
   } = useProjectStore();
-  const { selectedAccount, setSelectedAccount } = useAccountStore();
+  const { accounts, selectedAccount, setSelectedAccount, setAccounts } = useAccountStore();
   const [loading, setLoading] = useState(true);
   const [isFetchingDistance, setIsFetchingDistance] = useState(false);
   const { mode } = useThemeMode();
@@ -177,7 +176,7 @@ export function ProductSelect(props: any) {
     setLoading(true);
     getSaleAccounts()
       .then((accounts) => {
-        setAccount(accounts);
+        setAccounts(accounts);
       })
       .catch((error) => {
         let errorMessage = 'خطا در دریافت حساب ها';
@@ -189,7 +188,7 @@ export function ProductSelect(props: any) {
         showSnackbar(errorMessage, 'error', 5000, <ErrorOutlineRoundedIcon />);
       })
       .finally(() => { setLoading(false) });
-  }, []);
+  }, [setAccounts, showSnackbar]);
 
   // Updated to use global project store for unconnected projects - only fetch if store is empty
   React.useEffect(() => {
@@ -731,7 +730,7 @@ export function ProductSelect(props: any) {
             multiple={false}
             label="حساب مشتری"
             sx={{ flex: 1, ml: 1 }}
-            options={Account}
+            options={accounts}
             value={selectedAccount}
             onChange={handleAccountChange}
             loading={loading}
