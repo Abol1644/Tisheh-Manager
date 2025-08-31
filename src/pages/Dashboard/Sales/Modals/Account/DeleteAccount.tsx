@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 import {
   Typography,
@@ -8,7 +8,8 @@ import {
   Tooltip,
   Slide,
   Backdrop,
-  Zoom
+  Zoom,
+  CircularProgress
 } from '@mui/material';
 
 import Btn from '@/components/elements/Btn';
@@ -27,17 +28,21 @@ interface DeleteAccountModalProps {
 export default function DeleteAccountModal({ open, onClose }: DeleteAccountModalProps) {
   const { selectedAccount, eraseAccount } = useAccountStore();
   const { showSnackbar } = useSnackbar();
+  const [loading, setLoading] = useState(false);
 
   const handleDeleteAccount = ()  => {
-    showSnackbar('Deleting account...', 'success');
+    setLoading(true);
     if (selectedAccount) {
       deleteAccount(selectedAccount.codeAcc).then(() => {
         eraseAccount(selectedAccount.codeAcc);
         showSnackbar('حساب با موفقیت حذف شد', 'success');
         onClose();
+        setLoading(false);
       }).catch((error) => {
         console.error('Error deleting account:', error);
         showSnackbar('حذف حساب ناموفق بود', 'error');
+      }).finally(() => {
+        setLoading(false);
       });
     }
   }
@@ -128,7 +133,7 @@ export default function DeleteAccountModal({ open, onClose }: DeleteAccountModal
                   width: '100%'
                 }}
               >
-                <Btn variant="contained" color="error" endIcon={<DeleteRoundedIcon />} onClick={handleDeleteAccount} sx={{ height: '42px', mt: 1, justifySelf: 'end' }}>
+                <Btn disabled={loading} variant="contained" color="error" endIcon={loading ? <CircularProgress size={24} color='inherit' /> : <DeleteRoundedIcon />} onClick={handleDeleteAccount} sx={{ height: '42px', mt: 1, justifySelf: 'end' }}>
                   حذف
                 </Btn>
               </Box>
