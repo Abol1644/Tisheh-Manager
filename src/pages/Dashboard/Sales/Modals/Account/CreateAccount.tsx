@@ -18,7 +18,10 @@ import {
   ToggleButtonGroup,
   ToggleButton,
   Grid,
-  CircularProgress
+  CircularProgress,
+  InputAdornment,
+  Menu,
+  MenuItem
 } from '@mui/material';
 
 import CloseIcon from '@mui/icons-material/Close';
@@ -27,6 +30,12 @@ import ContactsRoundedIcon from '@mui/icons-material/ContactsRounded';
 import DoneAllRoundedIcon from '@mui/icons-material/DoneAllRounded';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
+import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded"
+import LocalPhoneRoundedIcon from "@mui/icons-material/LocalPhoneRounded"
+import StayCurrentPortraitRoundedIcon from "@mui/icons-material/StayCurrentPortraitRounded"
+import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
+import ApartmentRoundedIcon from '@mui/icons-material/ApartmentRounded';
+import LocalPrintshopRoundedIcon from '@mui/icons-material/LocalPrintshopRounded';
 import { TransitionGroup } from 'react-transition-group';
 
 import Btn from '@/components/elements/Btn';
@@ -56,6 +65,7 @@ function generateId() {
 
 export default React.memo(function CreateAccountModal({ open, onClose, formMode }: ModalProps) {
   const [gender, setGender] = React.useState('men');
+  const [numberType, setNumberType] = React.useState<1 | 2 | 3 | 4>(1);
   const [checked, setChecked] = React.useState(false);
   const [accountTitle, setAccountTitle] = React.useState('');
   const [nationalId, setNationalId] = React.useState('');
@@ -63,6 +73,9 @@ export default React.memo(function CreateAccountModal({ open, onClose, formMode 
   const [loading, setLoading] = React.useState(false);
   const [findingAccount, setFindingAccount] = React.useState(false);
   const [account, setAccount] = React.useState<AccountSale | null>(null);
+  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+  const menuOpen = Boolean(anchorEl);
+
   const [formFields, setFormFields] = React.useState<FormField[]>(() => [
     { id: generateId(), phoneNumber: '', infoText: '', phoneNumberError: false, phoneNumberHelperText: '' },
   ]);
@@ -82,6 +95,19 @@ export default React.memo(function CreateAccountModal({ open, onClose, formMode 
       setGender(newGender);
     }
   }, []);
+
+  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+  const handleChangeNumberType = (id: number) => {
+    setAnchorEl(null);
+    setNumberType(id as 1 | 2 | 3 | 4);
+  };
+
+
 
   const handleAddRow = () => {
     setFormFields((prev) => [
@@ -160,6 +186,7 @@ export default React.memo(function CreateAccountModal({ open, onClose, formMode 
           accountTitle,
           accountDescription,
           genderMap[gender] || 1,
+          numberType,
           checked ? '' : nationalId,
           checked,
           phoneNumbers,
@@ -197,13 +224,12 @@ export default React.memo(function CreateAccountModal({ open, onClose, formMode 
           ...account?.accountsSaleContactDetails[index],
           countryNumber: 98,
           provinceNumber: 21,
-          numberId: 1,
+          numberId: numberType,
           numberDescription: parseInt(phoneNumber),
           description: phoneNumberDescriptions[index] || null
         }))
       };
       console.log("⬆ ~ handleSave ~ updatedAccount:", updatedAccount)
-      // editAccount(updatedAccount).then((updatedAccount) => {
       editAccount(updatedAccount).then((updatedAccount) => {
         console.log("💕 ~ handleSave ~ updatedAccount:", updatedAccount)
         replaceAccount(updatedAccount);
@@ -228,21 +254,21 @@ export default React.memo(function CreateAccountModal({ open, onClose, formMode 
         console.log("🚀 ~ CreateAccountModal ~ foundAccount:", foundAccount)
         if (foundAccount) {
           setAccount(foundAccount);
-          
+
           // Fill form fields with found account data
           setAccountTitle(foundAccount.title || '');
           setAccountDescription(foundAccount.description || '');
           setNationalId(foundAccount.nationalId || '');
           setChecked(foundAccount.foreignNational || false);
-          
+
           // Map genderId to gender string
           const genderIdMap: Record<number, string> = {
             1: 'men',
-            2: 'women', 
+            2: 'women',
             3: 'company'
           };
           setGender(genderIdMap[foundAccount.genderId] || 'men');
-          
+
           // Fill phone numbers and descriptions
           if (foundAccount.accountsSaleContactDetails && foundAccount.accountsSaleContactDetails.length > 0) {
             const contactFields = foundAccount.accountsSaleContactDetails.map(contact => ({
@@ -259,7 +285,7 @@ export default React.memo(function CreateAccountModal({ open, onClose, formMode 
               { id: generateId(), phoneNumber: '', infoText: '', phoneNumberError: false, phoneNumberHelperText: '' }
             ]);
           }
-          
+
           setFindingAccount(false);
           showSnackbar('اطلاعات حساب دریافت شد', 'success');
         } else {
@@ -393,9 +419,18 @@ export default React.memo(function CreateAccountModal({ open, onClose, formMode 
                                 autoFocus={index === 0}
                                 margin="dense"
                                 label={
-                                  formFields.length === 1
-                                    ? 'شماره'
-                                    : `شماره (${index + 1})`
+                                  (() => {
+                                    const typeNames = {
+                                      1: 'همراه',
+                                      2: 'منزل', 
+                                      3: 'محل کار',
+                                      4: 'فکس'
+                                    };
+                                    const typeName = typeNames[numberType];
+                                    return formFields.length === 1
+                                      ? `شماره ${typeName}`
+                                      : `شماره ${typeName} (${index + 1})`;
+                                  })()
                                 }
                                 value={field.phoneNumber}
                                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
@@ -404,6 +439,45 @@ export default React.memo(function CreateAccountModal({ open, onClose, formMode 
                                 error={field.phoneNumberError}
                                 helperText={field.phoneNumberHelperText}
                                 fullWidth
+                                InputProps={{
+                                  endAdornment: (
+                                    <InputAdornment position='end'>
+                                      <IconButton onClick={handleClick}>
+                                        <MoreHorizRoundedIcon />
+                                      </IconButton>
+                                      <Menu
+                                        anchorEl={anchorEl}
+                                        open={menuOpen}
+                                        onClose={handleClose}
+                                        anchorOrigin={{
+                                          vertical: 'bottom',
+                                          horizontal: 'center',
+                                        }}
+                                        transformOrigin={{
+                                          vertical: 'top',
+                                          horizontal: 'center',
+                                        }}
+                                      >
+                                        <MenuItem onClick={() => handleChangeNumberType(1)} sx={{ mx: 1 }}>
+                                          <StayCurrentPortraitRoundedIcon sx={{ mr: 1.5 }} />
+                                          همراه
+                                        </MenuItem>
+                                        <MenuItem onClick={() => handleChangeNumberType(2)} sx={{ mx: 1 }}>
+                                          <HomeRoundedIcon sx={{ mr: 1.5 }} />
+                                          منزل
+                                        </MenuItem>
+                                        <MenuItem onClick={() => handleChangeNumberType(3)} sx={{ mx: 1 }}>
+                                          <ApartmentRoundedIcon sx={{ mr: 1.5 }} />
+                                          محل کار
+                                        </MenuItem>
+                                        <MenuItem onClick={() => handleChangeNumberType(4)} sx={{ mx: 1 }}>
+                                          <LocalPrintshopRoundedIcon sx={{ mr: 1.5 }} />
+                                          فکس
+                                        </MenuItem>
+                                      </Menu>
+                                    </InputAdornment>
+                                  ),
+                                }}
                               />
                             </Grid>
                             <Grid sx={{ ...flex.one }}>
