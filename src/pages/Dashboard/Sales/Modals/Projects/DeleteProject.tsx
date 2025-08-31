@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 import {
   Typography,
@@ -8,7 +8,8 @@ import {
   Tooltip,
   Slide,
   Backdrop,
-  Zoom
+  Zoom,
+  CircularProgress
 } from '@mui/material';
 
 import Btn from '@/components/elements/Btn';
@@ -27,17 +28,21 @@ interface DeleteProjectModalProps {
 export default function DeleteProjectModal({ open, onClose }: DeleteProjectModalProps) {
   const { selectedProject, eraseProject } = useProjectStore();
   const { showSnackbar } = useSnackbar();
+  const [loading, setLoading] = useState(false);
 
-  const handleDeleteProject = ()  => {
+  const handleDeleteProject = () => {
+    setLoading(true);
     showSnackbar('delteing', 'success');
     if (selectedProject) {
       deleteProject(selectedProject.id).then(() => {
         eraseProject(selectedProject.id);
         showSnackbar('پروژه با موفقیت حذف شد', 'success');
         onClose();
+        setLoading(false);
       }).catch((error) => {
         console.error('Error deleting project:', error);
         showSnackbar('حذف پروژه ناموفق بود', 'error');
+        setLoading(false);
       });
     }
   }
@@ -128,7 +133,7 @@ export default function DeleteProjectModal({ open, onClose }: DeleteProjectModal
                   width: '100%'
                 }}
               >
-                <Btn variant="contained" color="error" endIcon={<DeleteRoundedIcon />} onClick={handleDeleteProject} sx={{ height: '42px', mt: 1, justifySelf: 'end' }}>
+                <Btn disabled={loading} variant="contained" color="error" endIcon={loading ? <CircularProgress size={24} color='inherit' /> : <DeleteRoundedIcon />} onClick={handleDeleteProject} sx={{ height: '42px', mt: 1, justifySelf: 'end' }}>
                   حذف
                 </Btn>
               </Box>
