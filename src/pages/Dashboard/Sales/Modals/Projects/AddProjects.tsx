@@ -81,8 +81,7 @@ export default React.memo(function AddProjectModal({ open, onClose, formMode }: 
   const [searchQuery, setSearchQuery] = React.useState('');
   const addressUpdateSource = React.useRef<'user' | 'map' | 'search'>('user');
   const [findingProject, setFindingProject] = React.useState(false);
-  const [openProjectDelete, setOpenProjectDelete] = React.useState(false);
-  const [confirmProjectDelete, setConfirmProjectDelete] = React.useState(false);
+  const [loading, setLoading] = React.useState(false);
   // Added project store for optimistic updates after project creation
   const { mode } = useThemeMode()
   const { showSnackbar } = useSnackbar();
@@ -105,15 +104,19 @@ export default React.memo(function AddProjectModal({ open, onClose, formMode }: 
     setOriginalPosition(null);
     onClose();
     setFullScreen(true);
+    setMapTile('street');
+    setLevel('first');
+    setButtonText('مرحله بعدی');
   }
 
   // Updated to include optimistic update to project store after successful API call
   const handleNextLevel = () => {
     if (formMode === 'create') {
       setLevel((prevLevel) => (prevLevel === 'first' ? 'second' : 'first'));
-      setButtonText((prevText) => (prevText === 'تأیید' ? 'مرحله بعدی' : 'تأیید'));
-      setMapTile('satellite')
+      // setButtonText((prevText) => (prevText === 'تأیید' ? 'مرحله بعدی' : 'تأیید'));
+      // setMapTile('satellite')
       if (level === 'second') {
+        setLoading(true)
         addProject(
           projectName,
           address,
@@ -126,42 +129,53 @@ export default React.memo(function AddProjectModal({ open, onClose, formMode }: 
         ).then((newProject) => {
           addProjectToUnconnectedList(newProject);
           showSnackbar('پروژه با موفقیت اضافه شد', 'success');
+          setLoading(false);
           closeWindow();
         }).catch((error) => {
           console.error('Error adding project:', error);
           showSnackbar('افزودن پروژه ناموفق بود', 'error');
+          setLoading(false);
         });
       }
     } else {
-      if (selectedProject?.id && project) {
-        // Check if location has changed
-        const locationChanged = originalPosition && position && 
-          (originalPosition[0] !== position[0] || originalPosition[1] !== position[1]);
-        
-        const updatedProject = { 
-          ...project, 
-          title: projectName,
-          recipientName: receiverName,
-          recipientNumber: phoneNumber,
-          address: address,
-          longitude: position ? position[0] : project.longitude,
-          latitude: position ? position[1] : project.latitude,
-          elevation: elevation !== null ? elevation : project.elevation
-        };
-        
-        editProject(
-          Boolean(locationChanged),
-          updatedProject
-        ).then((updatedProject) => {
-          replaceProject(updatedProject);
-          showSnackbar('پروژه با موفقیت ویرایش شد', 'success');
-          closeWindow();
-        }).catch((error) => {
-          console.error('Error editing project:', error);
-          showSnackbar('ویرایش پروژه ناموفق بود', 'error');
-        });
-      } else {
-        console.error("Error: Project doesn't have an ID");
+      setLevel((prevLevel) => (prevLevel === 'first' ? 'second' : 'first'));
+      // setButtonText((prevText) => (prevText === 'تأیید' ? 'مرحله بعدی' : 'تأیید'));
+      // setMapTile('satellite');
+
+      if (level === 'second') {
+        setLoading(true)
+        if (selectedProject?.id && project) {
+          // Check if location has changed
+          const locationChanged = originalPosition && position &&
+            (originalPosition[0] !== position[0] || originalPosition[1] !== position[1]);
+
+          const updatedProject = {
+            ...project,
+            title: projectName,
+            recipientName: receiverName,
+            recipientNumber: phoneNumber,
+            address: address,
+            longitude: position ? position[1] : project.longitude,
+            latitude: position ? position[0] : project.latitude,
+            elevation: elevation !== null ? elevation : project.elevation
+          };
+
+          editProject(
+            Boolean(locationChanged),
+            updatedProject
+          ).then((updatedProject) => {
+            replaceProject(updatedProject);
+            showSnackbar('پروژه با موفقیت ویرایش شد', 'success');
+            setLoading(false);
+            closeWindow();
+          }).catch((error) => {
+            console.error('Error editing project:', error);
+            showSnackbar('ویرایش پروژه ناموفق بود', 'error');
+            setLoading(false);
+          });
+        } else {
+          console.error("Error: Project doesn't have an ID");
+        }
       }
     }
   }
@@ -169,10 +183,12 @@ export default React.memo(function AddProjectModal({ open, onClose, formMode }: 
   React.useEffect(() => {
     if (level === 'second') {
       setMapTile('satellite');
+      setButtonText('تأیید');
     } else {
       setMapTile('street');
+      setButtonText('مرحله بعدی');
     }
-  }, [level]);
+  }, [open, formMode, level]);
 
   React.useEffect(() => {
     if (open && formMode === 'edit' && selectedProject) {
@@ -189,9 +205,9 @@ export default React.memo(function AddProjectModal({ open, onClose, formMode }: 
           setProjectName(foundProject.title);
           setReceiverName(foundProject.recipientName ?? '');
           setPhoneNumber(foundProject.recipientNumber ?? '');
-          setPosition([foundProject.longitude, foundProject.latitude]);
-          setOriginalPosition([foundProject.longitude, foundProject.latitude]);
-          setMapCenter([foundProject.longitude, foundProject.latitude]);
+          setPosition([foundProject.latitude, foundProject.longitude]);
+          setOriginalPosition([foundProject.latitude, foundProject.longitude]);
+          setMapCenter([foundProject.latitude, foundProject.longitude]);
           setElevation(foundProject.elevation);
           setShouldFlyTo(true);
           // Reset flyTo after animation
@@ -619,9 +635,9 @@ export default React.memo(function AddProjectModal({ open, onClose, formMode }: 
                         variant="contained"
                         color="success"
                         endIcon={<DoneAllRoundedIcon />}
-                        disabled={position === null}
+                        disabled={loading}
                       >
-                        {buttonText}
+                        {loading ? <CircularProgress size={24} /> : buttonText}
                       </Btn>
                     </Box>
                   </Box>

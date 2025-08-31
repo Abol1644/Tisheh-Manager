@@ -191,7 +191,25 @@ export default React.memo(function CreateAccountModal({ open, onClose, formMode 
           checked,
           phoneNumbers,
           phoneNumberDescriptions
-        ).then((account) => {
+        ).then((accountSale) => {
+          // Convert AccountSale to Account format for the UI
+          const account: Account = {
+            ididentity: accountSale.codeAcc.toString(),
+            tabagheAcc: '',
+            groupAcc: '',
+            kolAcc: '',
+            moeinAcc: '',
+            tafziliAcc: '',
+            codeAccLen: '',
+            codeAcc: accountSale.codeAcc,
+            title: accountSale.title,
+            description: accountSale.description,
+            systemy: false,
+            accType: true,
+            accessWorkGroupId: '',
+            activate: true,
+            genderId: accountSale.genderId
+          };
           addAccount(account);
           showSnackbar('حساب با موفقیت ایجاد شد', 'success');
           handleCancel();
@@ -230,8 +248,26 @@ export default React.memo(function CreateAccountModal({ open, onClose, formMode 
         }))
       };
       console.log("⬆ ~ handleSave ~ updatedAccount:", updatedAccount)
-      editAccount(updatedAccount).then((updatedAccount) => {
-        console.log("💕 ~ handleSave ~ updatedAccount:", updatedAccount)
+      editAccount(updatedAccount).then((updatedAccountSale) => {
+        console.log("💕 ~ handleSave ~ updatedAccount:", updatedAccountSale)
+        // Convert AccountSale to Account format for the UI
+        const updatedAccount: Account = {
+          ididentity: updatedAccountSale.codeAcc.toString(),
+          tabagheAcc: '',
+          groupAcc: '',
+          kolAcc: '',
+          moeinAcc: '',
+          tafziliAcc: '',
+          codeAccLen: '',
+          codeAcc: updatedAccountSale.codeAcc,
+          title: updatedAccountSale.title,
+          description: updatedAccountSale.description,
+          systemy: false,
+          accType: true,
+          accessWorkGroupId: '',
+          activate: true,
+          genderId: updatedAccountSale.genderId
+        };
         replaceAccount(updatedAccount);
         showSnackbar('حساب با موفقیت ویرایش شد', 'success');
         setLoading(false);

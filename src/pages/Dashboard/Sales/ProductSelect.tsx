@@ -305,6 +305,16 @@ export function ProductSelect(props: any) {
     });
   }, [unconnectedProjects, selectedAccount, isBranchDelivery, connectedProjects]);
 
+  // Gender mapping for accounts
+  const getGenderTitle = (genderId: number) => {
+    const genderMap: Record<number, string> = {
+      1: 'آقای',
+      2: 'خانم',
+      3: 'شرکت'
+    };
+    return genderMap[genderId] || '';
+  };
+
   const handleAccountChange = useCallback(async (value: any) => {
     const account = value as Account | null;
     setSelectedAccount(account);
@@ -315,7 +325,7 @@ export function ProductSelect(props: any) {
     if (account) {
       setProjectsLoading(true);
       try {
-        const projects = await getConnectedProject(true, parseInt(account.codeAcc));
+        const projects = await getConnectedProject(true, account.codeAcc);
         setConnectedProjects(projects);
       } catch (error: any) {
         console.error("Error fetching connected projects:", error);
@@ -739,6 +749,11 @@ export function ProductSelect(props: any) {
             loading={loading}
             loadingText="در حال بارگذاری..."
             noOptionsText="هیچ گزینه‌ای موجود نیست"
+            getOptionLabel={(option) => {
+              const account = option as Account;
+              const genderTitle = account.genderId ? getGenderTitle(account.genderId) : '';
+              return genderTitle ? `${genderTitle} ${account.title}` : account.title;
+            }}
             menu={true}
             menuItems={[
               {
@@ -834,7 +849,8 @@ export function ProductSelect(props: any) {
           rows={filteredProducts()}
           columns={columns}
           columnVisibilityModel={{
-            priceAlternate: alternateShow,
+            priceTransit: !isBranchDelivery,
+            priceAlternate: alternateShow && !isBranchDelivery,
             discountPriceWarehouse2: dis3show,
           }}
           columnGroupingModel={columnGroupingModel}

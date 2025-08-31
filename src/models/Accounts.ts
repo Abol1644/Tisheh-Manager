@@ -13,6 +13,7 @@ export interface Account {
   accType: boolean;
   accessWorkGroupId: string;
   activate: boolean;
+  genderId?: number;
   // dateTime: string,
   // userIdMng: string,
   // userIpMng: string

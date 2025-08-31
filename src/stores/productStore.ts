@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import type { ItemResaultPrice, CategorySale, Warehouse } from "@/models";
 import { getItemPrice } from "@/api";
+import { useBranchDeliveryStore } from "./branchDeliveryStore";
 
 interface ProductsStore {
   // State
@@ -164,6 +165,7 @@ export const useProductsStore = create<ProductsStore>((set, get) => ({
     if (!selectedWarehouse) return [];
 
     const currentWarehouseId = selectedWarehouse.id;
+    const isBranchDelivery = useBranchDeliveryStore.getState().isBranchDelivery;
 
     // Step 1: Filter products where ValueId === ValueIdBase
     const filteredByValueId = products.filter(
@@ -183,6 +185,11 @@ export const useProductsStore = create<ProductsStore>((set, get) => ({
     grouped.forEach((group) => {
       const selectedItem =
         group.find((p) => p.warehouseId === currentWarehouseId) || group[0];
+
+      // If isBranchDelivery is true, only show products from current warehouse
+      if (isBranchDelivery && selectedItem.warehouseId !== currentWarehouseId) {
+        return; // Skip this product entirely
+      }
 
       if (selectedItem.warehouseId !== currentWarehouseId) {
         result.push({
