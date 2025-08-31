@@ -204,7 +204,7 @@ export default React.memo(function CreateAccountModal({ open, onClose, formMode 
       };
       console.log("⬆ ~ handleSave ~ updatedAccount:", updatedAccount)
       // editAccount(updatedAccount).then((updatedAccount) => {
-      editAccount(account).then((updatedAccount) => {
+      editAccount(updatedAccount).then((updatedAccount) => {
         console.log("💕 ~ handleSave ~ updatedAccount:", updatedAccount)
         replaceAccount(updatedAccount);
         showSnackbar('حساب با موفقیت ویرایش شد', 'success');

@@ -97,6 +97,7 @@ export const addSaleAccount = async (
       foreignNational: foreignNational,
       accountsSaleContactDetails: accountsSaleContactDetails
     });
+    console.log("➕ ~ addSaleAccount ~ response.data:", response.data)
     return response.data;
   } catch (error: any) {
     console.error("Add Sale Account API error: ", error);
