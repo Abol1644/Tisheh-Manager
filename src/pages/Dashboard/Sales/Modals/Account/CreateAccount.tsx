@@ -248,6 +248,7 @@ export default React.memo(function CreateAccountModal({ open, onClose, formMode 
         }))
       };
       console.log("⬆ ~ handleSave ~ updatedAccount:", updatedAccount)
+      // @ts-ignore
       editAccount(updatedAccount).then((updatedAccountSale) => {
         console.log("💕 ~ handleSave ~ updatedAccount:", updatedAccountSale)
         // Convert AccountSale to Account format for the UI
