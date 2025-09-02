@@ -22,8 +22,8 @@ import AddToOrderModal from '@/pages/Dashboard/Sales/Modals/AddToOrderModal';
 import { flex, width, height } from '@/models/ReadyStyles';
 import ProjectInfo from './ProjectInfo'
 import ProductInfo from './ProductInfo'
-import { OrderConfirm } from './OrderConfirm'
-
+import OrderConfirm from './OrderConfirm'
+import { TransportItem } from '@/models'
 
 interface SaleModalProps {
   open: boolean;
@@ -41,7 +41,9 @@ export default function SabtKalaModal({ open, onClose }: SaleModalProps) {
   const [listOpen, setListOpen] = React.useState(true);
   const [cart, setCart] = React.useState<string[]>([]);
   const [addToOrderModalOpen, setAddToOrderModalOpen] = React.useState(false);
+  const [selectedTransport, setSelectedTransport] = useState<TransportItem | null>(null);
 
+  const buttonState = selectedTransport ? false : true;
 
   const handleCloseAddToOrderModal = () => {
     if (addToOrderModalOpen === true) {
@@ -130,7 +132,10 @@ export default function SabtKalaModal({ open, onClose }: SaleModalProps) {
           <CustomTabPanel value={value} index={0}>
             <Zoom in={value === 0}>
               <Box sx={{ ...height.full, ...flex.justifyStart, flex: 1 }}>
-                <OrderConfirm />
+                <OrderConfirm
+                  selectedTransport={selectedTransport}
+                  setSelectedTransport={setSelectedTransport}
+                />
               </Box>
             </Zoom>
           </CustomTabPanel>
@@ -170,14 +175,14 @@ export default function SabtKalaModal({ open, onClose }: SaleModalProps) {
               </Select>
             </FormControl>
             <div style={{ display: 'flex', gap: '10px', flexDirection: 'row' }}>
-              <Btn onClick={addToOrderClick} color='info' variant="contained" sx={{ whiteSpace: 'nowrap' }}>
+              <Btn disabled={buttonState} onClick={addToOrderClick} color='info' variant="contained" sx={{ whiteSpace: 'nowrap' }}>
                 افزودن به سفارش
               </Btn>
               <BtnGroup variant="contained" color='success'>
-                <Btn color='success' variant="contained" sx={{ width: '70px' }}>
+                <Btn disabled={buttonState} color='success' variant="contained" sx={{ width: '70px' }}>
                   ثبت
                 </Btn>
-                <Btn color='success' variant="contained" sx={{ whiteSpace: 'nowrap' }}>
+                <Btn disabled={buttonState} color='success' variant="contained" sx={{ whiteSpace: 'nowrap' }}>
                   رفتن به سبد خرید
                 </Btn>
               </BtnGroup>

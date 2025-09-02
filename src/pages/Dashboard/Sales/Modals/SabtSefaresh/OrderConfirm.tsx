@@ -49,7 +49,12 @@ import { useSnackbar } from "@/contexts/SnackBarContext";
 import { filterVehicleCosts, groupTransportByVehicleAndAlternate } from '@/hooks/filterVehicleCosts';
 import { usePriceCalculator, useRoundedPrice } from '@/hooks/usePriceCalculator';
 
-export function OrderConfirm() {
+interface OrderConfirmProps {
+  selectedTransport: TransportItem | null;
+  setSelectedTransport: React.Dispatch<React.SetStateAction<TransportItem | null>>;
+}
+
+export default function OrderConfirm({ selectedTransport, setSelectedTransport }: OrderConfirmProps) {
   const { toPersianPrice } = usePersianNumbers();
   const [loading, setLoading] = useState(true);
   const [numberOfProduct, setNumberOfProduct] = React.useState(0);
@@ -58,7 +63,7 @@ export function OrderConfirm() {
   const [geofence, setgeofence] = useState<GeoFence | null>(null);
   const [transportListSale, setTransportListSale] = useState<TransportList[]>([]);
   // Changed from TransportList to TransportItem to match new nested structure
-  const [selectedTransport, setSelectedTransport] = useState<TransportItem | null>(null);
+  // const [selectedTransport, setSelectedTransport] = useState<TransportItem | null>(null);
 
   const { products, selectedItem, getAvailableUnits, setSelectedItem } = useProductsStore();
 
