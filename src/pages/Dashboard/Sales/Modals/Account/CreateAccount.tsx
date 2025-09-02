@@ -208,7 +208,8 @@ export default React.memo(function CreateAccountModal({ open, onClose, formMode 
             accType: true,
             accessWorkGroupId: '',
             activate: true,
-            genderId: accountSale.genderId
+            genderId: accountSale.genderId,
+            genderTitle: accountSale.genderTitle
           };
           addAccount(account);
           showSnackbar('حساب با موفقیت ایجاد شد', 'success');
@@ -240,6 +241,7 @@ export default React.memo(function CreateAccountModal({ open, onClose, formMode 
         foreignNational: checked,
         accountsSaleContactDetails: phoneNumbers.map((phoneNumber, index) => ({
           ...account?.accountsSaleContactDetails[index],
+          ididentity: account?.accountsSaleContactDetails[index]?.ididentity || 0,
           countryNumber: 98,
           provinceNumber: 21,
           numberId: numberType,
@@ -267,7 +269,8 @@ export default React.memo(function CreateAccountModal({ open, onClose, formMode 
           accType: true,
           accessWorkGroupId: '',
           activate: true,
-          genderId: updatedAccountSale.genderId
+          genderId: updatedAccountSale.genderId,
+          genderTitle: updatedAccountSale.genderTitle
         };
         replaceAccount(updatedAccount);
         showSnackbar('حساب با موفقیت ویرایش شد', 'success');
