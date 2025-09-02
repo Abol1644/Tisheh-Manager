@@ -2,7 +2,7 @@ import apiClient from "./apiClient";
 import type { Project, Account } from "@/models/";
 
 export const getUnConnectedProjects = async (): Promise<Project[]> => {
-  console.log("Getting Projects");
+  // console.log("Getting Projects");
   try {
     const response = await apiClient.get<Project[]>(
       "Projects/GetAll?BranchCenterDelivery=false&OnlyNoConnect=true"
@@ -17,7 +17,7 @@ export const getUnConnectedProjects = async (): Promise<Project[]> => {
 };
 
 export const getAllProjects = async (): Promise<Project[]> => {
-  console.log("Getting All Projects");
+  // console.log("Getting All Projects");
   try {
     const response = await apiClient.get<Project[]>(
       "Projects/GetAll"

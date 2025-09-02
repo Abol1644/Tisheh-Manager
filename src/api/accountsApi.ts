@@ -25,7 +25,7 @@ export const getCustomerAccounts = async (
 
 export const getSaleAccounts = async (): Promise<Account[]> => {
   try {
-    console.warn("Get Sale Accounts API");
+    // console.warn("Get Sale Accounts API");
     const response = await apiClient.get<Account[]>("/Accounts/GetAllSale");
     console.log("📊 ~ getSaleAccounts ~ response.data:", response.data);
     return response.data;
