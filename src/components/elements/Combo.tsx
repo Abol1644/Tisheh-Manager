@@ -83,7 +83,7 @@ export default function Combo({
   const getOptionValue = (option: Option): any => {
     if (customGetOptionValue) return customGetOptionValue(option);
     if (typeof option === 'string') return option;
-    return option.ididentity;
+    return option.codeAcc || option.ididentity;
   };
 
   const handleMenuClick = (event: React.MouseEvent<HTMLButtonElement>) => {

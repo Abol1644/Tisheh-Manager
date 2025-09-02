@@ -13,7 +13,8 @@ export interface Account {
   accType: boolean;
   accessWorkGroupId: string;
   activate: boolean;
-  genderId?: number;
+  genderId: number;
+  genderTitle: string;
   // dateTime: string,
   // userIdMng: string,
   // userIpMng: string
@@ -27,6 +28,7 @@ export interface AccountSale {
   contactGroupId: number;
   codeAccConnect: number;
   genderId: number;
+  genderTitle: string;
   nationalId: string;
   foreignNational: boolean;
   accountsSaleContactDetails: {

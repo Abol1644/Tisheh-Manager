@@ -1,8 +1,8 @@
 import axios from 'axios';
 
 const apiClient = axios.create({
-  baseURL: 'https://api.skantisheh.ir/api',
-  // baseURL: 'http://192.168.100.18:5230/api',
+  // baseURL: 'https://api.skantisheh.ir/api',
+  baseURL: 'http://192.168.100.18:5230/api',
   headers: {
     'Content-Type': 'application/json',
   },
