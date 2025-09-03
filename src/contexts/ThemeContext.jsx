@@ -110,7 +110,7 @@ export function CustomThemeProvider({ children }) {
       document.body.style.setProperty('--background-overlay', '#212121');
       document.body.style.setProperty('--background-overlay-light', '#2F2F2F');
       document.body.style.setProperty('--background-fade', 'rgb(0, 0, 0, 0.1)');
-      document.body.style.setProperty('--background-glass', 'rgb(30, 30, 30, 0.7)');
+      document.body.style.setProperty('--background-glass', 'rgb(30, 30, 30, 0)');
       document.body.style.setProperty('--text-primary', '#ffffff');
       document.body.style.setProperty('--text-secondary', '#aaaaaa');
       document.body.style.setProperty('--text-light', '#ffffff');
@@ -137,7 +137,7 @@ export function CustomThemeProvider({ children }) {
       document.body.style.setProperty('--background-overlay', '#ECEBEB');
       document.body.style.setProperty('--background-overlay-light', '#fbfbfb');
       document.body.style.setProperty('--background-fade', 'rgb(255, 255, 255, 0.1)');
-      document.body.style.setProperty('--background-glass', 'rgb(255, 255, 255, 0.7)');
+      document.body.style.setProperty('--background-glass', 'rgb(255, 255, 255, 0)');
       document.body.style.setProperty('--text-primary', '#000000');
       document.body.style.setProperty('--text-secondary', '#555555');
       document.body.style.setProperty('--text-light', '#ffffff');

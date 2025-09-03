@@ -61,7 +61,7 @@ export default function AddToOrderModal({ open, onClose }: AddToOrderModalProps)
             bgcolor: 'background.glass',
             background: 'linear-gradient(-165deg, #00ff684d, var(--background-glass) 75%)',
             border: 'none',
-            boxShadow: 0,
+            boxShadow: 'inset 0 0 10px 1px rgba(255, 255, 255, 0.2), 0px 11px 15px -7px rgba(0,0,0,0.2),0px 24px 38px 3px rgba(0,0,0,0.14),0px 9px 46px 8px rgba(0,0,0,0.12)',
             p: '20px 25px ',
             borderRadius: '20px',
             overflow: 'auto',
