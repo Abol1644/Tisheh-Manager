@@ -40,7 +40,7 @@ import { TransitionGroup } from 'react-transition-group';
 
 import Btn from '@/components/elements/Btn';
 import { flex, width, height, gap } from '@/models/ReadyStyles';
-import { addSaleAccount, editAccount, findAccount } from '@/api/accountsApi';
+import { addSaleAccount, editAccount, findAccount, deleteAccountNumber } from '@/api/accountsApi';
 import { useSnackbar } from '@/contexts/SnackBarContext';
 import { useAccountStore } from '@/stores';
 import { Account, AccountSale } from '@/models';
@@ -57,6 +57,7 @@ interface FormField {
   infoText: string;
   phoneNumberError: boolean;
   phoneNumberHelperText: string;
+  originalIdidentity?: number;
 }
 
 function generateId() {
@@ -73,6 +74,8 @@ export default React.memo(function CreateAccountModal({ open, onClose, formMode 
   const [loading, setLoading] = React.useState(false);
   const [findingAccount, setFindingAccount] = React.useState(false);
   const [account, setAccount] = React.useState<AccountSale | null>(null);
+  const [originalContactDetails, setOriginalContactDetails] = React.useState<any[]>([]);
+  const [removedContactIds, setRemovedContactIds] = React.useState<number[]>([]);
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const menuOpen = Boolean(anchorEl);
 
@@ -125,13 +128,22 @@ export default React.memo(function CreateAccountModal({ open, onClose, formMode 
     setAccountDescription('');
     setLoading(false);
     setFindingAccount(false);
+    setOriginalContactDetails([]);
+    setRemovedContactIds([]);
     setFormFields([
       { id: generateId(), phoneNumber: '', infoText: '', phoneNumberError: false, phoneNumberHelperText: '' },
     ]);
   };
 
   const handleRemoveRow = (idToRemove: string) => {
-    setFormFields((prev) => prev.filter((field) => field.id !== idToRemove));
+    setFormFields((prev) => {
+      const fieldToRemove = prev.find(field => field.id === idToRemove);
+      // If this field has an originalIdidentity, track it for deletion
+      if (fieldToRemove?.originalIdidentity) {
+        setRemovedContactIds(prevIds => [...prevIds, fieldToRemove.originalIdidentity!]);
+      }
+      return prev.filter((field) => field.id !== idToRemove);
+    });
   };
 
   const handlePhoneNumberChange = (
@@ -232,6 +244,19 @@ export default React.memo(function CreateAccountModal({ open, onClose, formMode 
       const phoneNumbers = formFields.map(field => field.phoneNumber);
       const phoneNumberDescriptions = formFields.map(field => field.infoText);
 
+      // Delete explicitly removed contacts first
+      try {
+        for (const removedContactId of removedContactIds) {
+          await deleteAccountNumber(removedContactId);
+          console.log(`Deleted contact with ididentity: ${removedContactId}`);
+        }
+      } catch (error: any) {
+        console.error('Error deleting phone numbers:', error);
+        showSnackbar('خطا در حذف شماره تلفن', 'error');
+        setLoading(false);
+        return;
+      }
+
       const updatedAccount = {
         ...account,
         title: accountTitle,
@@ -239,15 +264,16 @@ export default React.memo(function CreateAccountModal({ open, onClose, formMode 
         genderId: genderMap[gender] || 1,
         nationalId: nationalId,
         foreignNational: checked,
-        accountsSaleContactDetails: phoneNumbers.map((phoneNumber, index) => ({
-          ...account?.accountsSaleContactDetails[index],
-          ididentity: account?.accountsSaleContactDetails[index]?.ididentity || 0,
-          countryNumber: 98,
-          provinceNumber: 21,
-          numberId: numberType,
-          numberDescription: parseInt(phoneNumber),
-          description: phoneNumberDescriptions[index] || null
-        }))
+        accountsSaleContactDetails: formFields
+          .filter(field => field.phoneNumber && field.phoneNumber.trim() !== '')
+          .map(field => ({
+            ididentity: field.originalIdidentity || 0,
+            countryNumber: 98,
+            provinceNumber: 21,
+            numberId: numberType,
+            numberDescription: parseInt(field.phoneNumber),
+            description: field.infoText || null
+          }))
       };
       console.log("⬆ ~ handleSave ~ updatedAccount:", updatedAccount)
       // @ts-ignore
@@ -311,16 +337,21 @@ export default React.memo(function CreateAccountModal({ open, onClose, formMode 
 
           // Fill phone numbers and descriptions
           if (foundAccount.accountsSaleContactDetails && foundAccount.accountsSaleContactDetails.length > 0) {
+            // Store original contact details for comparison
+            setOriginalContactDetails([...foundAccount.accountsSaleContactDetails]);
+            
             const contactFields = foundAccount.accountsSaleContactDetails.map(contact => ({
               id: generateId(),
               phoneNumber: contact.numberDescription?.toString() || '',
               infoText: contact.description || '',
               phoneNumberError: false,
-              phoneNumberHelperText: ''
+              phoneNumberHelperText: '',
+              originalIdidentity: contact.ididentity
             }));
             setFormFields(contactFields);
           } else {
             // If no contact details, keep default empty field
+            setOriginalContactDetails([]);
             setFormFields([
               { id: generateId(), phoneNumber: '', infoText: '', phoneNumberError: false, phoneNumberHelperText: '' }
             ]);
@@ -373,8 +404,8 @@ export default React.memo(function CreateAccountModal({ open, onClose, formMode 
               sx={{
                 width: '680px',
                 height: 'auto',
-                bgcolor: 'background.paper',
-                background: 'linear-gradient(-165deg, #00ff684d, var(--background-paper) 75%)',
+                bgcolor: 'background.glass',
+                background: 'linear-gradient(-165deg, #00ff684d, var(--background-glass) 75%)',
                 border: 'none',
                 boxShadow: 'inset 0 0 10px 1px rgba(255, 255, 255, 0.2), 0px 11px 15px -7px rgba(0,0,0,0.2),0px 24px 38px 3px rgba(0,0,0,0.14),0px 9px 46px 8px rgba(0,0,0,0.12)',
                 p: '20px 20px',
@@ -383,6 +414,7 @@ export default React.memo(function CreateAccountModal({ open, onClose, formMode 
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'space-between',
+                backdropFilter: 'blur(5px)',
                 '&:focus-visible': {
                   outline: 'none'
                 },
@@ -404,7 +436,7 @@ export default React.memo(function CreateAccountModal({ open, onClose, formMode 
                 <Tooltip title="بستن" placement='top' arrow disableInteractive slots={{ transition: Zoom }} >
                   <IconButton
                     aria-label="بستن"
-                    onClick={onClose}
+                    onClick={handleCancel}
                     color='error'
                   >
                     <CloseIcon />

@@ -159,3 +159,17 @@ export const editAccount = async (account: AccountSale): Promise<AccountSale> =>
     throw new Error(serverMessage);
   }
 };
+
+export const deleteAccountNumber = async (idIdentity: number): Promise<void> => {
+  try {
+    const accountNumberIdInt = idIdentity;
+    const response = await apiClient.delete<void>("Contact/DeleteDetail", {
+      data: [accountNumberIdInt],
+    });
+    console.log("🗑️ Delete AccountNumber response:", response.data);
+  } catch (error: any) {
+    console.error("Delete AccountNumber API error:", error);
+    const serverMessage = error.response?.data || "Delete AccountNumber failed";
+    throw new Error(serverMessage);
+  }
+};

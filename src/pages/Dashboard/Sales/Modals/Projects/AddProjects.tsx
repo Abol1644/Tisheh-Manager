@@ -627,7 +627,7 @@ export default React.memo(function AddProjectModal({ open, onClose, formMode }: 
                       </Box>
                     </Box>
                     <Box sx={{ ...flex.rowEnd, ...gap.ten, height: '44px' }}>
-                      <Btn variant="contained" color="error" onClick={onClose} endIcon={<CloseRoundedIcon />}>
+                      <Btn variant="contained" color="error" onClick={closeWindow} endIcon={<CloseRoundedIcon />}>
                         انصراف
                       </Btn>
                       <Btn
