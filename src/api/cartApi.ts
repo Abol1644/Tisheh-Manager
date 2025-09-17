@@ -26,3 +26,16 @@ export const getCart = async (cartId:number): Promise<Cart> => {
     throw new Error(serverMessage);
   }
 };
+
+export const deleteCart = async (cartId: number | null): Promise<void> => {
+  try {
+    const response = await apiClient.delete<void>("/Cart/Delete", {
+      data: [cartId],
+    });
+    console.log("🗑️ Delete Cart response:", response.data);
+  } catch (error: any) {
+    console.error("Delete Cart API error:", error);
+    const serverMessage = error.response?.data || "Delete Cart failed";
+    throw new Error(serverMessage);
+  }
+};
