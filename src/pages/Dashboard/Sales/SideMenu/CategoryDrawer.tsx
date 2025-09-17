@@ -124,6 +124,7 @@ const CategoryItem = React.memo(({
           }}
         >
           <AccordionSummary
+            component="div"
             expandIcon={<ExpandMoreIcon />}
             sx={{
               '& .MuiPaper-root-MuiAccordion-root:first-of-type': {

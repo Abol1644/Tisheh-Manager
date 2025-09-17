@@ -49,7 +49,7 @@ import {
   editProject,
   findProject,
 } from '@/api';
-import { useProjectStore } from '@/stores/';
+import { useProjectStore, useAccountStore } from '@/stores/';
 import { Project } from '@/models/';
 
 interface ModalProps {
@@ -86,6 +86,8 @@ export default React.memo(function AddProjectModal({ open, onClose, formMode }: 
   const { mode } = useThemeMode()
   const { showSnackbar } = useSnackbar();
   const { addProjectToUnconnectedList, selectedProject, replaceProject } = useProjectStore();
+  const { selectedAccount } = useAccountStore();
+  const accountCode = selectedAccount?.codeAcc.toString() ?? '';
 
   const closeWindow = () => {
     // Clean up search state when closing
@@ -123,6 +125,7 @@ export default React.memo(function AddProjectModal({ open, onClose, formMode }: 
           position ? position[0] : 0,
           position ? position[1] : 0,
           elevation ? elevation : 0,
+          accountCode,
           receiverName,
           phoneNumber,
           0,

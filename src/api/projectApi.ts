@@ -55,6 +55,7 @@ export const addProject = async (
   longitude: number,
   latitude: number,
   elevation: number,
+  codeAccConnect: string,
   recipientName: string,
   recipientNumber: string,
   nationalId: number
@@ -67,9 +68,10 @@ export const addProject = async (
       latitude: latitude,
       elevation: elevation,
       recipientName: recipientName,
+      codeAccConnect: codeAccConnect,
       recipientNumber: recipientNumber,
     });
-    // console.log("Add Project responce: " , response.data)
+    console.log("Add Project responce: " , response.data)
     return response.data;
   } catch (error: any) {
     console.error("Add Project API error: ", error);

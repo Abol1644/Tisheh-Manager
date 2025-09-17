@@ -175,16 +175,10 @@ export default function Sale() {
             scrollbarWidth: 'none',
           }}
         >
-          <MemTabPanel value={value} index={1}>
-            <MemCartDrawer
-              setOpenCart={setOpenCart}
-              openCart={openCart}
-              value={value}
-              drawerOpen={drawerOpen}
-              listCart={listCart}
-            />
-          </MemTabPanel>
           <MemTabPanel value={value} index={0}>
+            <MemCartDrawer />
+          </MemTabPanel>
+          <MemTabPanel value={value} index={1}>
             <MemCategoryDrawer
               value={value}
               drawerOpen={drawerOpen}
