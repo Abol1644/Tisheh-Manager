@@ -9,7 +9,9 @@ import {
   List,
   ListItem,
   ListItemText,
-  Slide, IconButton
+  Slide, IconButton,
+  Tooltip,
+  Zoom
 } from '@mui/material';
 
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -74,11 +76,27 @@ export function CartDrawer() {
     setDeleteItemModal(true);
   }
 
-  const handleCartDelete = (cartId: number | null) => {
-    deleteCart(cartId)
-    setDeleteItemModal(false);
-    showSnackbar('سبد با موفقیت حذف شد', 'success', 1500, <DoneAllRoundedIcon />);
-  }
+  const handleCartDelete = async (id: number | null) => {
+    if (!id) return;
+
+    try {
+      await deleteCart(id);
+      setGroupedItems(prev => {
+        const updated = { ...prev };
+        for (const key in updated) {
+          updated[key] = updated[key].filter(item => item.id !== id);
+          if (updated[key].length === 0) delete updated[key];
+        }
+        return updated;
+      });
+
+      showSnackbar('سبد با موفقیت حذف شد', 'success', 1500, <DoneAllRoundedIcon />);
+    } catch (error) {
+      showSnackbar('حذف سبد ناموفق بود', 'error', 3000);
+    } finally {
+      setDeleteItemModal(false);
+    }
+  };
 
   return (
     <React.Fragment>
@@ -119,27 +137,36 @@ export function CartDrawer() {
                           p: 0,
                           transition: 'all 0.3s ease',
                           '&:hover': {
-                            transform: 'translateX(4px)',
+                            transform: 'translateY(-4px)',
+                            scale: 1.02,
                           },
                         }}
                       >
-                        <Btn variant='outlined' fullWidth sx={{ py: 1, mb: 1, ...flex.justifyBetween }}>
-                          <Box sx={{ ...flex.row }}>
-                            <ShoppingCartRoundedIcon sx={{ mr: 1 }} />
-                            <Typography variant="body2" align='right'>
-                              {item.codeAccCustomerTitle} - <strong>پروژه</strong> {item.projectIdCustomerTitle}
-                            </Typography>
-                          </Box>
-                          <DeleteRoundedIcon
-                            onClick={() => openDeleteModal(item.id)}
-                            sx={{
-                              transition: 'all 0.3s ease',
-                              '&:hover': {
-                                color: 'error.main',
-                              },
-                            }}
-                          />
-                        </Btn>
+                        <Tooltip
+                          title={<p><strong>پروژه</strong> {item.projectIdCustomerTitle}</p>}
+                          placement="left"
+                          arrow
+                          disableInteractive
+                          slots={{ transition: Zoom }}
+                        >
+                          <Btn variant='outlined' fullWidth sx={{ py: 1, mb: 1, ...flex.justifyBetween }}>
+                            <Box sx={{ ...flex.row }}>
+                              <ShoppingCartRoundedIcon sx={{ mr: 1 }} />
+                              <Typography variant="body2" align='right'>
+                                {item.codeAccCustomerTitle}
+                              </Typography>
+                            </Box>
+                            <DeleteRoundedIcon
+                              onClick={() => openDeleteModal(item.id)}
+                              sx={{
+                                transition: 'all 0.3s ease',
+                                '&:hover': {
+                                  color: 'error.main',
+                                },
+                              }}
+                            />
+                          </Btn>
+                        </Tooltip>
                       </ListItem>
                     ))}
                   </List>
@@ -157,7 +184,7 @@ export function CartDrawer() {
         title='حذف سبد'
         buttonText='حذف شود'
         info='سبد مورد نظر حذف شود؟'
-        buttonFunc={() => {handleCartDelete(cartId)}}
+        buttonFunc={() => { handleCartDelete(cartId) }}
       />
     </React.Fragment>
   );
