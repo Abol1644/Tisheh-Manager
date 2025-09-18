@@ -16,6 +16,15 @@
   }
 }
 
+@keyframes refresh {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(720deg);
+  }
+}
+
 @keyframes wiggle {
   0% {
     transform: translateX(0);
@@ -59,6 +68,10 @@
 
 .wiggle-animation:hover {
   animation: wiggle 0.5s ease;
+}
+
+.refresh-animation:hover {
+  animation: refresh 0.5s ease;
 }
 
 .delete-animation:hover {

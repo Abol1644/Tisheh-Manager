@@ -18,6 +18,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ShoppingCartRoundedIcon from "@mui/icons-material/ShoppingCartRounded"
 import DeleteRoundedIcon from "@mui/icons-material/DeleteRounded"
 import DoneAllRoundedIcon from "@mui/icons-material/DoneAllRounded"
+import RefreshRoundedIcon from '@mui/icons-material/RefreshRounded';
 
 import Btn from '@/components/elements/Btn';
 import { flex } from '@/models';
@@ -98,12 +99,50 @@ export function CartDrawer() {
     }
   };
 
+  const handleRefresh = () => {
+    getCartList()
+      .then((data: ListCart[]) => {
+        // 👇 Group by "name"
+        const grouped = data.reduce((acc, item) => {
+          const key = item.name || 'بدون نام'; // Fallback for null/undefined names
+          if (!acc[key]) {
+            acc[key] = [];
+          }
+          acc[key].push(item);
+          return acc;
+        }, {} as Record<string, ListCart[]>);
+        setExpanded(userName || false);
+        setGroupedItems(grouped);
+        setLoading(false);
+      })
+      .catch((error) => {
+        console.error('Error fetching cart list:', error);
+        setLoading(false);
+      });
+  }
+
   return (
     <React.Fragment>
       <Box sx={{ p: 2, bgcolor: 'background.paper' }}>
-        <Typography variant="h6" sx={{ mb: 2 }}>
-          لیست سبدهای خرید
-        </Typography>
+        <Box sx={{ ...flex.rowBetween, mb: 2 }}>
+          <Box sx={{ ...flex.row, ...flex.alignCenter }}>
+            <ShoppingCartRoundedIcon sx={{ mr: 1 }} />
+            <Typography variant="h6">
+              سبدهای خرید
+            </Typography>
+          </Box>
+          <Tooltip
+            title={<strong>بارگذاری مجدد</strong>}
+            placement="top"
+            arrow
+            disableInteractive
+            slots={{ transition: Zoom }}
+          >
+            <IconButton className='refresh-animation' onClick={handleRefresh}>
+              <RefreshRoundedIcon />
+            </IconButton>
+          </Tooltip>
+        </Box>
         {loading ? (
           <CircularProgress />
         ) : Object.keys(groupedItems).length > 0 ? (
@@ -122,8 +161,28 @@ export function CartDrawer() {
               <Accordion
                 expanded={expanded === name}
                 onChange={(_, isExpanded) => setExpanded(isExpanded ? name : false)}
+                sx={{
+                  transition: 'all 0.3s ease',
+                  margin: '4px 0',
+                  '&.MuiPaper-root': {
+                    borderRadius: '12px !important',
+                    borderLeft: userName === name ? '2px solid var(--icon-main)' : '2px solid var(--primary-main)',
+                  },
+                  '&.MuiPaper-root::before': {
+                    display: 'none !important'
+                  },
+                  '&.MuiPaper-root.Mui-expanded': {
+                    margin: '4px 0',
+                    transition: 'all 0.3s ease',
+                  },
+                  '&.MuiPaper-root, .Mui-expanded ': {
+                    transition: 'all 0.3s ease'
+                  }
+                }}
               >
-                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                <AccordionSummary
+                  expandIcon={<ExpandMoreIcon />}
+                >
                   <Typography>
                     {name} ({items.length})
                   </Typography>
@@ -175,7 +234,7 @@ export function CartDrawer() {
             </Slide>
           ))
         ) : (
-          <Typography>هیچ سفارشی یافت نشد.</Typography>
+          <Typography>هیچ سفارشی یافت نشد</Typography>
         )}
       </Box>
       <DeleteModal
