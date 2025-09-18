@@ -34,7 +34,7 @@ import { height } from '@/models/ReadyStyles';
 import { getSaleCategories, getItemPrice, getCartList, getCart } from '@/api';
 import { CategorySale, ItemResaultPrice, ListCart, Warehouse } from '@/models';
 
-import { useProductsStore, useProjectStore } from '@/stores';
+import { useProductsStore, useProjectStore, useControlCart } from '@/stores';
 
 const MemoizedProductSelect = React.memo(ProductSelect);
 const MemoizedCart = React.memo(Cart);
@@ -50,7 +50,8 @@ export default function Sale() {
   const [categoryEnable, setCategoryEnable] = useState(true);
   const { mode } = useThemeMode();
   const [value, setValue] = useState(0);
-  const [openCart, setOpenCart] = useState(false);
+  const { isCartOpen, toggleCart, cartOpen, cartClose } = useControlCart();
+
 
   const [modals, setModals] = useState({
     accountAdd: false,
@@ -284,24 +285,24 @@ export default function Sale() {
               }}
             >
               <Box
-                className={`cart-box ${openCart ? 'animate-in' : 'animate-out'}`}
+                className={`cart-box ${isCartOpen ? 'animate-in' : 'animate-out'}`}
                 sx={{
                   position: 'absolute',
                   inset: 0,
                   height: '100%',
-                  zIndex: openCart ? 10 : 0
+                  zIndex: isCartOpen ? 10 : 0
                 }}
               >
-                <MemoizedCart openCart={openCart} setOpenCart={setOpenCart} />
+                <MemoizedCart openCart={isCartOpen} setOpenCart={cartOpen} />
               </Box>
 
               <Box
-                className={`datagrid-box ${!openCart ? 'animate-in' : 'animate-out'}`}
+                className={`datagrid-box ${!isCartOpen ? 'animate-in' : 'animate-out'}`}
                 sx={{
                   position: 'absolute',
                   inset: 0,
                   height: '100%',
-                  zIndex: openCart ? 0 : 10
+                  zIndex: isCartOpen ? 0 : 10
                 }}
               >
                 <MemoizedProductSelect

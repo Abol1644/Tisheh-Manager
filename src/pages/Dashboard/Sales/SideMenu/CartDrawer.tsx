@@ -27,8 +27,9 @@ import DeleteModal from '@/pages/Dashboard/Sales/Modals/DeleteModal';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useSnackbar } from "@/contexts/SnackBarContext";
-import { ListCart } from '@/models'; // Or ListCart if you prefer to keep naming
-import { getCartList, deleteCart } from '@/api';
+import { ListCart, Cart } from '@/models'; // Or ListCart if you prefer to keep naming
+import { getCartList, deleteCart, getCart, getListOfCartItems } from '@/api';
+import { useControlCart } from '@/stores';
 
 interface DecodedToken {
   [key: string]: any;
@@ -38,12 +39,14 @@ export function CartDrawer() {
   const [loading, setLoading] = useState(false);
   const [deleteItemModal, setDeleteItemModal] = useState(false);
   const [cartId, setCartId] = useState<number | null>(null);
+  const [cartDetails, setCartDetails] = useState<Cart | null>(null);
   const [groupedItems, setGroupedItems] = useState<Record<string, ListCart[]>>({});
   const { decodedToken } = useAuth();
   const userName = (decodedToken as DecodedToken)?.Name;
   const [expanded, setExpanded] = useState<string | false>(userName || false);
 
   const { showSnackbar, closeSnackbarById } = useSnackbar();
+  const { isCartOpen, toggleCart, cartOpen, cartClose } = useControlCart();
 
   useEffect(() => {
     setExpanded(userName || false);
@@ -118,6 +121,29 @@ export function CartDrawer() {
       .catch((error) => {
         console.error('Error fetching cart list:', error);
         setLoading(false);
+      });
+  }
+  
+  const getCartDetails = (cart: ListCart) => {
+    getCart(cart.id)
+      .then((data: Cart) => {
+        setCartDetails(data);
+        console.log('Fetched cart details:', data);
+      })
+      .catch((error) => {
+        console.error('Error fetching cart details:', error);
+      });
+  }
+
+  const getCartItems = (cart: ListCart) => {
+    console.log("🚀 ~ getCartItems ~ cart:", cart)
+    cartOpen()
+    getListOfCartItems(cart)
+      .then((data: Cart) => {
+        console.log('Fetched cart items:', data);
+      })
+      .catch((error) => {
+        console.error('Error fetching cart items:', error);
       });
   }
 
@@ -208,7 +234,12 @@ export function CartDrawer() {
                           disableInteractive
                           slots={{ transition: Zoom }}
                         >
-                          <Btn variant='outlined' fullWidth sx={{ py: 1, mb: 1, ...flex.justifyBetween }}>
+                          <Btn
+                            variant='outlined'
+                            fullWidth
+                            onClick={() => getCartDetails(item)}
+                            sx={{ py: 1, mb: 1, ...flex.justifyBetween }}
+                          >
                             <Box sx={{ ...flex.row }}>
                               <ShoppingCartRoundedIcon sx={{ mr: 1 }} />
                               <Typography variant="body2" align='right'>
