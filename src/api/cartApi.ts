@@ -1,5 +1,5 @@
 import apiClient from "./apiClient";
-import { ListCart, Cart } from "@/models/";
+import { ListCart, Cart, CartDetails } from "@/models/";
 
 export const getCartList = async (): Promise<ListCart[]> => {
   try {
@@ -14,9 +14,9 @@ export const getCartList = async (): Promise<ListCart[]> => {
   }
 };
 
-export const getCart = async (cartId:number): Promise<Cart> => {
+export const getCart = async (cartId:number): Promise<CartDetails> => {
   try {
-    const response = await apiClient.get<Cart>(`Cart/GetCart?CartId=${cartId}`);
+    const response = await apiClient.get<CartDetails>(`Cart/GetCart?CartId=${cartId}`);
     console.log("Get Cart: ", response.data);
     return response.data;
   } catch (error: any) {

@@ -27,7 +27,7 @@ import DeleteModal from '@/pages/Dashboard/Sales/Modals/DeleteModal';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useSnackbar } from "@/contexts/SnackBarContext";
-import { ListCart, Cart } from '@/models'; // Or ListCart if you prefer to keep naming
+import { ListCart, Cart, CartDetails } from '@/models'; 
 import { getCartList, deleteCart, getCart, getListOfCartItems } from '@/api';
 import { useControlCart } from '@/stores';
 
@@ -39,14 +39,14 @@ export function CartDrawer() {
   const [loading, setLoading] = useState(false);
   const [deleteItemModal, setDeleteItemModal] = useState(false);
   const [cartId, setCartId] = useState<number | null>(null);
-  const [cartDetails, setCartDetails] = useState<Cart | null>(null);
+  const [cartDetails, setCartDetails] = useState<CartDetails | null>(null);
   const [groupedItems, setGroupedItems] = useState<Record<string, ListCart[]>>({});
   const { decodedToken } = useAuth();
   const userName = (decodedToken as DecodedToken)?.Name;
   const [expanded, setExpanded] = useState<string | false>(userName || false);
 
   const { showSnackbar, closeSnackbarById } = useSnackbar();
-  const { isCartOpen, toggleCart, cartOpen, cartClose } = useControlCart();
+  const { isCartOpen, toggleCart, cartOpen, cartClose, openCartId, setOpenCartId } = useControlCart();
 
   useEffect(() => {
     setExpanded(userName || false);
@@ -56,9 +56,8 @@ export function CartDrawer() {
     setLoading(true);
     getCartList()
       .then((data: ListCart[]) => {
-        // 👇 Group by "name"
         const grouped = data.reduce((acc, item) => {
-          const key = item.name || 'بدون نام'; // Fallback for null/undefined names
+          const key = item.name || 'بدون نام';
           if (!acc[key]) {
             acc[key] = [];
           }
@@ -105,9 +104,8 @@ export function CartDrawer() {
   const handleRefresh = () => {
     getCartList()
       .then((data: ListCart[]) => {
-        // 👇 Group by "name"
         const grouped = data.reduce((acc, item) => {
-          const key = item.name || 'بدون نام'; // Fallback for null/undefined names
+          const key = item.name || 'بدون نام';
           if (!acc[key]) {
             acc[key] = [];
           }
@@ -124,15 +122,18 @@ export function CartDrawer() {
       });
   }
   
-  const getCartDetails = (cart: ListCart) => {
-    getCart(cart.id)
-      .then((data: Cart) => {
-        setCartDetails(data);
-        console.log('Fetched cart details:', data);
-      })
-      .catch((error) => {
-        console.error('Error fetching cart details:', error);
-      });
+  const sendCartId = (cart: ListCart) => {
+    cartOpen()
+    setOpenCartId(cart.id)
+    // getCart(cart.id)
+    //   .then((data: CartDetails) => {
+    //     setCartDetails(data);
+        
+    //     console.log('Fetched cart details:', data);
+    //   })
+    //   .catch((error) => {
+    //     console.error('Error fetching cart details:', error);
+    //   });
   }
 
   const getCartItems = (cart: ListCart) => {
@@ -237,7 +238,7 @@ export function CartDrawer() {
                           <Btn
                             variant='outlined'
                             fullWidth
-                            onClick={() => getCartDetails(item)}
+                            onClick={() => sendCartId(item)}
                             sx={{ py: 1, mb: 1, ...flex.justifyBetween }}
                           >
                             <Box sx={{ ...flex.row }}>

@@ -5,7 +5,7 @@ import { CartDrawer } from '@/pages/Dashboard/Sales/SideMenu/CartDrawer';
 import { Category } from '@/pages/Dashboard/Sales/SideMenu/CategoryDrawer';
 import { TabPanel, CustomTab } from '@/pages/Dashboard/Sales/SideMenu/SideMenu';
 import { ProductSelect } from '@/pages/Dashboard/Sales/ProductSelect';
-import { Cart } from '@/pages/Dashboard/Sales/SabadKharid';
+import { Cart } from '@/pages/Dashboard/Sales/Cart';
 import CreateAccountModal from '@/pages/Dashboard/Sales/Modals/Account/CreateAccount';
 import DeleteAccountModal from '@/pages/Dashboard/Sales/Modals/Account/DeleteAccount';
 import ConnectToProjectModal from '@/pages/Dashboard/Sales/Modals/Account/ConnectToProject';

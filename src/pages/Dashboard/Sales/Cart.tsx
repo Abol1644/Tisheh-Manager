@@ -41,7 +41,8 @@ import { flex, size } from '@/models/ReadyStyles';
 
 import { cart1Details, accounts, shipments } from '@/samples/sabadkharid';
 
-import Logo from '@/assets/images/rial.svg?react';
+import { useAccountStore, useProjectStore } from '@/stores';
+import { getConnectedProject, getSaleAccounts } from '@/api';
 
 interface CartProps {
   setOpenCart: (value: boolean) => void;
@@ -372,9 +373,10 @@ export function Cart({ setOpenCart, openCart }: CartProps,) {
           sx={{
             flex: 0.85,
             display: 'flex',
-            justifyContent: 'start',
+            justifyContent: 'center',
             alignItems: 'center',
-            gap: '40px'
+            gap: '40px',
+            px: 2
           }}
         >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -389,7 +391,21 @@ export function Cart({ setOpenCart, openCart }: CartProps,) {
             onChange={setProjects}
             options={accountProjectLabels.map(label => ({ title: label }))}
             sx={{ width: '270px' }}
-            label='انتخاب پروژه'
+            label='حساب - پروژه'
+          />
+          <Combo
+            value={projects}
+            onChange={setProjects}
+            options={accountProjectLabels.map(label => ({ title: label }))}
+            sx={{ width: '270px' }}
+            label='شیوه تحویل'
+          />
+          <Combo
+            value={projects}
+            onChange={setProjects}
+            options={accountProjectLabels.map(label => ({ title: label }))}
+            sx={{ width: '270px' }}
+            label='ترانزیت - نوبت دار'
           />
         </Box>
         <Box
