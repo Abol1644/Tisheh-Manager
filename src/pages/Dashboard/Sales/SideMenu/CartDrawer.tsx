@@ -11,7 +11,8 @@ import {
   ListItemText,
   Slide, IconButton,
   Tooltip,
-  Zoom
+  Zoom,
+  Skeleton, Stack
 } from '@mui/material';
 
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -27,12 +28,34 @@ import DeleteModal from '@/pages/Dashboard/Sales/Modals/DeleteModal';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useSnackbar } from "@/contexts/SnackBarContext";
-import { ListCart, Cart, CartDetails } from '@/models'; 
+import { ListCart, Cart, CartDetails, ItemResaultPrice } from '@/models'; 
 import { getCartList, deleteCart, getCart, getListOfCartItems } from '@/api';
 import { useControlCart } from '@/stores';
 
 interface DecodedToken {
   [key: string]: any;
+}
+
+function CartItemSkeleton() {
+  return (
+    <Stack spacing={1}>
+      <Skeleton variant="rounded" height={20} />
+      <Stack spacing={1} sx={{ pl:1, pt:1 }}>
+        <Stack spacing={1} sx={{ }} direction="row">
+          <Skeleton variant="rounded" width={200} height={40} sx={{ borderRadius: '52px' }} />
+          <Skeleton variant="rounded" width={40} height={40} sx={{ borderRadius: '52px' }} />
+        </Stack>
+        <Stack spacing={1} sx={{ }} direction="row">
+          <Skeleton variant="rounded" width={200} height={40} sx={{ borderRadius: '52px' }} />
+          <Skeleton variant="rounded" width={40} height={40} sx={{ borderRadius: '52px' }} />
+        </Stack>
+        <Stack spacing={1} sx={{ }} direction="row">
+          <Skeleton variant="rounded" width={200} height={40} sx={{ borderRadius: '52px' }} />
+          <Skeleton variant="rounded" width={40} height={40} sx={{ borderRadius: '52px' }} />
+        </Stack>
+      </Stack>
+    </Stack>
+  )
 }
 
 export function CartDrawer() {
@@ -46,7 +69,7 @@ export function CartDrawer() {
   const [expanded, setExpanded] = useState<string | false>(userName || false);
 
   const { showSnackbar, closeSnackbarById } = useSnackbar();
-  const { isCartOpen, toggleCart, cartOpen, cartClose, openCartId, setOpenCartId } = useControlCart();
+  const { isCartOpen, toggleCart, cartOpen, cartClose, openCartId, setCartProducts, setOpenCart } = useControlCart();
 
   useEffect(() => {
     setExpanded(userName || false);
@@ -102,6 +125,7 @@ export function CartDrawer() {
   };
 
   const handleRefresh = () => {
+    setLoading(true);
     getCartList()
       .then((data: ListCart[]) => {
         const grouped = data.reduce((acc, item) => {
@@ -124,24 +148,17 @@ export function CartDrawer() {
   
   const sendCartId = (cart: ListCart) => {
     cartOpen()
-    setOpenCartId(cart.id)
-    // getCart(cart.id)
-    //   .then((data: CartDetails) => {
-    //     setCartDetails(data);
-        
-    //     console.log('Fetched cart details:', data);
-    //   })
-    //   .catch((error) => {
-    //     console.error('Error fetching cart details:', error);
-    //   });
+    setOpenCart(cart)
+    getCartItems(cart)
   }
 
   const getCartItems = (cart: ListCart) => {
     console.log("🚀 ~ getCartItems ~ cart:", cart)
     cartOpen()
     getListOfCartItems(cart)
-      .then((data: Cart) => {
+      .then((data: ItemResaultPrice[]) => {
         console.log('Fetched cart items:', data);
+        setCartProducts(data)
       })
       .catch((error) => {
         console.error('Error fetching cart items:', error);
@@ -171,7 +188,7 @@ export function CartDrawer() {
           </Tooltip>
         </Box>
         {loading ? (
-          <CircularProgress />
+          <CartItemSkeleton />
         ) : Object.keys(groupedItems).length > 0 ? (
           Object.entries(groupedItems).map(([name, items], index) => (
             <Slide

@@ -322,6 +322,6 @@ input[type="search"]::-webkit-search-cancel-button {
   scrollbar-width: thin;
 }
 
-.MuiTypography-root {
-  line-height: inherit !important;
-}
+/* .MuiTypography-root { */
+  /* line-height: inherit !important; */
+/* } */

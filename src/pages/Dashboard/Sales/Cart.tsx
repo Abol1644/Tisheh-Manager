@@ -9,7 +9,9 @@ import {
   Checkbox,
   IconButton,
   FormControl,
-  ToggleButtonGroup
+  ToggleButtonGroup,
+  Switch, FormControlLabel,
+  Grow
 } from '@mui/material'
 import { DataGrid, GridColDef, gridClasses, GridRowsProp } from '@mui/x-data-grid';
 
@@ -41,7 +43,7 @@ import { flex, size } from '@/models/ReadyStyles';
 
 import { cart1Details, accounts, shipments } from '@/samples/sabadkharid';
 
-import { useAccountStore, useProjectStore } from '@/stores';
+import { useAccountStore, useProjectStore, useBranchDeliveryStore } from '@/stores';
 import { getConnectedProject, getSaleAccounts } from '@/api';
 
 interface CartProps {
@@ -102,6 +104,10 @@ export function Cart({ setOpenCart, openCart }: CartProps,) {
   const [deleteItemModal, setDeleteItemModal] = React.useState(false)
   const [confirmOrderModal, setConfirmOrderModal] = React.useState(false)
   const [paymentModal, setPaymentModal] = React.useState(false)
+  const [deliveryMethodBot, setDeliveryMethodBot] = React.useState<string | null>('left');
+
+  const isBranchDelivery = useBranchDeliveryStore((s) => s.isBranchDelivery);
+  const setIsBranchDelivery = useBranchDeliveryStore((s) => s.setIsBranchDelivery);
 
   const handleMoveItemModalToggle = () => {
     setMoveItemModal(prev => !prev)
@@ -147,17 +153,20 @@ export function Cart({ setOpenCart, openCart }: CartProps,) {
     });
   }, []);
 
-  // const addNewRow = (newRowData: any) => {
-  //   setRows(prevRows => {
-  //     const rowsWithoutDefault = prevRows.filter(row => !row.isDefaultRow);
-  //     const newRow = {
-  //       id: Date.now(),
-  //       ...newRowData
-  //     };
-  //     const defaultRow = createDefaultRow();
-  //     return [...rowsWithoutDefault, newRow, defaultRow];
-  //   });
-  // };
+  const changeBranchDelivery1 = (event: any) => {
+    setIsBranchDelivery(event.target.checked);
+  };
+
+  const changeBranchDelivery2 = (event: any) => {
+    setIsBranchDelivery(!event.target.checked);
+  };
+
+  const handledeliveryMethodBot = (
+    event: React.MouseEvent<HTMLElement>,
+    newdeliveryMethodBot: string | null,
+  ) => {
+    setDeliveryMethodBot(newdeliveryMethodBot);
+  };
 
   const handleCloseCart = () => {
     if (openCart === true) {
@@ -264,6 +273,7 @@ export function Cart({ setOpenCart, openCart }: CartProps,) {
           return (
             <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', height: '100%', width: '100%' }}>
               <NumberField
+                // @ts-ignore
                 value='سرویس'
                 onChange={() => { }}
               />
@@ -275,6 +285,7 @@ export function Cart({ setOpenCart, openCart }: CartProps,) {
             <Box sx={{ minWidth: '180px', maxWidth: '180px', display: 'flex', justifyContent: 'start', mr: 1 }}>
               <NumberField
                 value={params.row.quantity.toString()}
+                // @ts-ignore
                 onChange={(value) => handleQuantityChange(params.row.id, value)}
                 min={0}
                 step={1.0}
@@ -365,49 +376,82 @@ export function Cart({ setOpenCart, openCart }: CartProps,) {
           display: 'flex',
           flexDirection: 'row',
           minHeight: '50px',
-          mb: 2
+          overflowX: 'auto',
+          // overflowY: 'hidden',
+          scrollbarWidth: 'none',
+          pb: 3, pl: 2, pt: 0.6
         }}
       >
-        <Box
-          className='cart-header-text'
-          sx={{
-            flex: 0.85,
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            gap: '40px',
-            px: 2
-          }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <ShoppingCartRoundedIcon sx={{ fontSize: '22px' }} />
-            <Typography variant="subtitle1" sx={{ display: 'flex', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap' }}>
-              سبد خرید شماره
-            </Typography>
-            <Typography variant="subtitle1" sx={{ textDecoration: 'underline' }}> {toPersianDigits(' ' + cart1Details.number)} </Typography>
+        <Box sx={{ ...flex.columnStart, }} >
+          <Box sx={{ ...flex.rowStart }}>
+            <FormControlLabel checked={isBranchDelivery} onChange={changeBranchDelivery1} control={<Switch size='small' defaultChecked color='info' />} label="ارسال به پروژه" sx={{ whiteSpace: 'nowrap' }} />
           </Box>
-          <Combo
-            value={projects}
-            onChange={setProjects}
-            options={accountProjectLabels.map(label => ({ title: label }))}
-            sx={{ width: '270px' }}
-            label='حساب - پروژه'
-          />
-          <Combo
-            value={projects}
-            onChange={setProjects}
-            options={accountProjectLabels.map(label => ({ title: label }))}
-            sx={{ width: '270px' }}
-            label='شیوه تحویل'
-          />
-          <Combo
-            value={projects}
-            onChange={setProjects}
-            options={accountProjectLabels.map(label => ({ title: label }))}
-            sx={{ width: '270px' }}
-            label='ترانزیت - نوبت دار'
-          />
+          <Box sx={{ ...flex.rowStart }}>
+            <FormControlLabel checked={!isBranchDelivery} onChange={changeBranchDelivery2} control={<Switch size='small' color='info' />} label="تحویل درب انبار" sx={{ whiteSpace: 'nowrap' }} />
+          </Box>
         </Box>
+        <Grow in={isBranchDelivery} timeout={450}>
+          <Box
+            sx={{
+              width: '100%',
+              ...flex.row,
+              gap: '10px',
+              display: isBranchDelivery ? 'flex' : 'none',
+            }}
+          >
+            <Combo
+              value={projects}
+              onChange={setProjects}
+              options={accountProjectLabels.map(label => ({ title: label }))}
+              sx={{ width: '100%', maxWidth: '270px', minWidth: '200px' }}
+              label='حساب - پروژه'
+            />
+            <Combo
+              value={projects}
+              onChange={setProjects}
+              options={accountProjectLabels.map(label => ({ title: label }))}
+              sx={{ width: '100%', maxWidth: '270px', minWidth: '200px' }}
+              label='ارسال به صورت'
+            />
+            <Grow in={deliveryMethodBot === "auto"} timeout={450}>
+              <Combo
+                value={projects}
+                onChange={setProjects}
+                options={accountProjectLabels.map(label => ({ title: label }))}
+                sx={{ width: '100%', maxWidth: '270px', minWidth: '200px', display: deliveryMethodBot === 'auto' ? 'flex' : 'none', }}
+                label='شیوه تحویل'
+              />
+            </Grow>
+            <ToggleButtonGroup
+              className='sale-button-group'
+              value={deliveryMethodBot}
+              exclusive
+              onChange={handledeliveryMethodBot}
+              sx={{ display: isBranchDelivery ? 'flex' : 'none', '& button': { borderRadius: '50px', minWidth: '80px' }, }}
+            >
+              <ToggleButton color='primary' value="auto" disabled><AutoAwesomeRoundedIcon sx={{ mr: 0.5 }} />خودکار</ToggleButton>
+              <ToggleButton color='primary' value="manual">دستی <TouchAppRoundedIcon sx={{ ml: 0.5 }} /></ToggleButton>
+            </ToggleButtonGroup>
+          </Box>
+        </Grow>
+        <Grow in={!isBranchDelivery} timeout={450}>
+          <Box
+            sx={{
+              ...flex.justifyBetween,
+              width: '100%',
+              justifyContent: 'start',
+              display: isBranchDelivery ? 'none' : 'flex',
+            }}
+          >
+            <Combo
+              value={projects}
+              onChange={setProjects}
+              options={accountProjectLabels.map(label => ({ title: label }))}
+              sx={{ width: '100%', maxWidth: '270px', minWidth: '200px' }}
+              label='نام انبار'
+            />
+          </Box>
+        </Grow>
         <Box
           className='cart-header-buttons'
           sx={{
@@ -418,10 +462,6 @@ export function Cart({ setOpenCart, openCart }: CartProps,) {
             flex: 0.18,
           }}
         >
-          <ToggleButtonGroup className='sale-button-group'>
-            <ToggleButton color='primary' disabled value="false"><AutoAwesomeRoundedIcon sx={{ mr: 0.5 }} />خودکار</ToggleButton>
-            <ToggleButton color='primary' value="true">دستی <TouchAppRoundedIcon sx={{ ml: 0.5 }} /></ToggleButton>
-          </ToggleButtonGroup>
           <Box
             sx={{
               p: 1,
@@ -508,15 +548,15 @@ export function Cart({ setOpenCart, openCart }: CartProps,) {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'end',
-            gap: '14px',
+            gap: '12px',
             flex: 0.18,
           }}
         >
-          <Btn color='error' onClick={handleCloseCart} variant='contained' sx={{ height: '44px', minWidth: '56px', ml: 1 }}>
+          <Btn color='error' onClick={handleCloseCart} variant='contained' sx={{ height: '54px', minWidth: '56px', py: 1 }}>
             خروج
             <CloseRoundedIcon sx={{ ml: 1 }} />
           </Btn>
-          <Btn color='success' onClick={handleConfirmModalToggle} variant='contained' sx={{ height: '44px', minWidth: '56px', ml: 1, whiteSpace: 'nowrap' }}>
+          <Btn color='success' onClick={handleConfirmModalToggle} variant='contained' sx={{ height: '84px', minWidth: '56px', whiteSpace: 'nowrap', py: 1 }}>
             ثبت سفارش
             <DoneAllIcon sx={{ ml: 1 }} />
           </Btn>
