@@ -3,11 +3,13 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import svgr from 'vite-plugin-svgr'
 import path from 'path'
+import reactRefresh from '@vitejs/plugin-react-refresh';
 
 export default defineConfig({
   plugins: [
     react(),
     svgr(),
+    reactRefresh(),
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
@@ -66,7 +68,15 @@ export default defineConfig({
     port: 5174,
     strictPort: true,
     cors: true,
-    allowedHosts: 'all'
-  }
-  
+    allowedHosts: 'all',
+    hmr: true,
+  },
+  optimizeDeps: {
+    include: [
+      'react', 
+      'react-dom', 
+      '@mui/material',       // Include MUI
+      '@mui/icons-material', // If you're using MUI icons
+    ],
+  },
 })

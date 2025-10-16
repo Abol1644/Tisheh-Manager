@@ -32,7 +32,7 @@ export const getAllProjects = async (): Promise<Project[]> => {
 
 export const getConnectedProject = async (
   BranchCenterDelivery: boolean,
-  id: number
+  id: number | undefined
 ): Promise<Project[]> => {
   console.log("Getting Connected Project");
   try {

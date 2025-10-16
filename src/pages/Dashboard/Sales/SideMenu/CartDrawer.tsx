@@ -28,9 +28,9 @@ import DeleteModal from '@/pages/Dashboard/Sales/Modals/DeleteModal';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useSnackbar } from "@/contexts/SnackBarContext";
-import { ListCart, Cart, CartDetails, ItemResaultPrice } from '@/models'; 
-import { getCartList, deleteCart, getCart, getListOfCartItems } from '@/api';
-import { useControlCart } from '@/stores';
+import { ListCart, Cart, CartDetails, ItemResaultPrice } from '@/models';
+import { getCartList, deleteCart, getCart, getListOfCartItems, findAccount, getConnectedProject } from '@/api';
+import { useControlCart, useAccountStore, useProjectStore, useBranchDeliveryStore } from '@/stores';
 
 interface DecodedToken {
   [key: string]: any;
@@ -40,16 +40,16 @@ function CartItemSkeleton() {
   return (
     <Stack spacing={1}>
       <Skeleton variant="rounded" height={20} />
-      <Stack spacing={1} sx={{ pl:1, pt:1 }}>
-        <Stack spacing={1} sx={{ }} direction="row">
+      <Stack spacing={1} sx={{ pl: 1, pt: 1 }}>
+        <Stack spacing={1} sx={{}} direction="row">
           <Skeleton variant="rounded" width={200} height={40} sx={{ borderRadius: '52px' }} />
           <Skeleton variant="rounded" width={40} height={40} sx={{ borderRadius: '52px' }} />
         </Stack>
-        <Stack spacing={1} sx={{ }} direction="row">
+        <Stack spacing={1} sx={{}} direction="row">
           <Skeleton variant="rounded" width={200} height={40} sx={{ borderRadius: '52px' }} />
           <Skeleton variant="rounded" width={40} height={40} sx={{ borderRadius: '52px' }} />
         </Stack>
-        <Stack spacing={1} sx={{ }} direction="row">
+        <Stack spacing={1} sx={{}} direction="row">
           <Skeleton variant="rounded" width={200} height={40} sx={{ borderRadius: '52px' }} />
           <Skeleton variant="rounded" width={40} height={40} sx={{ borderRadius: '52px' }} />
         </Stack>
@@ -69,7 +69,10 @@ export function CartDrawer() {
   const [expanded, setExpanded] = useState<string | false>(userName || false);
 
   const { showSnackbar, closeSnackbarById } = useSnackbar();
-  const { isCartOpen, toggleCart, cartOpen, cartClose, openCartId, setCartProducts, setOpenCart } = useControlCart();
+  const { isCartOpen, toggleCart, cartOpen, cartClose, openCartId, setCartProducts, setIsFetchingItems } = useControlCart();
+  const { selectedAccount, setSelectedAccount } = useAccountStore()
+  const { setConnectedProjects } = useProjectStore()
+  const { isBranchDelivery } = useBranchDeliveryStore()
 
   useEffect(() => {
     setExpanded(userName || false);
@@ -145,23 +148,62 @@ export function CartDrawer() {
         setLoading(false);
       });
   }
-  
-  const sendCartId = (cart: ListCart) => {
-    cartOpen()
-    setOpenCart(cart)
-    getCartItems(cart)
-  }
 
-  const getCartItems = (cart: ListCart) => {
-    console.log("🚀 ~ getCartItems ~ cart:", cart)
-    cartOpen()
+  const sendCartId = (cart: ListCart) => {
+    findAccount(cart.codeAccCustomer)
+      .then((account) => {
+        setSelectedAccount(account);
+
+        const tryGetConnectedProject = (retryCount = 0) => {
+          const acc = selectedAccount || account;
+          if (acc) {
+            getConnectedProject(isBranchDelivery, acc.codeAcc)
+              .then((data) => {
+                setConnectedProjects(data);
+              });
+          } else if (retryCount < 3) {
+            setTimeout(() => tryGetConnectedProject(retryCount + 1), 100);
+          }
+        };
+
+        tryGetConnectedProject();
+      });
+
+    cartOpen();
+
+    // Fetch items
     getListOfCartItems(cart)
       .then((data: ItemResaultPrice[]) => {
-        console.log('Fetched cart items:', data);
-        setCartProducts(data)
+        setCartProducts(data);
       })
       .catch((error) => {
         console.error('Error fetching cart items:', error);
+      });
+
+    // 👇 Fetch cart details
+    getCart(cart.id)
+      .then((details: CartDetails) => {
+        // Use the action we just added
+        useControlCart.getState().setCurrentCartDetails(details);
+      })
+      .catch((error) => {
+        console.error('Failed to load cart details:', error);
+      });
+    getCartItems(cart)
+  };
+
+  const getCartItems = (cart: ListCart) => {
+    setIsFetchingItems(true);
+    getListOfCartItems(cart)
+      .then((data: ItemResaultPrice[]) => {
+        console.log('Fetched cart items:', data);
+        setCartProducts(data);
+      })
+      .catch((error) => {
+        console.error('Error fetching cart items:', error);
+      })
+      .finally(() => {
+        setIsFetchingItems(false);
       });
   }
 

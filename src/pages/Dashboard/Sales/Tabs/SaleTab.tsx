@@ -293,7 +293,7 @@ export default function Sale() {
                   zIndex: isCartOpen ? 10 : 0
                 }}
               >
-                <MemoizedCart openCart={isCartOpen} setOpenCart={cartOpen} />
+                <Cart openCart={isCartOpen} setOpenCart={cartOpen} />
               </Box>
 
               <Box

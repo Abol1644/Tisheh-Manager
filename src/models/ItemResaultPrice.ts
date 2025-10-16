@@ -7,6 +7,7 @@ export interface ItemResaultPrice {
     priceAvgShipp: number;
   };
   id: number;
+  cartId: number;
   parentId: number;
   parentSid: string;
   sort: number;

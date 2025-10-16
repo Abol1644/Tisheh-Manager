@@ -97,9 +97,21 @@ export const deleteAccount = async (accountId: string): Promise<void> => {
   }
 };
 
-export const findAccount = async (accountId: number): Promise<AccountSale> => {
+export const findSaleAccount = async (accountId: number): Promise<AccountSale> => {
   try {
     const response = await apiClient.post<AccountSale>(`/Accounts/FindSale?CodeAcc=${accountId}`);
+    return response.data;
+  } catch (error: any) {
+    console.error("Find Account API error: ", error);
+
+    const serverMessage = error.response?.data || "Find Account failed";
+    throw new Error(serverMessage);
+  }
+};
+
+export const findAccount = async (accountId: number): Promise<Account> => {
+  try {
+    const response = await apiClient.post<Account>(`/Accounts/Find?CodeAcc=${accountId}`);
     return response.data;
   } catch (error: any) {
     console.error("Find Account API error: ", error);
