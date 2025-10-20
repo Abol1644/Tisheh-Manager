@@ -105,7 +105,6 @@ export const useDataGridStyles = () => {
     '& .default-row': {
       "& .MuiDataGrid-cell": {
         borderTop: '1px solid var(--text-secondary)',
-        boxShadow: 'inset 0 5px 5px -5px var(--text-secondary)',
       },
     }
   };
@@ -160,7 +159,6 @@ export const hiddenFooterStyles = () => {
       "& .MuiDataGrid-cell": {
         height: "75px",
         borderTop: '1px solid var(--text-secondary)',
-        boxShadow: 'inset 0 5px 5px -5px var(--text-secondary)',
       },
     },
   };
