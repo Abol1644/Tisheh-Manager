@@ -6,6 +6,7 @@ export interface ItemResaultPrice {
     disPrice: number;
     priceAvgShipp: number;
   };
+  ididentity: number;
   id: number;
   cartId: number;
   parentId: number;
