@@ -1,14 +1,9 @@
 import React, { useCallback, useMemo, useEffect, useState, memo, use } from 'react'
 import {
-  alpha,
   Box,
-  Button,
-  Paper,
   ToggleButton, Typography,
-  TextField, Select, SelectChangeEvent, MenuItem, InputLabel, OutlinedInput,
   Checkbox,
   IconButton,
-  FormControl,
   ToggleButtonGroup,
   Switch, FormControlLabel,
   Grow
@@ -104,22 +99,45 @@ export function Cart({ setOpenCart, openCart }: CartProps,) {
   const [rawItems, setRawItems] = useState<ItemResaultPrice[]>([]);
   const [loadingItems, setLoadingItems] = useState(false);
   const [Warehouse, setWarehouse] = useState<Warehouse[]>([]);
-  const [selectedWarehouse, setSelectedWarehouse] = useState<Warehouse | null>(null);
   const [quantityMap, setQuantityMap] = useState<Record<number, number>>({});
 
   const isBranchDelivery = useBranchDeliveryStore((s) => s.isBranchDelivery);
   const setIsBranchDelivery = useBranchDeliveryStore((s) => s.setIsBranchDelivery);
+  const [isTransit, setIsTransit] = useState(false);
 
   const { setSelectedProject, connectedProjects, setConnectedProjects } = useProjectStore();
   const { selectedAccount } = useAccountStore();
-  const { cartClose, products: cartProducts, isFetchingItems } = useControlCart()
+  const {
+    cartClose,
+    products: cartProducts,
+    isFetchingItems,
+    isSelectingProject,
+    isSelectingTransit,
+    isFindingWarehouse,
+    setIsFetchingItems,
+    setIsSelectingProject,
+    setIsSelectingTransit,
+    setIsFindingWarehouse,
+    currentCartDetails,
+    selectedCartWarehouse,
+    setSelectedCartWarehouse
+  } = useControlCart()
 
   useEffect(() => {
     if (Array.isArray(cartProducts)) {
       setRawItems(cartProducts);
-      console.log("🚀 ~ Cart ~ cartProducts:", cartProducts)
-      console.log("🚀 ~ Cart ~ rawItems:", rawItems)
-      console.log("🚀 ~ Cart ~ rows:", rows)
+      // console.log("🚀 ~ Cart ~ cartProducts:", cartProducts)
+      // console.log("🚀 ~ Cart ~ rawItems:", rawItems)
+      // console.log("🚀 ~ Cart ~ rows:", rows)
+    }
+    getWarehouses()
+      .then((warehouses) => {
+        setWarehouse(warehouses);
+      });
+    if (currentCartDetails?.transit) {
+      setDeliverySource('ارسال مستقیم از کارخانه')
+    } else {
+      setDeliverySource('از انبار')
     }
   }, [cartProducts]);
 
@@ -132,14 +150,14 @@ export function Cart({ setOpenCart, openCart }: CartProps,) {
     }
 
     // If branch delivery (تحویل درب انبار) BUT no warehouse selected → wait
-    if (!selectedWarehouse) {
+    if (!selectedCartWarehouse) {
       return [createDefaultRow()];
     }
 
     // ✅ Now: isBranchDelivery = true AND warehouse selected
     // So filter real items by warehouse
     const filtered = rawItems.filter(
-      item => item.warehouseId === selectedWarehouse.id
+      item => item.warehouseId === selectedCartWarehouse.id
     );
 
     const mappedRows = filtered.map((item): CartItemRow => ({
@@ -155,10 +173,10 @@ export function Cart({ setOpenCart, openCart }: CartProps,) {
 
     // Always append default/footer row
     return [...mappedRows, createDefaultRow()];
-  }, [rawItems, selectedWarehouse, isBranchDelivery, quantityMap]);
+  }, [rawItems, selectedCartWarehouse, isBranchDelivery, quantityMap]);
 
   const totalInvoice = useMemo(() => {
-    if (isBranchDelivery || !selectedWarehouse) return 0;
+    if (isBranchDelivery || !selectedCartWarehouse) return 0;
 
     return rows
       .filter(row => !row.isDefaultRow)
@@ -166,7 +184,7 @@ export function Cart({ setOpenCart, openCart }: CartProps,) {
         const effectivePrice = row.offPrice ?? row.price;
         return sum + effectivePrice * row.quantity;
       }, 0);
-  }, [rows, isBranchDelivery, selectedWarehouse]);
+  }, [rows, isBranchDelivery, selectedCartWarehouse]);
 
   const handleMoveItemModalToggle = () => {
     setMoveItemModal(prev => !prev)
@@ -214,10 +232,6 @@ export function Cart({ setOpenCart, openCart }: CartProps,) {
     setIsBranchDelivery(!event.target.checked);
     if (!isBranchDelivery) {
       setWarehouseLoading(true);
-      getWarehouses()
-        .then((warehouses) => {
-          setWarehouse(warehouses);
-        });
     }
   };
 
@@ -225,10 +239,6 @@ export function Cart({ setOpenCart, openCart }: CartProps,) {
     setIsBranchDelivery(event.target.checked);
     if (!isBranchDelivery) {
       setWarehouseLoading(true);
-      getWarehouses()
-        .then((warehouses) => {
-          setWarehouse(warehouses);
-        });
     }
   };
 
@@ -241,10 +251,10 @@ export function Cart({ setOpenCart, openCart }: CartProps,) {
 
   const handleWarehouseChange = React.useCallback(
     (newValue: any) => {
-      setSelectedWarehouse(newValue);
+      setSelectedCartWarehouse(newValue);
       console.log("🚀 ~ Cart ~ newValue:", newValue)
     },
-    [setSelectedWarehouse]
+    [setSelectedCartWarehouse]
   );
 
   const handleCloseCart = () => {
@@ -269,6 +279,21 @@ export function Cart({ setOpenCart, openCart }: CartProps,) {
         });
     }
   }, [selectedAccount, connectedProjects]);
+
+  // Sync selectedProject from global store to local state on mount or update
+  useEffect(() => {
+    const { selectedProject: globalSelectedProject } = useProjectStore.getState();
+
+    if (globalSelectedProject && projectTitles.length > 0) {
+      const matchedProject = projectTitles.find(pt => pt.id === globalSelectedProject.id);
+      if (matchedProject && !selectedProject) {
+        setSelectedProjectState(matchedProject);
+        // Optionally also call setSelectedProject if needed for side effects in the store
+        // But avoid infinite loops — only if necessary
+      }
+    }
+    // If there's no global selection, you might want to reset or keep current
+  }, [projectTitles, selectedProject]);
 
   const columns: GridColDef[] = [
     {
@@ -504,6 +529,7 @@ export function Cart({ setOpenCart, openCart }: CartProps,) {
               sx={{ width: '100%', maxWidth: '270px', minWidth: '200px' }}
               label="حساب - پروژه"
               getOptionValue={(option) => (typeof option === 'string' ? option : option.id)}
+              loading={isSelectingProject}
             />
             <Combo
               value={deliverySource}
@@ -546,9 +572,9 @@ export function Cart({ setOpenCart, openCart }: CartProps,) {
           >
             <Combo
               options={Warehouse}
-              value={selectedWarehouse}
+              value={selectedCartWarehouse}
               onChange={handleWarehouseChange}
-              loading={warehouseLoading}
+              loading={isFindingWarehouse}
               loadingText="در حال بارگذاری..."
               noOptionsText="هیچ گزینه‌ای موجود نیست"
               sx={{ width: '100%', maxWidth: '270px', minWidth: '200px' }}

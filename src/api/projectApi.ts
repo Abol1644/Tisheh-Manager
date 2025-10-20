@@ -198,7 +198,7 @@ export const disconnectProject = async (
 ): Promise<Project> => {
   try {
     const updatedProject = { ...project };
-    console.log("🚀 ~ disconnectProject ~ updatedProject:", updatedProject);
+    // console.log("🚀 ~ disconnectProject ~ updatedProject:", updatedProject);
 
     if (!updatedProject.codeAccConnect) {
       updatedProject.codeAccConnect = "";

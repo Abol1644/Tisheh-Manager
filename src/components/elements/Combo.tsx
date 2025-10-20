@@ -12,6 +12,7 @@ import {
   Menu,
   MenuItem,
   Button,
+  CircularProgress,
 } from "@mui/material";
 import { useThemeMode } from "@/contexts/ThemeContext";
 import Btn from "@/components/elements/Btn";
@@ -47,7 +48,7 @@ interface ComboProps {
     menuItemDisabled?: boolean;
   }[];
   menuIcon?: React.ReactNode;
-
+  loading?: boolean;
   // Pass through any other props to Autocomplete
   [key: string]: any;
 }
@@ -67,6 +68,7 @@ export default function Combo({
   menuItems = [],
   menuIcon,
   inputValue,
+  loading,
   ...rest
 }: ComboProps) {
   const [anchorEl, setAnchorEl] = React.useState<HTMLElement | null>(null);
@@ -143,6 +145,15 @@ export default function Combo({
         label={label}
         placeholder={placeholder}
         variant="outlined"
+        InputProps= {{
+          ...params.InputProps,
+          endAdornment: (
+            <>
+              {loading ? <CircularProgress color="inherit" size={20} /> : null}
+              {params.InputProps.endAdornment}
+            </>
+          ),
+        }}
       />
     ),
 

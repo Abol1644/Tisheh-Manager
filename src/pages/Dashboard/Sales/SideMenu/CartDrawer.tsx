@@ -12,7 +12,8 @@ import {
   Slide, IconButton,
   Tooltip,
   Zoom,
-  Skeleton, Stack
+  Skeleton, Stack,
+  Badge
 } from '@mui/material';
 
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -29,7 +30,7 @@ import DeleteModal from '@/pages/Dashboard/Sales/Modals/DeleteModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSnackbar } from "@/contexts/SnackBarContext";
 import { ListCart, Cart, CartDetails, ItemResaultPrice } from '@/models';
-import { getCartList, deleteCart, getCart, getListOfCartItems, findAccount, getConnectedProject } from '@/api';
+import { getCartList, deleteCart, getCart, getListOfCartItems, findAccount, getConnectedProject, findWarehouse } from '@/api';
 import { useControlCart, useAccountStore, useProjectStore, useBranchDeliveryStore } from '@/stores';
 
 interface DecodedToken {
@@ -38,23 +39,38 @@ interface DecodedToken {
 
 function CartItemSkeleton() {
   return (
-    <Stack spacing={1}>
-      <Skeleton variant="rounded" height={20} />
-      <Stack spacing={1} sx={{ pl: 1, pt: 1 }}>
-        <Stack spacing={1} sx={{}} direction="row">
-          <Skeleton variant="rounded" width={200} height={40} sx={{ borderRadius: '52px' }} />
-          <Skeleton variant="rounded" width={40} height={40} sx={{ borderRadius: '52px' }} />
-        </Stack>
-        <Stack spacing={1} sx={{}} direction="row">
-          <Skeleton variant="rounded" width={200} height={40} sx={{ borderRadius: '52px' }} />
-          <Skeleton variant="rounded" width={40} height={40} sx={{ borderRadius: '52px' }} />
-        </Stack>
-        <Stack spacing={1} sx={{}} direction="row">
-          <Skeleton variant="rounded" width={200} height={40} sx={{ borderRadius: '52px' }} />
-          <Skeleton variant="rounded" width={40} height={40} sx={{ borderRadius: '52px' }} />
+    <>
+      <Stack spacing={1}>
+        <Skeleton variant="rounded" height={20} />
+        <Stack spacing={1} sx={{ pl: 1, pt: 1 }}>
+          <Stack spacing={1} sx={{}} direction="row">
+            <Skeleton variant="rounded" width={200} height={40} sx={{ borderRadius: '52px' }} />
+            <Skeleton variant="rounded" width={40} height={40} sx={{ borderRadius: '52px' }} />
+          </Stack>
+          <Stack spacing={1} sx={{}} direction="row">
+            <Skeleton variant="rounded" width={200} height={40} sx={{ borderRadius: '52px' }} />
+            <Skeleton variant="rounded" width={40} height={40} sx={{ borderRadius: '52px' }} />
+          </Stack>
+          <Stack spacing={1} sx={{}} direction="row">
+            <Skeleton variant="rounded" width={200} height={40} sx={{ borderRadius: '52px' }} />
+            <Skeleton variant="rounded" width={40} height={40} sx={{ borderRadius: '52px' }} />
+          </Stack>
         </Stack>
       </Stack>
-    </Stack>
+      <Stack spacing={1} sx={{ mt: 2 }}>
+        <Skeleton variant="rounded" height={20} />
+        <Stack spacing={1} sx={{ pl: 1, pt: 1 }}>
+          <Stack spacing={1} sx={{}} direction="row">
+            <Skeleton variant="rounded" width={200} height={40} sx={{ borderRadius: '52px' }} />
+            <Skeleton variant="rounded" width={40} height={40} sx={{ borderRadius: '52px' }} />
+          </Stack>
+          <Stack spacing={1} sx={{}} direction="row">
+            <Skeleton variant="rounded" width={200} height={40} sx={{ borderRadius: '52px' }} />
+            <Skeleton variant="rounded" width={40} height={40} sx={{ borderRadius: '52px' }} />
+          </Stack>
+        </Stack>
+      </Stack>
+    </>
   )
 }
 
@@ -69,10 +85,23 @@ export function CartDrawer() {
   const [expanded, setExpanded] = useState<string | false>(userName || false);
 
   const { showSnackbar, closeSnackbarById } = useSnackbar();
-  const { isCartOpen, toggleCart, cartOpen, cartClose, openCartId, setCartProducts, setIsFetchingItems } = useControlCart();
-  const { selectedAccount, setSelectedAccount } = useAccountStore()
-  const { setConnectedProjects } = useProjectStore()
-  const { isBranchDelivery } = useBranchDeliveryStore()
+  const { selectedAccount, setSelectedAccount, } = useAccountStore()
+  const { setConnectedProjects, setSelectedProject, } = useProjectStore()
+  const { isBranchDelivery, setIsBranchDelivery } = useBranchDeliveryStore()
+  const {
+      cartOpen,
+      setCartProducts,
+      products: cartProducts,
+      isFetchingItems,
+      isSelectingProject,
+      isSelectingTransit,
+      isFindingWarehouse,
+      setIsFetchingItems,
+      setIsSelectingProject,
+      setIsSelectingTransit,
+      setIsFindingWarehouse,
+      setSelectedCartWarehouse
+    } = useControlCart()
 
   useEffect(() => {
     setExpanded(userName || false);
@@ -160,6 +189,19 @@ export function CartDrawer() {
             getConnectedProject(isBranchDelivery, acc.codeAcc)
               .then((data) => {
                 setConnectedProjects(data);
+                setIsSelectingProject(true);
+
+                const matchedProject = data.find(project => project.id === cart.projectIdCustomer);
+
+                if (matchedProject) {
+                  // 🎯 Set the selected project in the store
+                  setSelectedProject(matchedProject);
+                  setIsSelectingProject(false);
+                } else {
+                  // Optional: reset if no match
+                  setSelectedProject(null);
+                }
+                setIsSelectingProject(false);
               });
           } else if (retryCount < 3) {
             setTimeout(() => tryGetConnectedProject(retryCount + 1), 100);
@@ -183,8 +225,18 @@ export function CartDrawer() {
     // 👇 Fetch cart details
     getCart(cart.id)
       .then((details: CartDetails) => {
+        console.log("🎁 ~ sendCartId ~ details:", details)
         // Use the action we just added
         useControlCart.getState().setCurrentCartDetails(details);
+        if (details.branchCenterDelivery) {
+          setIsBranchDelivery(true);
+          findWarehouse(details.warehouseId)
+            .then((warehouse) => {
+              setSelectedCartWarehouse(warehouse);
+            })
+        } else {
+          setIsBranchDelivery(false);
+        }
       })
       .catch((error) => {
         console.error('Failed to load cart details:', error);
@@ -241,87 +293,115 @@ export function CartDrawer() {
               unmountOnExit
               timeout={300}
               style={{
-                transitionDelay: `${index * 30}ms`,
+                transitionDelay: `${index * 30}ms`
               }}
             >
-              <Accordion
-                expanded={expanded === name}
-                onChange={(_, isExpanded) => setExpanded(isExpanded ? name : false)}
+              <Badge
+                anchorOrigin={{
+                  vertical: 'top',
+                  horizontal: 'left',
+                }}
+                badgeContent={items.length}
+                color={userName === name ? "info" : "primary"}
                 sx={{
-                  transition: 'all 0.3s ease',
-                  margin: '4px 0',
-                  '&.MuiPaper-root': {
-                    borderRadius: '12px !important',
-                    borderLeft: userName === name ? '2px solid var(--icon-main)' : '2px solid var(--primary-main)',
+                  width: '100%',
+                  '& .MuiBadge-badge': {
+                    left: 1,
+                    top: '50%',
                   },
-                  '&.MuiPaper-root::before': {
-                    display: 'none !important'
-                  },
-                  '&.MuiPaper-root.Mui-expanded': {
-                    margin: '4px 0',
-                    transition: 'all 0.3s ease',
-                  },
-                  '&.MuiPaper-root, .Mui-expanded ': {
-                    transition: 'all 0.3s ease'
-                  }
                 }}
               >
-                <AccordionSummary
-                  expandIcon={<ExpandMoreIcon />}
+                <Accordion
+                  expanded={expanded === name}
+                  onChange={(_, isExpanded) => setExpanded(isExpanded ? name : false)}
+                  sx={{
+                    transition: 'all 0.3s ease',
+                    margin: '4px 0',
+                    '&.MuiPaper-root': {
+                      borderRadius: '12px !important',
+                      borderLeft: userName === name ? '2px solid var(--icon-main)' : '2px solid var(--primary-main)',
+                    },
+                    '&.MuiPaper-root::before': {
+                      display: 'none !important'
+                    },
+                    '&.MuiPaper-root.Mui-expanded': {
+                      margin: '4px 0',
+                      transition: 'all 0.3s ease',
+                    },
+                    '&.MuiPaper-root, .Mui-expanded ': {
+                      transition: 'all 0.3s ease'
+                    },
+                    width: '100%'
+                  }}
                 >
-                  <Typography>
-                    {name} ({items.length})
-                  </Typography>
-                </AccordionSummary>
-                <AccordionDetails>
-                  <List dense>
-                    {items.map((item) => (
-                      <ListItem
-                        key={item.id}
-                        sx={{
-                          p: 0,
-                          transition: 'all 0.3s ease',
-                          '&:hover': {
-                            transform: 'translateY(-4px)',
-                            scale: 1.02,
-                          },
-                        }}
-                      >
-                        <Tooltip
-                          title={<p><strong>پروژه</strong> {item.projectIdCustomerTitle}</p>}
-                          placement="left"
-                          arrow
-                          disableInteractive
-                          slots={{ transition: Zoom }}
+                  <AccordionSummary
+                    expandIcon={<ExpandMoreIcon />}
+                  >
+                    {/* <Badge
+                      anchorOrigin={{
+                        vertical: 'top',
+                        horizontal: 'left',
+                      }}
+                      badgeContent={items.length}
+                      color={userName !== name ? "primary" : "info"}
+                      sx={{ mr: 1 }}
+                    >
+                      <ShoppingCartRoundedIcon color="action" />
+                    </Badge> */}
+                    <Typography>
+                      {name}
+                    </Typography>
+                  </AccordionSummary>
+                  <AccordionDetails>
+                    <List dense>
+                      {items.map((item) => (
+                        <ListItem
+                          key={item.id}
+                          sx={{
+                            p: 0,
+                            transition: 'all 0.3s ease',
+                            '&:hover': {
+                              transform: 'translateY(-4px)',
+                              scale: 1.02,
+                            },
+                          }}
                         >
-                          <Btn
-                            variant='outlined'
-                            fullWidth
-                            onClick={() => sendCartId(item)}
-                            sx={{ py: 1, mb: 1, ...flex.justifyBetween }}
+                          <Tooltip
+                            title={<p><strong>پروژه</strong> {item.projectIdCustomerTitle}</p>}
+                            placement="left"
+                            arrow
+                            disableInteractive
+                            slots={{ transition: Zoom }}
                           >
-                            <Box sx={{ ...flex.row }}>
-                              <ShoppingCartRoundedIcon sx={{ mr: 1 }} />
-                              <Typography variant="body2" align='right'>
-                                {item.codeAccCustomerTitle}
-                              </Typography>
-                            </Box>
-                            <DeleteRoundedIcon
-                              onClick={() => openDeleteModal(item.id)}
-                              sx={{
-                                transition: 'all 0.3s ease',
-                                '&:hover': {
-                                  color: 'error.main',
-                                },
-                              }}
-                            />
-                          </Btn>
-                        </Tooltip>
-                      </ListItem>
-                    ))}
-                  </List>
-                </AccordionDetails>
-              </Accordion>
+                            <Btn
+                              variant='outlined'
+                              fullWidth
+                              onClick={() => sendCartId(item)}
+                              sx={{ py: 1, mb: 1, ...flex.justifyBetween }}
+                            >
+                              <Box sx={{ ...flex.row }}>
+                                <ShoppingCartRoundedIcon sx={{ mr: 1 }} />
+                                <Typography variant="body2" align='right'>
+                                  {item.codeAccCustomerTitle}
+                                </Typography>
+                              </Box>
+                              <DeleteRoundedIcon
+                                onClick={() => openDeleteModal(item.id)}
+                                sx={{
+                                  transition: 'all 0.3s ease',
+                                  '&:hover': {
+                                    color: 'error.main',
+                                  },
+                                }}
+                              />
+                            </Btn>
+                          </Tooltip>
+                        </ListItem>
+                      ))}
+                    </List>
+                  </AccordionDetails>
+                </Accordion>
+              </Badge>
             </Slide>
           ))
         ) : (

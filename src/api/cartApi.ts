@@ -17,7 +17,7 @@ export const getCartList = async (): Promise<ListCart[]> => {
 export const getCart = async (cartId:number): Promise<CartDetails> => {
   try {
     const response = await apiClient.get<CartDetails>(`Cart/GetCart?CartId=${cartId}`);
-    console.log("Get Cart: ", response.data);
+    // console.log("Get Cart: ", response.data);
     return response.data;
   } catch (error: any) {
     console.error("Get Cart API error: ", error);
