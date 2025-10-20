@@ -88,7 +88,7 @@ export const useDataGridStyles = () => {
       fontWeight: "bold",
     },
     "& .MuiDataGrid-row--borderBottom, .MuiDataGrid-columnHeader": {
-      backgroundColor: mode === "light" ? "#FFF3D1 " : "#292929",
+      backgroundColor: 'var(--table-header)',
     },
     "& .MuiDataGrid-panelContent  ": {
       backgroundColor: "background.paper",
@@ -104,7 +104,7 @@ export const useDataGridStyles = () => {
     },
     '& .default-row': {
       "& .MuiDataGrid-cell": {
-        borderTop: '1px solid var(--text-secondary)',
+        borderTop: mode === "light" ? "2px solid #D1D1D1 " : "2px solid #6b6b6b",
       },
     }
   };
@@ -158,7 +158,7 @@ export const hiddenFooterStyles = () => {
       maxHeight: "100% !important",
       "& .MuiDataGrid-cell": {
         height: "75px",
-        borderTop: '1px solid var(--text-secondary)',
+        borderTop: mode === "light" ? "2px solid #D1D1D1 " : "2px solid #6b6b6b",
       },
     },
   };
