@@ -251,8 +251,7 @@ export function ProductSelect(props: any) {
         showSnackbar('انبار پردازش شد', 'success', 4000, <DoneAllRoundedIcon />);
       }
     };
-    if (isCartOpen) fetchData();
-    // fetchData();
+    if (!isCartOpen) fetchData();
   }, [selectedProject, isBranchDelivery, fetchDistance]);
 
   React.useEffect(() => {

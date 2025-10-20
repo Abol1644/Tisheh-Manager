@@ -20,7 +20,9 @@ import PersonIcon from '@mui/icons-material/Person';
 import SwapVertRoundedIcon from '@mui/icons-material/SwapVertRounded';
 import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
 import DoneAllIcon from '@mui/icons-material/DoneAll';
-import GroupRoundedIcon from '@mui/icons-material/GroupRounded';
+import DoneAllRoundedIcon from '@mui/icons-material/DoneAllRounded';
+import ErrorOutlineRoundedIcon from '@mui/icons-material/ErrorOutlineRounded';
+import InfoRoundedIcon from '@mui/icons-material/InfoRounded';
 
 import { toPersianDigits } from '@/utils/persianNumbers';
 import { useThemeMode } from '@/contexts/ThemeContext';
@@ -35,7 +37,8 @@ import BaseModal from '@/pages/Dashboard/Sales/Modals/BaseModal';
 import PaymentModal from '@/pages/Dashboard/Sales/Modals/PaymentModal';
 import { flex, size } from '@/models/ReadyStyles';
 
-import { useAccountStore, useProjectStore, useBranchDeliveryStore, useControlCart } from '@/stores';
+import { useAccountStore, useProjectStore, useBranchDeliveryStore, useControlCart, useDistanceStore } from '@/stores';
+import { useSnackbar } from "@/contexts/SnackBarContext";
 import { getConnectedProject, getWarehouses } from '@/api';
 import { Warehouse, ItemResaultPrice } from '@/models'
 
@@ -100,6 +103,7 @@ export function Cart({ setOpenCart, openCart }: CartProps,) {
   const [loadingItems, setLoadingItems] = useState(false);
   const [Warehouse, setWarehouse] = useState<Warehouse[]>([]);
   const [quantityMap, setQuantityMap] = useState<Record<number, number>>({});
+  const [isFetchingDistance, setIsFetchingDistance] = useState(false);
 
   const isBranchDelivery = useBranchDeliveryStore((s) => s.isBranchDelivery);
   const setIsBranchDelivery = useBranchDeliveryStore((s) => s.setIsBranchDelivery);
@@ -107,6 +111,8 @@ export function Cart({ setOpenCart, openCart }: CartProps,) {
 
   const { setSelectedProject, connectedProjects, setConnectedProjects } = useProjectStore();
   const { selectedAccount } = useAccountStore();
+  const { showSnackbar, closeSnackbarById } = useSnackbar();
+  const { distance, fetchDistance } = useDistanceStore();
   const {
     cartClose,
     products: cartProducts,
@@ -120,8 +126,11 @@ export function Cart({ setOpenCart, openCart }: CartProps,) {
     setIsFindingWarehouse,
     currentCartDetails,
     selectedCartWarehouse,
-    setSelectedCartWarehouse
+    setSelectedCartWarehouse,
+    isCartOpen
   } = useControlCart()
+
+  const primaryDistance = useMemo(() => distance.find((d) => d.warehouseId > 0)?.warehouseId || null, [distance]);
 
   useEffect(() => {
     if (Array.isArray(cartProducts)) {
@@ -140,6 +149,43 @@ export function Cart({ setOpenCart, openCart }: CartProps,) {
       setDeliverySource('از انبار')
     }
   }, [cartProducts]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsFetchingDistance(true);
+      try {
+        const loadingSnackbarId = showSnackbar('درحال پردازش نزدیکترین انبار', 'info', 0, <InfoRoundedIcon />);
+        await fetchDistance();
+        closeSnackbarById(loadingSnackbarId);
+      } catch (error: any) {
+        setSelectedCartWarehouse(null);
+        let errorMessage = 'خطا در دریافت فاصله';
+        if (error.response?.data) {
+          errorMessage = error.response.data;
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+        console.error("API error fetching distance:", error);
+        showSnackbar(errorMessage, 'error', 5000, <ErrorOutlineRoundedIcon />);
+      } finally {
+        setIsFetchingDistance(false);
+        showSnackbar('انبار پردازش شد', 'success', 4000, <DoneAllRoundedIcon />);
+      }
+    };
+    if (!isBranchDelivery && isCartOpen) {
+      fetchData();
+    }
+  }, [isBranchDelivery, selectedProject]);
+
+  useEffect(() => {
+    if (!isCartOpen || isBranchDelivery || !primaryDistance || Warehouse.length === 0) {
+      return;
+    }
+    const matchedWarehouse = Warehouse.find(wh => wh.id === primaryDistance);
+    if (isCartOpen && !isBranchDelivery) {
+      setSelectedCartWarehouse(matchedWarehouse || null);
+    }
+  }, [primaryDistance, Warehouse, isBranchDelivery]);
 
   const rows = React.useMemo((): CartItemRow[] => {
     if (!isBranchDelivery) {
