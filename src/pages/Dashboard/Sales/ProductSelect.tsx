@@ -43,7 +43,7 @@ import CachedRoundedIcon from "@mui/icons-material/CachedRounded"
 
 // Updated imports to use the enhanced project store
 import { useOrgansStore } from '@/stores/organStore';
-import { useProductsStore, useProjectStore, useAccountStore, useBranchDeliveryStore, useDistanceStore } from '@/stores/';
+import { useProductsStore, useProjectStore, useAccountStore, useBranchDeliveryStore, useDistanceStore, useControlCart } from '@/stores/';
 import { useSnackbar } from "@/contexts/SnackBarContext";
 
 const ODD_OPACITY = 0.1;
@@ -85,6 +85,7 @@ const StripedDataGrid = styled(DataGrid)(({ theme }) => ({
 
 export function ProductSelect(props: any) {
   const { setCategoryEnable } = props;
+  const { isCartOpen } = useControlCart();
 
   const {
     products,
@@ -122,10 +123,7 @@ export function ProductSelect(props: any) {
   const setIsBranchDelivery = useBranchDeliveryStore((s) => s.setIsBranchDelivery);
   const { distance, fetchDistance } = useDistanceStore();
   const { setSelectedItem } = useProductsStore();
-  const primaryDistance = useMemo(
-    () => distance.find((d) => d.warehouseId > 0)?.warehouseId || null,
-    [distance]
-  );
+  const primaryDistance = useMemo(() => distance.find((d) => d.warehouseId > 0)?.warehouseId || null,[distance]);
 
   useEffect(() => {
     const isAlt = products.find(product => product.activateAlternate);
@@ -253,7 +251,8 @@ export function ProductSelect(props: any) {
         showSnackbar('انبار پردازش شد', 'success', 4000, <DoneAllRoundedIcon />);
       }
     };
-    fetchData();
+    if (isCartOpen) fetchData();
+    // fetchData();
   }, [selectedProject, isBranchDelivery, fetchDistance]);
 
   React.useEffect(() => {

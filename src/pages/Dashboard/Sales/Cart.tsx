@@ -142,20 +142,25 @@ export function Cart({ setOpenCart, openCart }: CartProps,) {
   }, [cartProducts]);
 
   const rows = React.useMemo((): CartItemRow[] => {
-    // When NOT branch delivery → show placeholder: "ارسال به پروژه فعال است"
     if (!isBranchDelivery) {
-      return [
-        { ...createDefaultRow(), productServiceName: 'ارسال به پروژه فعال است' }
-      ];
+      const mappedRows = rawItems.map((item): CartItemRow => ({
+        id: item.ididentity + item.warehouseId,
+        shipmentId: item.cartId ?? 1,
+        productServiceName: `${item.title} ${item.attributeGroupTitle}`.trim(),
+        quantity: quantityMap[item.ididentity] ?? 1,
+        unit: item.valueTitleBase || item.valueTitle || 'عدد',
+        price: item.priceWarehouse,
+        offPrice: item.discountPriceWarehouse > 0 ? item.discountPriceWarehouse : null,
+        originalItem: item,
+      }));
+
+      return [...mappedRows, createDefaultRow()];
     }
 
-    // If branch delivery (تحویل درب انبار) BUT no warehouse selected → wait
     if (!selectedCartWarehouse) {
       return [createDefaultRow()];
     }
 
-    // ✅ Now: isBranchDelivery = true AND warehouse selected
-    // So filter real items by warehouse
     const filtered = rawItems.filter(
       item => item.warehouseId === selectedCartWarehouse.id
     );
