@@ -188,9 +188,13 @@ export function Cart({ setOpenCart, openCart }: CartProps,) {
   }, [primaryDistance, Warehouse, isBranchDelivery]);
 
   const rows = React.useMemo((): CartItemRow[] => {
-    if (!isBranchDelivery) {
-      const mappedRows = rawItems.map((item): CartItemRow => ({
-        id: item.ididentity + item.warehouseId,
+    if (!isBranchDelivery && selectedCartWarehouse) {
+      const filtered = rawItems.filter(
+        item => item.warehouseId === selectedCartWarehouse.id
+      );
+
+      const mappedRows = filtered.map((item): CartItemRow => ({
+        id: item.ididentity,
         shipmentId: item.cartId ?? 1,
         productServiceName: `${item.title} ${item.attributeGroupTitle}`.trim(),
         quantity: quantityMap[item.ididentity] ?? 1,
