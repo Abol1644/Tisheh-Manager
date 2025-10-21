@@ -1,3 +1,4 @@
+// src\models\Cart.ts
 export interface Cart {
   id: number;
   codeAccCustomer: number;
