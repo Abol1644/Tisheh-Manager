@@ -8,6 +8,7 @@ export interface ItemResaultPrice {
   };
   ididentity: number;
   id: number;
+  value: number;
   cartId: number;
   parentId: number;
   parentSid: string;
