@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useEffect, useState, memo, use } from 'react'
+import React, { useCallback, useMemo, useEffect, useState } from 'react'
 import {
   Box,
   ToggleButton, Typography,
@@ -144,7 +144,7 @@ export function Cart({ setOpenCart, openCart }: CartProps,) {
         setWarehouse(warehouses);
       });
     if (currentCartDetails?.transit) {
-      setDeliverySource('ارسال مستقیم از کارخانه')
+      setDeliverySource('مستقیم از کارخانه')
     } else {
       setDeliverySource('از انبار')
     }
@@ -187,8 +187,51 @@ export function Cart({ setOpenCart, openCart }: CartProps,) {
     }
   }, [primaryDistance, Warehouse, isBranchDelivery]);
 
+  // const rows = React.useMemo((): CartItemRow[] => {
+  //   if (!isBranchDelivery && selectedCartWarehouse) {
+  //     const filtered = rawItems.filter(
+  //       item => item.warehouseId === selectedCartWarehouse.id
+  //     );
+
+  //     const mappedRows = filtered.map((item): CartItemRow => ({
+  //       id: item.ididentity,
+  //       shipmentId: item.cartId ?? 1,
+  //       productServiceName: `${item.title} ${item.attributeGroupTitle}`.trim(),
+  //       quantity: item.value ?? 1,
+  //       unit: item.valueTitleBase || item.valueTitle || 'عدد',
+  //       price: item.priceWarehouse,
+  //       offPrice: item.discountPriceWarehouse > 0 ? item.discountPriceWarehouse : null,
+  //       originalItem: item,
+  //     }));
+
+  //     return [...mappedRows, createDefaultRow()];
+  //   }
+
+  //   if (!selectedCartWarehouse) {
+  //     return [createDefaultRow()];
+  //   }
+
+  //   const filtered = rawItems.filter(
+  //     item => item.warehouseId === selectedCartWarehouse.id
+  //   );
+
+  //   const mappedRows = filtered.map((item): CartItemRow => ({
+  //     id: item.ididentity,
+  //     shipmentId: item.cartId ?? 1,
+  //     productServiceName: `${item.title} ${item.attributeGroupTitle}`.trim(),
+  //     quantity: item.value ?? 1,
+  //     unit: item.valueTitleBase || item.valueTitle || 'عدد',
+  //     price: item.priceWarehouse,
+  //     offPrice: item.discountPriceWarehouse > 0 ? item.discountPriceWarehouse : null,
+  //     originalItem: item,
+  //   }));
+
+  //   // Always append default/footer row
+  //   return [...mappedRows, createDefaultRow()];
+  // }, [rawItems, selectedCartWarehouse, isBranchDelivery, quantityMap]);
+
   const rows = React.useMemo((): CartItemRow[] => {
-    if (!isBranchDelivery && selectedCartWarehouse) {
+    if (selectedCartWarehouse) {
       const filtered = rawItems.filter(
         item => item.warehouseId === selectedCartWarehouse.id
       );
@@ -205,29 +248,9 @@ export function Cart({ setOpenCart, openCart }: CartProps,) {
       }));
 
       return [...mappedRows, createDefaultRow()];
-    }
-
-    if (!selectedCartWarehouse) {
+    } else {
       return [createDefaultRow()];
     }
-
-    const filtered = rawItems.filter(
-      item => item.warehouseId === selectedCartWarehouse.id
-    );
-
-    const mappedRows = filtered.map((item): CartItemRow => ({
-      id: item.ididentity,
-      shipmentId: item.cartId ?? 1,
-      productServiceName: `${item.title} ${item.attributeGroupTitle}`.trim(),
-      quantity: item.value ?? 1,
-      unit: item.valueTitleBase || item.valueTitle || 'عدد',
-      price: item.priceWarehouse,
-      offPrice: item.discountPriceWarehouse > 0 ? item.discountPriceWarehouse : null,
-      originalItem: item,
-    }));
-
-    // Always append default/footer row
-    return [...mappedRows, createDefaultRow()];
   }, [rawItems, selectedCartWarehouse, isBranchDelivery, quantityMap]);
 
   const totalInvoice = useMemo(() => {
