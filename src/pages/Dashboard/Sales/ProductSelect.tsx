@@ -1,38 +1,32 @@
-import React, { memo, useMemo, useCallback, useState, useEffect } from "react";
-import { DataGrid, GridColDef, gridClasses } from "@mui/x-data-grid";
-import { styled } from "@mui/material/styles";
+import React, { useMemo, useCallback, useState, useEffect } from "react";
 
 import OrderConfirmModal from "@/pages/Dashboard/Sales/Modals/SabtSefaresh/OrderConfirmModal";
 import usePersianNumbers from "@/hooks/usePersianNumbers";
-import { persianDataGridLocale, useDataGridStyles } from "@/components/datagrids/DataGridProps";
 
 import Combo from "@/components/elements/Combo";
 import { flex, size } from "@/models/ReadyStyles";
 import { useThemeMode } from "@/contexts/ThemeContext";
 
-import { Account, Project, Warehouse, Distance } from "@/models/";
+import { Account, Project, Warehouse } from "@/models/";
 import {
   getUnConnectedProjects,
   getConnectedProject,
   getWarehouses,
   getSaleAccounts,
-  getDistance,
 } from "@/api/";
 
 import {
   Typography,
   ToggleButton,
   Box,
-  alpha,
   ToggleButtonGroup,
-  Tooltip,
-  Zoom,
-  Chip,
   Table,
   TableHead,
   TableBody,
   TableRow,
   TableCell,
+  Tooltip,
+  Zoom
 } from "@mui/material";
 
 import AddIcon from "@mui/icons-material/Add";
@@ -46,47 +40,9 @@ import ErrorOutlineRoundedIcon from '@mui/icons-material/ErrorOutlineRounded';
 import InfoRoundedIcon from '@mui/icons-material/InfoRounded';
 import CachedRoundedIcon from "@mui/icons-material/CachedRounded"
 
-// Updated imports to use the enhanced project store
 import { useOrgansStore } from '@/stores/organStore';
 import { useProductsStore, useProjectStore, useAccountStore, useBranchDeliveryStore, useDistanceStore, useControlCart } from '@/stores/';
 import { useSnackbar } from "@/contexts/SnackBarContext";
-
-const ODD_OPACITY = 0.1;
-
-const StripedDataGrid = styled(DataGrid)(({ theme }) => ({
-  [`& .${gridClasses.row}.even`]: {
-    backgroundColor: "#FAFAFA",
-    "&:hover": {
-      backgroundColor: alpha(theme.palette.primary.main, ODD_OPACITY),
-      "@media (hover: none)": {
-        backgroundColor: "transparent",
-      },
-    },
-    "&.Mui-selected": {
-      backgroundColor: alpha(
-        theme.palette.primary.main,
-        ODD_OPACITY + theme.palette.action.selectedOpacity
-      ),
-      "&:hover": {
-        backgroundColor: alpha(
-          theme.palette.primary.main,
-          ODD_OPACITY +
-          theme.palette.action.selectedOpacity +
-          theme.palette.action.hoverOpacity
-        ),
-        "@media (hover: none)": {
-          backgroundColor: alpha(
-            theme.palette.primary.main,
-            ODD_OPACITY + theme.palette.action.selectedOpacity
-          ),
-        },
-      },
-    },
-    ...theme.applyStyles("dark", {
-      backgroundColor: theme.palette.grey[800],
-    }),
-  },
-}));
 
 export function ProductSelect(props: any) {
   const { setCategoryEnable } = props;
@@ -94,7 +50,6 @@ export function ProductSelect(props: any) {
 
   const {
     products,
-    loading: productsLoading,
     selectedWarehouse,
     selectedCategory,
     setSelectedWarehouse,
@@ -409,315 +364,6 @@ export function ProductSelect(props: any) {
     [setSelectedWarehouse]
   );
 
-  // const columns: GridColDef[] = [
-  //   {
-  //     field: "rowNumber",
-  //     headerName: "ردیف",
-  //     width: 60,
-  //     align: "center" as const,
-  //     headerAlign: "center" as const,
-  //     sortable: false,
-  //     filterable: false,
-  //     resizable: true,
-  //     renderCell: (params) => {
-  //       const { toPersianPrice } = usePersianNumbers();
-  //       const rowIds = params.api.getAllRowIds();
-  //       const currentRowId = params.id;
-  //       const rowIndex = rowIds.indexOf(currentRowId);
-  //       return toPersianPrice(rowIndex + 1);
-  //     },
-  //   },
-  //   {
-  //     field: "title",
-  //     headerName: "نام کالا / خدمات",
-  //     width: 420,
-  //     resizable: true,
-  //     flex: 0.6,
-  //     renderCell: (params) => {
-  //       return (
-  //         <Box sx={{ ...flex.alignCenter, gap: '4px', height: '100%' }}>
-  //           <Typography variant="body2">
-  //             {params.value}
-  //           </Typography>
-  //           <Typography variant="body2">
-  //             {params.row.attributeTitle}
-  //           </Typography>
-  //           <Typography variant="body2">
-  //             , {params.row.titleCompany}
-  //           </Typography>
-  //         </Box>
-  //       );
-  //     },
-  //   },
-  //   {
-  //     field: "valueTitle",
-  //     headerName: "مقدار",
-  //     width: 200,
-  //     resizable: true,
-  //     flex: 0.17,
-  //     renderCell: (params) => {
-  //       const { products } = useProductsStore();
-
-  //       const relatedUnits = products
-  //         .filter(p => p.priceId === params.row.priceId)
-  //         .map(p => p.valueTitle);
-
-  //       const uniqueUnits = [...new Set(relatedUnits)];
-
-  //       const hasMultipleUnits = uniqueUnits.length > 1;
-
-  //       return (
-  //         <Tooltip
-  //           title={
-  //             hasMultipleUnits
-  //             && `${uniqueUnits.join("، ")}`
-  //           }
-  //           placement="top"
-  //           arrow
-  //           disableInteractive
-  //           slots={{ transition: Zoom }}
-  //           followCursor
-  //         >
-  //           <Box sx={{
-  //             ...flex.column,
-  //             ...flex.justifyCenter,
-  //             height: '100%',
-  //           }}>
-  //             <Typography variant="body2">
-  //               {params.value}
-  //             </Typography>
-  //             {hasMultipleUnits && (
-  //               <Chip
-  //                 size="medium"
-  //                 label="چند واحد"
-  //                 color="info"
-  //                 variant="outlined"
-  //                 sx={{ fontSize: '0.65rem', height: 25, mr: 'auto' }}
-  //                 icon={<ScaleRoundedIcon fontSize="small" />}
-  //               />
-  //             )}
-  //           </Box>
-  //         </Tooltip>
-  //       );
-  //     },
-  //   },
-  //   {
-  //     field: "priceWarehouse",
-  //     headerName: "قیمت",
-  //     width: 200,
-  //     resizable: true,
-  //     flex: 0.25,
-  //     renderCell: (params) => {
-  //       const { toPersianPrice } = usePersianNumbers();
-  //       if (params.value === 0) return "-";
-  //       return toPersianPrice(params.value);
-  //     },
-  //   },
-  //   {
-  //     field: "discountPriceWarehouse",
-  //     headerName: "تخفیف سطح 1",
-  //     width: 400,
-  //     resizable: true,
-  //     flex: 0.35,
-  //     renderCell: (params) => {
-  //       const { toPersianPrice } = usePersianNumbers();
-  //       if (params.value === null) return "-";
-  //       return (
-  //         <div style={{
-  //           display: "flex",
-  //           flexDirection: "column",
-  //           padding: "4px 0",
-  //           justifyContent: "center",
-  //           height: "100%",
-  //           gap: "2px",
-  //         }}>
-  //           <Typography variant="body2">
-  //             {params.row.priceWarehouse != 0
-  //               ?
-  //               params.value === 0
-  //                 ?
-  //                 '-'
-  //                 :
-  //                 toPersianPrice(params.value)
-  //               :
-  //               '-'
-  //             }
-  //           </Typography>
-  //           <Typography variant="caption" color="text.warning">
-  //             {params.row.promotionTitle != null && params.row.priceWarehouse != 0
-  //               ?
-  //               `${params.row.promotionTitle} حداقل از ${params.row.lowestNumberOfDiscount} ${params.row.valueTitle}`
-  //               :
-  //               ''
-  //             }
-  //           </Typography>
-  //         </div>
-  //       );
-  //     },
-  //   },
-  //   {
-  //     field: "discountPriceWarehouse1",
-  //     headerName: "تخفیف سطح 2",
-  //     width: 400,
-  //     resizable: true,
-  //     flex: 0.35,
-  //     renderCell: (params) => {
-  //       const { toPersianPrice } = usePersianNumbers();
-  //       if (params.value === null) return "-";
-  //       return (
-  //         <div style={{
-  //           display: "flex",
-  //           flexDirection: "column",
-  //           padding: "4px 0",
-  //           justifyContent: "center",
-  //           height: "100%",
-  //           gap: "2px",
-  //         }}>
-  //           <Typography variant="body2">
-  //             {params.row.percentage != 0
-  //               ?
-  //               params.value === 0
-  //                 ?
-  //                 '-'
-  //                 :
-  //                 toPersianPrice(params.value)
-  //               :
-  //               '-'
-  //             }
-  //           </Typography>
-  //           <Typography variant="caption" color="text.warning">
-  //             {params.row.promotionTitle != null && params.row.lowestNumberOfDiscount1 != 0 && params.row.priceWarehouse != 0
-  //               ?
-  //               `${params.row.promotionTitle} حداقل از ${params.row.lowestNumberOfDiscount1} ${params.row.valueTitle}`
-  //               :
-  //               ''
-  //             }
-  //           </Typography>
-  //         </div>
-  //       );
-  //     },
-  //   },
-  //   {
-  //     field: "discountPriceWarehouse2",
-  //     headerName: "تخفیف سطح 3",
-  //     width: 400,
-  //     resizable: true,
-  //     flex: 0.35,
-  //     renderCell: (params) => {
-  //       const { toPersianPrice } = usePersianNumbers();
-  //       if (params.value === null) return "-";
-  //       return (
-  //         <div style={{
-  //           display: "flex",
-  //           flexDirection: "column",
-  //           padding: "4px 0",
-  //           justifyContent: "center",
-  //           height: "100%",
-  //           gap: "2px",
-  //         }}>
-  //           <Typography variant="body2">
-  //             {params.row.percentage != 0
-  //               ?
-  //               params.value === 0
-  //                 ?
-  //                 '-'
-  //                 :
-  //                 toPersianPrice(params.value)
-  //               :
-  //               '-'
-  //             }
-  //           </Typography>
-  //           <Typography variant="caption" color="text.warning">
-  //             {params.row.promotionTitle != null && params.row.lowestNumberOfDiscount1 != 0 && params.row.priceWarehouse != 0
-  //               ?
-  //               `${params.row.promotionTitle} حداقل از ${params.row.lowestNumberOfDiscount1} ${params.row.valueTitle}`
-  //               :
-  //               ''
-  //             }
-  //           </Typography>
-  //         </div>
-  //       );
-  //     },
-  //   },
-  //   {
-  //     field: "priceTransit",
-  //     headerName: "عادی",
-  //     width: 400,
-  //     resizable: true,
-  //     flex: 0.22,
-  //     renderCell: (params) => {
-  //       const { toPersianPrice } = usePersianNumbers();
-  //       if (params.value === 0) return "-";
-  //       return toPersianPrice(params.value);
-  //     },
-  //   },
-  //   {
-  //     field: "priceAlternate",
-  //     headerName: "نوبت دار",
-  //     width: 400,
-  //     resizable: true,
-  //     flex: 0.22,
-  //     renderCell: (params) => {
-  //       const { toPersianPrice } = usePersianNumbers();
-  //       if (params.value === 0) return "-";
-  //       return toPersianPrice(params.value);
-  //     },
-  //   },
-  //   {
-  //     field: "titleCompany",
-  //     headerName: "فروشنده",
-  //     width: 400,
-  //     resizable: true,
-  //     flex: 0.2,
-  //     renderCell: (params) => {
-  //       return (
-  //         <div style={{
-  //           display: "flex",
-  //           flexDirection: "column",
-  //           padding: "4px 0",
-  //           justifyContent: "center",
-  //           height: "100%",
-  //           gap: "2px",
-  //         }}>
-  //           {organs.map(company => (
-  //             <div key={company.id}>
-  //               <strong>
-  //                 {params.row.codeAccSeller === 0 ? company.title : null}
-  //               </strong>
-  //             </div>
-  //           ))}
-  //         </div>
-  //       );
-  //     },
-  //   },
-  // ];
-
-  // const columnGroupingModel = [
-  //   {
-  //     groupId: "group1",
-  //     headerName: "کالا / خدمات",
-  //     headerAlign: "center" as const,
-  //     children: [{ field: "title" }, { field: "quantity" }],
-  //   },
-  //   {
-  //     groupId: "group2",
-  //     headerName: "قیمت از انبار",
-  //     headerAlign: "center" as const,
-  //     children: [
-  //       { field: "priceWarehouse" },
-  //       { field: "discountPriceWarehouse" },
-  //       { field: "discountPriceWarehouse1" },
-  //       { field: "discountPriceWarehouse2" },
-  //     ],
-  //   },
-  //   {
-  //     groupId: "group3",
-  //     headerName: "قیمت مستقیم از کارخانه",
-  //     headerAlign: "center" as const,
-  //     children: [{ field: "priceTransit" }, { field: "priceAlternate" }],
-  //   },
-  // ];
-
   return (
     <>
       <Box sx={{ ...flex.column, ...size.full, gap: "16px" }}>
@@ -849,81 +495,97 @@ export function ProductSelect(props: any) {
             disabled={!isBranchDelivery}
           />
         </Box>
-        {/* <StripedDataGrid
-          rows={filteredProducts()}
-          columns={columns}
-          columnVisibilityModel={{
-            priceTransit: !isBranchDelivery,
-            priceAlternate: alternateShow && !isBranchDelivery,
-            discountPriceWarehouse2: dis3show,
-          }}
-          columnGroupingModel={columnGroupingModel}
-          onRowClick={handleRowClick}
-          rowHeight={60}
-          getRowId={(row) => `${row.id}${row.modelId}${row.valueId}${row.warehouseId}`}
-          columnHeaderHeight={54}
-          loading={productsLoading}
-          pagination={false}
-          pageSizeOptions={[]}
-          rowSelection={false}
-          getRowClassName={(params) =>
-            params.indexRelativeToCurrentPage % 2 === 0 ? "even" : "odd"
-          }
-          localeText={{
-            ...persianDataGridLocale,
-            noRowsLabel: selectedCategory
-              ? 'هیچ محصولی در این دسته‌بندی یافت نشد'
-              : 'لطفاً دسته‌بندی انتخاب کنید',
-          }}
+        <Box
           sx={{
-            ...useDataGridStyles(),
-            "& .shipment-merged-cell": {
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexDirection: "row",
-            },
-            "& .MuiDataGrid-row:hover": {
-              backgroundColor: mode === "light" ? "#FFF3D1" : "#292929",
-            },
-            "& .MuiDataGrid-noRowsLabel": {
-              fontSize: '1rem',
-              color: 'text.secondary',
-            },
-            "& .MuiDataGrid-footerContainer": {
-              display: "none",
-            },
+            width: "100%",
+            overflow: "auto",
+            border: "2px solid var(--border-main)",
+            borderRadius: '18px',
+            height: '100%'
           }}
-        /> */}
-        {/* جدول جایگزین DataGrid */}
-        <Box sx={{ width: "100%", overflow: "auto" }}>
+        >
           <Table size="small">
-            {/* هدر با گروه‌بندی ستون‌ها */}
-            <TableHead>
+            <TableHead
+              sx={{
+                backgroundColor: "var(--table-header)",
+                '& .MuiTableCell-root': {
+                  p: 1.5,
+                  position: 'relative',
+                  whiteSpace: 'nowrap',
+                  '&:not(.first-cell)::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: '6px',
+                    left: 0,
+                    right: 0,
+                    bottom: '6px',
+                    width: '2px',
+                    backgroundColor: 'var(--border-main)',
+                  },
+                },
+                '& .span-cell': {
+                  position: 'relative',
+                  borderBottom: 'none',
+                  '&:not(.first-cell)::before': {
+                    content: '""',
+                    position: 'absolute',
+                    left: '50%',
+                    top: '100%',
+                    width: 'calc(100% - 12px)',
+                    height: '2px',
+                    transform: 'translateX(-50%)',
+                    backgroundColor: 'var(--border-main)',
+                  },
+                  '&:not(.first-cell)::after': {
+                    content: '""',
+                    position: 'absolute',
+                    top: '6px',
+                    left: 0,
+                    right: 0,
+                    bottom: '6px',
+                    width: '2px',
+                    backgroundColor: 'var(--border-main)',
+                  },
+                },
+                '& .bottom-row': {
+                  borderBottom: '2px solid var(--border-main)'
+                },
+              }}
+            >
               <TableRow>
-                <TableCell align="center" rowSpan={2} width={60}>ردیف</TableCell>
+                <TableCell className="first-cell" align="center" rowSpan={2} width={60}>ردیف</TableCell>
                 <TableCell align="center" colSpan={1} rowSpan={2} width={420}>نام کالا / خدمات</TableCell>
                 <TableCell align="center" rowSpan={2} width={200}>مقدار</TableCell>
-                <TableCell align="center" colSpan={4}>قیمت از انبار</TableCell>
-                <TableCell align="center" colSpan={2}>قیمت مستقیم از کارخانه</TableCell>
-                <TableCell align="center" rowSpan={2} width={400}>فروشنده</TableCell>
+                <TableCell className="span-cell" align="center" colSpan={dis3show ? 4 : 3}>قیمت از انبار</TableCell>
+                <TableCell className="span-cell" align="center" colSpan={alternateShow ? 2 : 1}>قیمت مستقیم از کارخانه</TableCell>
+                <TableCell align="center" rowSpan={2} width={300}>فروشنده</TableCell>
               </TableRow>
-              <TableRow>
+              <TableRow className="bottom-row">
                 <TableCell align="center" width={200}>قیمت</TableCell>
-                <TableCell align="center" width={400}>تخفیف سطح 1</TableCell>
-                <TableCell align="center" width={400}>تخفیف سطح 2</TableCell>
-                <TableCell align="center" width={400}>تخفیف سطح 3</TableCell>
-                <TableCell align="center" width={400}>عادی</TableCell>
-                <TableCell align="center" width={400}>نوبت دار</TableCell>
+                <TableCell align="center" width={200}>تخفیف سطح 1</TableCell>
+                <TableCell align="center" width={200}>تخفیف سطح 2</TableCell>
+                {dis3show &&
+                  <TableCell align="center" width={200}>تخفیف سطح 3</TableCell>
+                }
+                <TableCell align="center" width={alternateShow ? 400 : 200}>عادی</TableCell>
+                {alternateShow && <TableCell align="center" width={400}>نوبت دار</TableCell>}
               </TableRow>
             </TableHead>
 
             {/* بدنه جدول */}
-            <TableBody>
+            <TableBody
+              sx={{
+                '& .MuiTableRow-root': {
+                  transition: 'background-color 0.1s ease-in-out',
+                },
+              }}
+            >
               {filteredProducts().length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={11} align="center">
-                    {selectedCategory ? 'هیچ محصولی در این دسته‌بندی یافت نشد' : 'لطفاً دسته‌بندی انتخاب کنید'}
+                <TableRow sx={{ height: '100%' }}>
+                  <TableCell colSpan={11} align="center" sx={{ height: '100%' }}>
+                    <Box sx={{ width: '100%', height: '100%', ...flex.center, ...flex.one }}>
+                      {selectedCategory ? 'هیچ محصولی در این دسته‌بندی یافت نشد' : 'لطفاً یک دسته‌بندی انتخاب کنید'}
+                    </Box>
                   </TableCell>
                 </TableRow>
               ) : (
@@ -937,25 +599,37 @@ export function ProductSelect(props: any) {
                     <TableRow
                       key={rowId}
                       onClick={() => handleRowClick({ row })}
-                      className={isEven ? "even" : ""}
                       hover
-                      sx={{ cursor: "pointer" }}
+                      sx={{
+                        cursor: "pointer",
+                        '& .MuiTableCell-root': {
+                          position: 'relative',
+                          '&:not(.first-cell)::before': {
+                            content: '""',
+                            position: 'absolute',
+                            top: '6px',
+                            left: 0,
+                            right: 0,
+                            bottom: '6px',
+                            width: '1px',
+                            backgroundColor: 'var(--table-border-overlay)',
+                          },
+                        },
+                      }}
                     >
                       {/* ردیف */}
-                      <TableCell align="center">{toPersianPrice(index + 1)}</TableCell>
+                      <TableCell className="first-cell" align="center">{toPersianPrice(index + 1)}</TableCell>
 
                       {/* نام کالا / خدمات */}
                       <TableCell>
-                        <Box sx={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-                          <Typography variant="body2">{row.title}</Typography>
-                          <Typography variant="body2">{row.attributeTitle}</Typography>
-                          <Typography variant="body2">، {row.titleCompany}</Typography>
+                        <Box sx={{ display: "flex", flexDirection: "column", gap: "2px", whiteSpace: "nowrap" }}>
+                          <Typography variant="body2">{row.title} {row.attributeTitle}, {row.titleCompany}</Typography>
                         </Box>
                       </TableCell>
 
                       {/* مقدار */}
                       <TableCell>
-                        <Box sx={{ display: "flex", flexDirection: "column", height: "100%", justifyContent: "center" }}>
+                        <Box sx={{ display: "flex", flexDirection: "row", height: "100%", justifyContent: "center", gap: 1 }}>
                           <Typography variant="body2">{row.valueTitle}</Typography>
                           {(() => {
                             const relatedUnits = products
@@ -965,14 +639,9 @@ export function ProductSelect(props: any) {
                             const hasMultipleUnits = uniqueUnits.length > 1;
                             if (hasMultipleUnits) {
                               return (
-                                <Chip
-                                  size="medium"
-                                  label="چند واحد"
-                                  color="info"
-                                  variant="outlined"
-                                  sx={{ fontSize: '0.65rem', height: 25, mr: 'auto' }}
-                                  icon={<ScaleRoundedIcon fontSize="small" />}
-                                />
+                                <Tooltip title="چند واحد" placement='top' arrow disableInteractive slots={{ transition: Zoom }} >
+                                  <ScaleRoundedIcon fontSize="small" color="info" />
+                                </Tooltip>
                               );
                             }
                             return null;
@@ -981,19 +650,23 @@ export function ProductSelect(props: any) {
                       </TableCell>
 
                       {/* قیمت از انبار */}
-                      <TableCell>{row.priceWarehouse === 0 ? "-" : toPersianPrice(row.priceWarehouse)}</TableCell>
+                      <TableCell>
+                        <Typography variant="body2" sx={{ whiteSpace: "nowrap" }}>
+                          {row.priceWarehouse === 0 ? "-" : toPersianPrice(row.priceWarehouse)}
+                        </Typography>
+                      </TableCell>
 
                       {/* تخفیف سطح 1 */}
                       <TableCell>
-                        <div style={{ display: "flex", flexDirection: "column", padding: "4px 0", gap: "2px" }}>
-                          <Typography variant="body2">
+                        <div style={{ display: "flex", flexDirection: "column", padding: "4px 0", gap: "2px", width: "fit-content" }}>
+                          <Typography variant="body2" sx={{ whiteSpace: "nowrap" }}>
                             {row.priceWarehouse !== 0 && row.discountPriceWarehouse !== null
                               ? row.discountPriceWarehouse === 0
                                 ? '-'
                                 : toPersianPrice(row.discountPriceWarehouse)
                               : '-'}
                           </Typography>
-                          <Typography variant="caption" color="text.warning">
+                          <Typography variant="caption" color="text.warning" sx={{ whiteSpace: "nowrap", width: "fit-content" }}>
                             {row.promotionTitle && row.priceWarehouse !== 0 && row.lowestNumberOfDiscount > 0
                               ? `${row.promotionTitle} حداقل از ${row.lowestNumberOfDiscount} ${row.valueTitle}`
                               : ''}
@@ -1004,14 +677,14 @@ export function ProductSelect(props: any) {
                       {/* تخفیف سطح 2 */}
                       <TableCell>
                         <div style={{ display: "flex", flexDirection: "column", padding: "4px 0", gap: "2px" }}>
-                          <Typography variant="body2">
+                          <Typography variant="body2" sx={{ whiteSpace: "nowrap" }}>
                             {row.percentage !== 0 && row.discountPriceWarehouse1 !== null
                               ? row.discountPriceWarehouse1 === 0
                                 ? '-'
                                 : toPersianPrice(row.discountPriceWarehouse1)
                               : '-'}
                           </Typography>
-                          <Typography variant="caption" color="text.warning">
+                          <Typography variant="caption" color="text.warning" sx={{ whiteSpace: "nowrap" }}>
                             {row.promotionTitle && row.lowestNumberOfDiscount1 > 0 && row.priceWarehouse !== 0
                               ? `${row.promotionTitle} حداقل از ${row.lowestNumberOfDiscount1} ${row.valueTitle}`
                               : ''}
@@ -1020,29 +693,40 @@ export function ProductSelect(props: any) {
                       </TableCell>
 
                       {/* تخفیف سطح 3 */}
-                      <TableCell>
-                        <div style={{ display: "flex", flexDirection: "column", padding: "4px 0", gap: "2px" }}>
-                          <Typography variant="body2">
-                            {row.percentage !== 0 && row.discountPriceWarehouse2 !== null
-                              ? row.discountPriceWarehouse2 === 0
-                                ? '-'
-                                : toPersianPrice(row.discountPriceWarehouse2)
-                              : '-'}
-                          </Typography>
-                          <Typography variant="caption" color="text.warning">
-                            {row.promotionTitle && row.lowestNumberOfDiscount1 > 0 && row.priceWarehouse !== 0
-                              ? `${row.promotionTitle} حداقل از ${row.lowestNumberOfDiscount1} ${row.valueTitle}`
-                              : ''}
-                          </Typography>
-                        </div>
-                      </TableCell>
+                      {dis3show &&
+                        <TableCell>
+                          <div style={{ display: "flex", flexDirection: "column", padding: "4px 0", gap: "2px" }}>
+                            <Typography variant="body2" sx={{ whiteSpace: "nowrap" }}>
+                              {row.percentage !== 0 && row.discountPriceWarehouse2 !== null
+                                ? row.discountPriceWarehouse2 === 0
+                                  ? '-'
+                                  : toPersianPrice(row.discountPriceWarehouse2)
+                                : '-'}
+                            </Typography>
+                            <Typography variant="caption" color="text.warning" sx={{ whiteSpace: "nowrap" }}>
+                              {row.promotionTitle && row.lowestNumberOfDiscount2 > 0 && row.priceWarehouse !== 0
+                                ? `${row.promotionTitle} حداقل از ${row.lowestNumberOfDiscount1} ${row.valueTitle}`
+                                : ''}
+                            </Typography>
+                          </div>
+                        </TableCell>
+                      }
 
                       {/* قیمت مستقیم از کارخانه - عادی */}
-                      <TableCell>{row.priceTransit === 0 ? "-" : toPersianPrice(row.priceTransit)}</TableCell>
+                      <TableCell>
+                        <Typography variant="body2" sx={{ whiteSpace: "nowrap" }}>
+                          {row.priceTransit === 0 ? "-" : toPersianPrice(row.priceTransit)}
+                        </Typography>
+                      </TableCell>
 
                       {/* قیمت نوبت دار */}
-                      <TableCell>{row.priceAlternate === 0 ? "-" : toPersianPrice(row.priceAlternate)}</TableCell>
-
+                      {alternateShow &&
+                        <TableCell>
+                          <Typography variant="body2" sx={{ whiteSpace: "nowrap" }}>
+                            {row.priceAlternate === 0 ? "-" : toPersianPrice(row.priceAlternate)}
+                          </Typography>
+                        </TableCell>
+                      }
                       {/* فروشنده */}
                       <TableCell>
                         <div style={{ display: "flex", flexDirection: "column", padding: "4px 0", gap: "2px" }}>
