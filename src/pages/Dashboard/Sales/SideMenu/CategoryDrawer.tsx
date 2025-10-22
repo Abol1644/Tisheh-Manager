@@ -549,6 +549,22 @@ export function Category({
       }}>
         {pinnedParentsList.length > 0 && (
           <Box sx={{ mb: 2, }}>
+
+            <Slide in={!categoryEnable} unmountOnExit mountOnEnter direction='left'>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: 'error.main',
+                  fontWeight: 600,
+                  display: 'block',
+                  my: 1,
+                  px: 1,
+                  fontSize: '0.75rem',
+                }}
+              >
+                انبار انتخاب نشده است
+              </Typography>
+            </Slide>
             <Fade in={true} timeout={300}>
               <Typography
                 variant="caption"
