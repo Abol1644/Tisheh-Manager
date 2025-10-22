@@ -436,6 +436,7 @@ export function Cart({ setOpenCart, openCart }: CartProps,) {
       width: 420,
       resizable: true,
       flex: 0.45,
+      rowSpanValueGetter: () => null,
       renderCell: (params) => {
         const rowId = params.row.id;
         const isChecked = selectedRows.has(rowId);
@@ -473,6 +474,7 @@ export function Cart({ setOpenCart, openCart }: CartProps,) {
       width: 240,
       resizable: true,
       flex: 0.22,
+      rowSpanValueGetter: () => null,
       renderCell: (params) => {
         if (params.row.isDefaultRow) {
           return (
@@ -788,6 +790,13 @@ export function Cart({ setOpenCart, openCart }: CartProps,) {
       <MoveItemModal
         open={moveItemModal}
         onClose={handleMoveItemModalToggle}
+        items={rawItems}
+        selectedRowIds={selectedRows}
+        onUpdate={(updatedItems) => {
+          // Update rawItems → triggers re-render of rows
+          setRawItems(updatedItems);
+          showSnackbar('آیتم‌ها منتقل شدند', 'success', 3000, <DoneAllRoundedIcon />);
+        }}
       />
       <DeleteModal
         open={deleteItemModal}
