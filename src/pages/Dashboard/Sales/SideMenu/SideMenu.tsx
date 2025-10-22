@@ -57,13 +57,13 @@ export function CustomTab({ value, onChange }: { value: number; onChange: (event
         textColor='primary'
       >
         <Tab
-          label="سبد خرید"
-          icon={<AddShoppingCartRoundedIcon />}
+          label="دسته بندی"
+          icon={<SortIcon />}
           iconPosition='start'
         />
         <Tab
-          label="دسته بندی"
-          icon={<SortIcon />}
+          label="سبد خرید"
+          icon={<AddShoppingCartRoundedIcon />}
           iconPosition='start'
         />
       </Tabs>
