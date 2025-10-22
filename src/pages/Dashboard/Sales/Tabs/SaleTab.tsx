@@ -14,7 +14,8 @@ import DeleteProjectModal from '@/pages/Dashboard/Sales/Modals/Projects/DeletePr
 import ConnectProjectModal from '@/pages/Dashboard/Sales/Modals/Projects/ConnectProject';
 import DisconnectProjectModal from '@/pages/Dashboard/Sales/Modals/Projects/DisconnectProject';
 import RecalculateProjectModal from '@/pages/Dashboard/Sales/Modals/Projects/RecalculateProject';
-import BaseModal from '@/pages/Dashboard/Sales/Modals/BaseModal';
+import PushPinRoundedIcon from '@mui/icons-material/PushPinRounded';
+import PushPinOutlinedIcon from '@mui/icons-material/PushPinOutlined';
 
 import {
   Box,
@@ -47,6 +48,7 @@ const drawerWidth = 340;
 
 export default function Sale() {
   const [drawerOpen, setDrawerOpen] = useState(true);
+  const [drawerPinned, setDrawerPinned] = useState(false);
   const [categoryEnable, setCategoryEnable] = useState(true);
   const { mode } = useThemeMode();
   const [value, setValue] = useState(0);
@@ -94,21 +96,6 @@ export default function Sale() {
     fetchCategories();
   }, []);
 
-  // useEffect(() => {
-  //   const fetchCartList = () => {
-  //     setLoading(true);
-  //     getCartList()
-  //       .then((list) => {
-  //         setListCart(list);
-  //       })
-  //       .catch(err => {
-  //         console.error('Failed to fetch CartList:', err);
-  //       })
-  //       .finally(() => setLoading(false));
-  //   };
-  //   fetchCartList();
-  // }, []);
-
   const handleRefresh = useCallback(() => {
     setLoading(true);
     getSaleCategories()
@@ -140,7 +127,10 @@ export default function Sale() {
     setDrawerOpen(!drawerOpen);
   };
 
-  // ✅ Memoize categories for child
+  const handleDrawerPin = () => {
+    setDrawerPinned(!drawerPinned);
+  };
+
   const memoizedCategories = useMemo(() => categories, [categories]);
 
   const drawerContent = (
@@ -188,25 +178,45 @@ export default function Sale() {
               loading={loading}
               onRefresh={handleRefresh}
               onCategorySelect={handleCategorySelect}
+              setDrawerOpen={setDrawerOpen}
+              drawerPinned={drawerPinned}
             />
           </MemTabPanel>
         </Box>
       </Box>
-      <IconButton
-        color="info"
-        onClick={handleDrawerToggle}
-        sx={{
-          position: 'absolute',
-          right: 0,
-          width: '25px',
-          height: '100%',
-          borderRadius: 0,
-          '& .MuiSvgIcon-root': { fontSize: '30px' },
-          bgcolor: 'background.paper',
-        }}
-      >
-        <MoreVertIcon />
-      </IconButton>
+      {drawerOpen ?
+        <IconButton
+          color="info"
+          onClick={handleDrawerPin}
+          sx={{
+            position: 'absolute',
+            right: 0,
+            width: '25px',
+            height: '100%',
+            borderRadius: 0,
+            '& .MuiSvgIcon-root': { fontSize: '20px', rotate: '-45deg' },
+            bgcolor: 'background.paper',
+          }}
+        >
+          {drawerPinned ? <PushPinRoundedIcon /> : <PushPinOutlinedIcon />}
+        </IconButton>
+        :
+        <IconButton
+          color="info"
+          onClick={handleDrawerToggle}
+          sx={{
+            position: 'absolute',
+            right: 0,
+            width: '25px',
+            height: '100%',
+            borderRadius: 0,
+            '& .MuiSvgIcon-root': { fontSize: '30px' },
+            bgcolor: 'background.paper',
+          }}
+        >
+          <MoreVertIcon />
+        </IconButton>
+      }
     </>
   );
 

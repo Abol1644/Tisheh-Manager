@@ -310,6 +310,8 @@ export function Category({
   loading,
   onRefresh,
   onCategorySelect,
+  setDrawerOpen,
+  drawerPinned
 }: {
   value: number;
   drawerOpen?: boolean;
@@ -318,6 +320,8 @@ export function Category({
   loading: boolean;
   onRefresh: () => void;
   onCategorySelect?: (category: CategorySale | null) => void;
+  setDrawerOpen: (open: boolean) => void;
+  drawerPinned: boolean;
 }) {
   const isServer = typeof window === 'undefined';
 
@@ -340,6 +344,11 @@ export function Category({
   const handleCategorySelect = React.useCallback((category: CategorySale) => {
     if (onCategorySelect) {
       onCategorySelect(category);
+      if (!drawerPinned) {
+        setDrawerOpen(false);
+      } else {
+        setDrawerOpen(true);
+      }
     }
   }, [onCategorySelect]);
 
@@ -434,7 +443,7 @@ export function Category({
 
   const debouncedSave = React.useCallback(
     React.useMemo(() => {
-      let timeoutId: NodeJS.Timeout;
+      let timeoutId: ReturnType<typeof setTimeout>;
       return (data: number[]) => {
         clearTimeout(timeoutId);
         timeoutId = setTimeout(() => {
