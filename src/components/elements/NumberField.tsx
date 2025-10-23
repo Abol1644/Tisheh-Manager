@@ -8,7 +8,7 @@ import {
   FormHelperText,
   OutlinedInputProps,
 } from '@mui/material';
-import { Add, Remove } from '@mui/icons-material';
+import { Add, Remove, SixKOutlined } from '@mui/icons-material';
 import usePersianNumbers from '@/hooks/usePersianNumbers';
 import { toPersianDigits } from '@/utils/persianNumbers';
 
@@ -22,6 +22,7 @@ interface NumberFieldProps extends Omit<OutlinedInputProps, 'value' | 'onChange'
   error?: boolean;
   helperText?: string;
   decimal?: boolean;
+  sx?: object;
 }
 
 const NumberField: React.FC<NumberFieldProps> = ({
@@ -35,6 +36,7 @@ const NumberField: React.FC<NumberFieldProps> = ({
   helperText,
   decimal = false,
   fullWidth = false,
+  sx,
   ...props
 }) => {
   const { toPersianPrice, toEnglishNumber } = usePersianNumbers();
@@ -89,7 +91,7 @@ const NumberField: React.FC<NumberFieldProps> = ({
   };
 
   return (
-    <FormControl fullWidth={fullWidth} variant="outlined" size="small" error={error} sx={{ flex: 1 }}>
+    <FormControl fullWidth={fullWidth} variant="outlined" size="small" error={error} sx={{ flex: 1, ...sx }}>
       {
         label &&
         <InputLabel
