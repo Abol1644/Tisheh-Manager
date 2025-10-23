@@ -20,6 +20,7 @@ interface ToggleState {
   selectedCartWarehouse: Warehouse | null;
   currentCartDetails: CartDetails | null;
   cartShipments: CartShipment[];
+  selectedItemKeys: Set<number>;
 
   // Actions
   toggleCart: () => void;
@@ -33,6 +34,9 @@ interface ToggleState {
   setIsSelectingTransit: (selecting: boolean) => void;
   setIsFindingWarehouse: (finding: boolean) => void;
   setSelectedCartWarehouse: (warehouse: Warehouse | null) => void;
+  setSelectedItemKeys: (keys: Set<number>) => void;
+  toggleSelectedItem: (item: ItemResaultPrice) => void;
+  clearSelectedItems: () => void;
 
   // Shipment Actions
   addShipment: (shipment: Omit<CartShipment, 'id'>) => number;
@@ -56,6 +60,7 @@ export const useControlCart = create<ToggleState>((set, get) => {
     isFindingWarehouse: false,
     selectedCartWarehouse: null,
     cartShipments: [],
+    selectedItemKeys: new Set(), // ← Initialize here
 
     // Actions
     toggleCart: () => set((state) => ({ isCartOpen: !state.isCartOpen })),
@@ -73,6 +78,22 @@ export const useControlCart = create<ToggleState>((set, get) => {
     setIsSelectingTransit: (selecting) => set({ isSelectingTransit: selecting }),
     setIsFindingWarehouse: (finding) => set({ isFindingWarehouse: finding }),
     setSelectedCartWarehouse: (warehouse) => set({ selectedCartWarehouse: warehouse }),
+    setSelectedItemKeys: (keys: Set<number>) => set({ selectedItemKeys: new Set(keys) }),
+
+    toggleSelectedItem: (item: ItemResaultPrice) => {
+      const key = item.ididentity + item.warehouseId;
+      set((state) => {
+        const newSet = new Set(state.selectedItemKeys);
+        if (newSet.has(key)) {
+          newSet.delete(key);
+        } else {
+          newSet.add(key);
+        }
+        return { selectedItemKeys: newSet };
+      });
+    },
+
+    clearSelectedItems: () => set({ selectedItemKeys: new Set() }),
 
     // Shipment Management
     addShipment: (shipment) => {

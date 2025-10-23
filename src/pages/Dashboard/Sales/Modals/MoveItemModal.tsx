@@ -17,7 +17,6 @@ import {
   RadioGroup,
   FormControlLabel,
   Radio,
-  TextField,
 } from '@mui/material';
 
 import CloseIcon from '@mui/icons-material/Close';
@@ -28,37 +27,44 @@ import NumberField from '@/components/elements/NumberField';
 import { ItemResaultPrice } from '@/models';
 import usePersianNumbers from '@/hooks/usePersianNumbers';
 
+import { useControlCart } from '@/stores';
+
 interface MoveItemModalProps {
   open: boolean;
   onClose: () => void;
-  items: ItemResaultPrice[]; // All current cart items
-  selectedRowIds: Set<number>; // Selected item IDs (by row.id = originalItem.ididentity)
-  onUpdate: (updatedItems: ItemResaultPrice[]) => void; // Apply changes back to cart
+  items: ItemResaultPrice[];
+  onUpdate: (updatedItems: ItemResaultPrice[]) => void;
 }
+
+// Unique ID generator for split items
+let tempIdCounter = -1;
+const generateTempId = () => tempIdCounter--;
 
 export default function MoveItemModal({
   open,
   onClose,
   items,
-  selectedRowIds,
   onUpdate,
 }: MoveItemModalProps) {
-  const [quantityMap, setQuantityMap] = useState<Record<number, string>>({});
+  const [quantityMap, setQuantityMap] = useState<Record<number, number>>({});
   const [targetShipmentOption, setTargetShipmentOption] = useState<'new' | number>('new');
-  const [newShipmentId, setNewShipmentId] = useState<number>(999); // Auto-increment mock ID
   const { toPersianPrice } = usePersianNumbers();
 
-  // Extract selected items
-  const selectedItems = useMemo(() => {
-    return items.filter(item => selectedRowIds.has(item.ididentity));
-  }, [items, selectedRowIds]);
+  const { addShipment, selectedItemKeys, clearSelectedItems } = useControlCart();
 
-  // Reset form on open
+  const selectedItems = useMemo(() => {
+    return items.filter((item) => {
+      const key = item.ididentity + item.warehouseId;
+      return selectedItemKeys.has(key);
+    });
+  }, [items, selectedItemKeys]);
+
+  // Reset form when modal opens
   React.useEffect(() => {
     if (open) {
-      const initialQuantities: Record<number, string> = {};
-      selectedItems.forEach(item => {
-        initialQuantities[item.ididentity] = item.value?.toString() || '0';
+      const initialQuantities: Record<number, number> = {};
+      selectedItems.forEach((item) => {
+        initialQuantities[item.ididentity] = item.value ?? 0;
       });
       setQuantityMap(initialQuantities);
       setTargetShipmentOption('new');
@@ -69,57 +75,79 @@ export default function MoveItemModal({
     if (!selectedItems.length) return;
 
     const updates: ItemResaultPrice[] = [];
-    const maxCurrentShipmentId = Math.max(...items.map(i => i.cartId || 1), 1);
+    let nextShipmentId = -1;
 
-    const nextShipmentId = targetShipmentOption === 'new'
-      ? maxCurrentShipmentId + 1
-      : targetShipmentOption;
+    // Determine target shipment ID
+    if (targetShipmentOption === 'new') {
+      nextShipmentId = addShipment({
+        warehouseId: null,
+        deliveryMethod: null,
+        deliveryDate: null,
+      });
+    } else {
+      nextShipmentId = targetShipmentOption;
+    }
 
     for (const item of selectedItems) {
       const itemId = item.ididentity;
       const currentQty = item.value ?? 0;
-      const moveQtyStr = quantityMap[itemId];
-      const moveQty = parseFloat(moveQtyStr) || 0;
+      const moveQty = Math.max(0, quantityMap[itemId] || 0);
 
       if (moveQty <= 0) continue;
 
       if (moveQty >= currentQty) {
-        // Move full item
+        // Full move
         updates.push({
           ...item,
-          cartId: nextShipmentId,
-          value: moveQty,
+          tempShipmentId: nextShipmentId,
+          value: currentQty,
         });
       } else {
-        // Split: keep some, move some
+        // Split item
 
-        // Modify original item (reduce quantity)
-        Object.assign(item, {
+        // Update original (reduced qty)
+        updates.push({
           ...item,
           value: currentQty - moveQty,
         });
 
-        // Add new entry for moved quantity
+        // Create new item with unique identity
+        const newId = generateTempId(); // Guaranteed unique
+
         updates.push({
           ...item,
-          ididentity: Date.now() + Math.round(Math.random() * 1000), // fake unique ID
-          cartId: nextShipmentId,
+          ididentity: newId,
+          tempShipmentId: nextShipmentId,
           value: moveQty,
         });
       }
     }
 
-    // Combine updated originals + new moved items
-    const result = [...items.filter(i => !updates.some(u => u.ididentity === i.ididentity)), ...updates];
+    // Apply updates immutably
+    const result = items.map((existing) => {
+      const update = updates.find((u) => u.ididentity === existing.ididentity);
+      return update ? update : existing;
+    });
 
-    onUpdate(result);
+    const newSplitItems = updates.filter(
+      (u) => !items.some((i) => i.ididentity === u.ididentity)
+    );
+
+    onUpdate([...result, ...newSplitItems]);
+    clearSelectedItems();
     onClose();
   };
 
-  // Available shipment IDs (excluding current selection)
   const existingShipments = useMemo(() => {
-    const ids = Array.from(new Set(items.map(i => i.cartId).filter(Boolean) as number[]));
-    return ids.filter(id => !selectedItems.some(si => si.cartId === id)); // Exclude source shipments?
+    const sourceShipmentIds = new Set(
+      selectedItems.map(item => item.tempShipmentId).filter((id): id is number => id !== null)
+    );
+
+    const allShipmentIds = Array.from(
+      new Set(items.map(i => i.tempShipmentId).filter((id): id is number => id !== null))
+    );
+
+    return allShipmentIds.filter(id => !sourceShipmentIds.has(id));
   }, [items, selectedItems]);
 
   return (
@@ -219,7 +247,7 @@ export default function MoveItemModal({
               </Box>
 
               <List dense>
-                {selectedItems.map(item => (
+                {selectedItems.map((item) => (
                   <ListItem
                     key={item.ididentity}
                     sx={{
@@ -236,13 +264,14 @@ export default function MoveItemModal({
                     <Box sx={{ mt: 1, width: '100%' }}>
                       <NumberField
                         label="مقدار انتقال"
-                        value={quantityMap[item.ididentity] || ''}
-                        onChange={(val) =>
+                        value={quantityMap[item.ididentity] ?? 0}
+                        onChange={(val) => {
+                          const numVal = parseFloat(val) || 0;
                           setQuantityMap((prev) => ({
                             ...prev,
-                            [item.ididentity]: val,
-                          }))
-                        }
+                            [item.ididentity]: numVal,
+                          }));
+                        }}
                         decimal
                         fullWidth
                       />

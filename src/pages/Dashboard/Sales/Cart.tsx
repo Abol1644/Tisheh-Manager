@@ -14,7 +14,6 @@ import {
   TableContainer,
   TableHead
 } from '@mui/material'
-import { DataGrid, GridColDef } from '@mui/x-data-grid';
 
 import Btn from '@/components/elements/Btn';
 
@@ -31,7 +30,6 @@ import InfoRoundedIcon from '@mui/icons-material/InfoRounded';
 import usePersianNumbers from '@/hooks/usePersianNumbers';
 import NumberField from '@/components/elements/NumberField';
 import Combo from '@/components/elements/Combo';
-import { persianDataGridLocale, hiddenFooterStyles } from '@/components/datagrids/DataGridProps';
 import { RialIcon } from '@/components/elements/TomanIcon';
 import MoveItemModal from '@/pages/Dashboard/Sales/Modals/MoveItemModal';
 import DeleteModal from '@/pages/Dashboard/Sales/Modals/DeleteModal';
@@ -87,7 +85,6 @@ interface CartItemRow {
 }
 
 export function Cart({ setOpenCart, openCart }: CartProps,) {
-  const [selectedRows, setSelectedRows] = React.useState<Set<number>>(new Set());
   const [projects, setProjects] = React.useState<string[]>([]);
   const [selectedProject, setSelectedProjectState] = React.useState<{ title: string; id: number } | null>(null);
   const [projectTitles, setProjectTitles] = React.useState<{ title: string; id: number }[]>([]);
@@ -130,7 +127,9 @@ export function Cart({ setOpenCart, openCart }: CartProps,) {
     selectedCartWarehouse,
     setSelectedCartWarehouse,
     isCartOpen,
-    cartShipments
+    cartShipments,
+    selectedItemKeys,
+    toggleSelectedItem
   } = useControlCart()
 
   const primaryDistance = useMemo(() => distance.find((d) => d.warehouseId > 0)?.warehouseId || null, [distance]);
@@ -238,8 +237,8 @@ export function Cart({ setOpenCart, openCart }: CartProps,) {
     );
 
     const mappedRows = filtered.map((item): CartItemRow => ({
-      id: item.ididentity + item.warehouseId,
-      shipmentId: item.cartId ?? 1,
+      id: item.ididentity, // ← Safe React key
+      shipmentId: item.tempShipmentId ?? 1,
       productServiceName: `${item.title} ${item.attributeGroupTitle}`.trim(),
       quantity: item.value ?? 1,
       unit: item.valueTitleBase || item.valueTitle || 'عدد',
@@ -287,18 +286,6 @@ export function Cart({ setOpenCart, openCart }: CartProps,) {
 
   const handleQuantityChange = useCallback((rowId: number, newQuantityStr: string) => {
     const newQty = parseFloat(newQuantityStr) || 0;
-  }, []);
-
-  const handleRowSelect = React.useCallback((rowId: number, checked: boolean) => {
-    setSelectedRows(prev => {
-      const newSet = new Set(prev);
-      if (checked) {
-        newSet.add(rowId);
-      } else {
-        newSet.delete(rowId);
-      }
-      return newSet;
-    });
   }, []);
 
   const handleBranchDeliveryChange = useCallback(
@@ -625,7 +612,7 @@ export function Cart({ setOpenCart, openCart }: CartProps,) {
                   return [
                     ...itemsInShipment.map((item, itemIndex) => {
                       const rowId = item.ididentity + item.warehouseId;
-                      const isChecked = selectedRows.has(rowId);
+                      const isChecked = selectedItemKeys.has(rowId);
                       const hasDiscount = item.discountPriceWarehouse > 0;
                       const basePrice = item.priceWarehouse;
                       const finalPrice = hasDiscount ? item.discountPriceWarehouse : basePrice;
@@ -656,8 +643,8 @@ export function Cart({ setOpenCart, openCart }: CartProps,) {
                           {itemIndex === 0 && (
                             <TableCell className='first-cell' rowSpan={itemsInShipment.length} sx={{ verticalAlign: 'center' }}>
                               <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', height: '100%', justifyContent: 'space-around' }}>
-                                <Typography variant="subtitle1" color="primary" fontWeight="bold">
-                                  {shipmentNumber}
+                                <Typography variant="body1" color="primary" fontWeight="bold">
+                                  مرسوله {toPersianPrice(shipmentNumber)}
                                 </Typography>
                                 <Box>
                                   <IconButton
@@ -665,6 +652,7 @@ export function Cart({ setOpenCart, openCart }: CartProps,) {
                                     size="small"
                                     onClick={handleMoveItemModalToggle}
                                     title="جابجایی مرسوله"
+                                    disabled={selectedItemKeys.size === 0}
                                   >
                                     <SwapVertRoundedIcon fontSize="small" />
                                   </IconButton>
@@ -673,6 +661,7 @@ export function Cart({ setOpenCart, openCart }: CartProps,) {
                                     size="small"
                                     onClick={handleDeleteItemModalToggle}
                                     title="حذف آیتم از مرسوله"
+                                    disabled={selectedItemKeys.size === 0}
                                   >
                                     <DeleteRoundedIcon fontSize="small" />
                                   </IconButton>
@@ -683,8 +672,8 @@ export function Cart({ setOpenCart, openCart }: CartProps,) {
                           <TableCell>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                               <Checkbox
-                                checked={isChecked}
-                                onChange={(e) => handleRowSelect(rowId, e.target.checked)}
+                                checked={selectedItemKeys.has(item.ididentity + item.warehouseId)}
+                                onChange={() => toggleSelectedItem(item)}
                                 size="small"
                               />
                               <Typography variant="body2">
@@ -849,7 +838,6 @@ export function Cart({ setOpenCart, openCart }: CartProps,) {
         open={moveItemModal}
         onClose={handleMoveItemModalToggle}
         items={rawItems}
-        selectedRowIds={selectedRows}
         onUpdate={(updatedItems) => {
           // Update rawItems → triggers re-render of rows
           setRawItems(updatedItems);

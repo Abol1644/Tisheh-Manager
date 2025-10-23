@@ -8,28 +8,35 @@ export const getCartList = async (): Promise<ListCart[]> => {
     return response.data;
   } catch (error: any) {
     console.error("Get ListCart API error: ", error);
-    
+
     const serverMessage = error.response?.data || "Failed to fetch ListCart";
     throw new Error(serverMessage);
   }
 };
 
-export const getCart = async (cartId:number): Promise<CartDetails> => {
+export const getCart = async (cartId: number): Promise<CartDetails> => {
   try {
-    const response = await apiClient.get<CartDetails>(`Cart/GetCart?CartId=${cartId}`);
+    const response = await apiClient.get<CartDetails>(
+      `Cart/GetCart?CartId=${cartId}`
+    );
     // console.log("Get Cart: ", response.data);
     return response.data;
   } catch (error: any) {
     console.error("Get Cart API error: ", error);
-    
+
     const serverMessage = error.response?.data || "Failed to fetch Cart";
     throw new Error(serverMessage);
   }
 };
 
-export const getListOfCartItems = async (cart: ListCart): Promise<ItemResaultPrice[]> => {
+export const getListOfCartItems = async (
+  cart: ListCart
+): Promise<ItemResaultPrice[]> => {
   try {
-    const response = await apiClient.post<ItemResaultPrice[]>(`/Cart/GetListCartItem`, cart );
+    const response = await apiClient.post<ItemResaultPrice[]>(
+      `/Cart/GetListCartItem`,
+      cart
+    );
     return response.data;
   } catch (error: any) {
     console.error("get Cart API error: ", error);
@@ -48,6 +55,39 @@ export const deleteCart = async (cartId: number | null): Promise<void> => {
   } catch (error: any) {
     console.error("Delete Cart API error:", error);
     const serverMessage = error.response?.data || "Delete Cart failed";
+    throw new Error(serverMessage);
+  }
+};
+
+export const editCartDetails = async (
+  cart: CartDetails
+): Promise<CartDetails> => {
+  try {
+    const response = await apiClient.put<CartDetails>(
+      `/Cart/UpdatePut`,
+      {
+        id: cart.id,
+        cash: cart.cash,
+        codeAccCustomer: cart.codeAccCustomer,
+        projectIdCustomer: cart.projectIdCustomer,
+        byWhom: cart.byWhom,
+        branchCenterDelivery: cart.branchCenterDelivery,
+        fastSending: cart.fastSending,
+        preSell: cart.preSell,
+        transit: cart.transit,
+        alternate: cart.alternate,
+        installment: cart.installment,
+        warehouseId: cart.warehouseId,
+        valueDeliveryService: cart.valueDeliveryService,
+        vehicleId: cart.vehicleId,
+      }
+    );
+    console.log("✏ Edit CartDetails responce: ", response.data);
+    return response.data;
+  } catch (error: any) {
+    console.error("Edit CartDetails API error: ", error);
+
+    const serverMessage = error.response?.data || "Edit CartDetails failed";
     throw new Error(serverMessage);
   }
 };
