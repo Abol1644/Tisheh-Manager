@@ -624,6 +624,7 @@ export function Cart({ setOpenCart, openCart }: CartProps,) {
                           key={rowId}
                           sx={{
                             '& .MuiTableCell-root': {
+                              p: 1.5,
                               position: 'relative',
                               whiteSpace: 'nowrap',
                               '&:not(.first-cell)::before': {
@@ -727,6 +728,7 @@ export function Cart({ setOpenCart, openCart }: CartProps,) {
                       key={`options-${shipment.id}`}
                       sx={{
                         '& .MuiTableCell-root': {
+                          p: 1.5,
                           position: 'relative',
                           whiteSpace: 'nowrap',
                           borderBottomWidth: '2px',
