@@ -5,11 +5,9 @@ import {
   AccordionSummary,
   AccordionDetails,
   Typography,
-  CircularProgress,
   List,
   ListItem,
-  ListItemText,
-  Slide, IconButton,
+  Grow, IconButton,
   Tooltip,
   Zoom,
   Skeleton, Stack,
@@ -285,13 +283,12 @@ export function CartDrawer() {
           <CartItemSkeleton />
         ) : Object.keys(groupedItems).length > 0 ? (
           Object.entries(groupedItems).map(([name, items], index) => (
-            <Slide
+            <Grow
               key={name}
-              direction="up"
               in={!loading}
               mountOnEnter
               unmountOnExit
-              timeout={300}
+              timeout={500}
               style={{
                 transitionDelay: `${index * 30}ms`
               }}
@@ -402,7 +399,7 @@ export function CartDrawer() {
                   </AccordionDetails>
                 </Accordion>
               </Badge>
-            </Slide>
+            </Grow>
           ))
         ) : (
           <Typography>هیچ سفارشی یافت نشد</Typography>
