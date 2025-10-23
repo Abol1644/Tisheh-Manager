@@ -12,6 +12,7 @@ export interface ItemResaultPrice {
   cartId: number;
   parentId: number;
   parentSid: string;
+  tempShipmentId: number | null;
   sort: number;
   title: string;
   titleEn: string | null;

@@ -1,6 +1,12 @@
 // store/useToggleStore.js
 import { create } from "zustand";
-import { ListCart, ItemResaultPrice, CartDetails, Warehouse } from "@/models";
+import {
+  ListCart,
+  ItemResaultPrice,
+  CartDetails,
+  Warehouse,
+  CartShipment,
+} from "@/models";
 
 interface ToggleState {
   products: ItemResaultPrice[];
@@ -12,42 +18,86 @@ interface ToggleState {
   isSelectingTransit: boolean;
   isFindingWarehouse: boolean;
   selectedCartWarehouse: Warehouse | null;
+  currentCartDetails: CartDetails | null;
+  cartShipments: CartShipment[];
+
+  // Actions
   toggleCart: () => void;
   cartOpen: () => void;
   cartClose: () => void;
   setOpenCart: (cart: ListCart) => void;
   setCartProducts: (products: ItemResaultPrice[]) => void;
-  currentCartDetails: CartDetails | null; 
   setCurrentCartDetails: (details: CartDetails) => void;
-  setIsFetchingItems: (fetching: boolean) => void; 
-  setIsSelectingProject: (selecting: boolean) => void; 
-  setIsSelectingTransit: (selecting: boolean) => void; 
-  setIsFindingWarehouse: (finding: boolean) => void; 
+  setIsFetchingItems: (fetching: boolean) => void;
+  setIsSelectingProject: (selecting: boolean) => void;
+  setIsSelectingTransit: (selecting: boolean) => void;
+  setIsFindingWarehouse: (finding: boolean) => void;
   setSelectedCartWarehouse: (warehouse: Warehouse | null) => void;
+
+  // Shipment Actions
+  addShipment: (shipment: Omit<CartShipment, 'id'>) => number;
+  removeShipment: (id: number) => void;
+  updateShipment: (id: number, updates: Partial<CartShipment>) => void;
 }
 
-export const useControlCart = create<ToggleState>((set) => ({
-  products: [],
-  isCartOpen: false,
-  openCartId: null,
-  cartList: null, // Initialize cartList as null
-  currentCartDetails: null, // ← Initialize
-  isFetchingItems: false,
-  isSelectingProject: false,
-  isSelectingTransit: false,
-  isFindingWarehouse: false,
-  selectedCartWarehouse: null,
+export const useControlCart = create<ToggleState>((set, get) => {
+  let nextId = 1; // Simple ID counter
 
-  toggleCart: () => set((state) => ({ isCartOpen: !state.isCartOpen })),
-  cartOpen: () => set({ isCartOpen: true }),
-  cartClose: () => set({ isCartOpen: false }),
-  setOpenCart: (cart: ListCart) => set({ cartList: cart, isCartOpen: false }),
-  setCartProducts: (products) => set({ products }),
-  setCurrentCartDetails: (details: CartDetails) =>
-    set({ currentCartDetails: details }),
-  setIsFetchingItems: (fetching) => set({ isFetchingItems: fetching }), 
-  setIsSelectingProject: (selecting) => set({ isSelectingProject: selecting }), 
-  setIsSelectingTransit: (selecting) => set({ isSelectingTransit: selecting }), 
-  setIsFindingWarehouse: (finding) => set({ isFindingWarehouse: finding }), 
-  setSelectedCartWarehouse: (warehouse) => set({ selectedCartWarehouse: warehouse }),
-}));
+  return {
+    // Initial State
+    products: [],
+    isCartOpen: false,
+    openCartId: null,
+    cartList: null,
+    currentCartDetails: null,
+    isFetchingItems: false,
+    isSelectingProject: false,
+    isSelectingTransit: false,
+    isFindingWarehouse: false,
+    selectedCartWarehouse: null,
+    cartShipments: [],
+
+    // Actions
+    toggleCart: () => set((state) => ({ isCartOpen: !state.isCartOpen })),
+    cartOpen: () => set({ isCartOpen: true }),
+    cartClose: () => set({ isCartOpen: false }),
+
+    setOpenCart: (cart) => set({ cartList: cart }),
+
+    setCartProducts: (products) => set({ products }), // Pure – no mapping!
+
+    setCurrentCartDetails: (details) => set({ currentCartDetails: details }),
+
+    setIsFetchingItems: (fetching) => set({ isFetchingItems: fetching }),
+    setIsSelectingProject: (selecting) => set({ isSelectingProject: selecting }),
+    setIsSelectingTransit: (selecting) => set({ isSelectingTransit: selecting }),
+    setIsFindingWarehouse: (finding) => set({ isFindingWarehouse: finding }),
+    setSelectedCartWarehouse: (warehouse) => set({ selectedCartWarehouse: warehouse }),
+
+    // Shipment Management
+    addShipment: (shipment) => {
+      const id = nextId++;
+      set((state) => ({
+        cartShipments: [...state.cartShipments, { id, ...shipment }],
+      }));
+      return id;
+    },
+
+    removeShipment: (id) => {
+      set((state) => ({
+        cartShipments: state.cartShipments.filter((s) => s.id !== id),
+        products: state.products.map((p) =>
+          p.tempShipmentId === id ? { ...p, tempShipmentId: null } : p
+        ),
+      }));
+    },
+
+    updateShipment: (id, updates) => {
+      set((state) => ({
+        cartShipments: state.cartShipments.map((s) =>
+          s.id === id ? { ...s, ...updates } : s
+        ),
+      }));
+    },
+  };
+});

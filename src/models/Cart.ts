@@ -75,3 +75,10 @@ export interface CartOptions {
   deliveryDate: string | null;
   deliverySource: string | null;
 }
+
+export interface CartShipment {
+  id: number;
+  warehouseId: number | null;
+  deliveryMethod: string | null;
+  deliveryDate: string | null;
+}
