@@ -740,6 +740,7 @@ export function Cart({ setOpenCart, openCart }: CartProps,) {
                         '& .MuiTableCell-root': {
                           position: 'relative',
                           whiteSpace: 'nowrap',
+                          borderBottomWidth: '2px',
                           '&:not(.first-cell)::before': {
                             content: '""',
                             position: 'absolute',
@@ -770,7 +771,7 @@ export function Cart({ setOpenCart, openCart }: CartProps,) {
                         />
                       </TableCell>
                       <TableCell>
-                        <Box sx={{ ...flex.row, ...flex.alignCenter, gap: 2, width: 'fit-content' , flexWrap: 'wrap' }}>
+                        <Box sx={{ ...flex.row, ...flex.alignCenter, gap: 2, width: 'fit-content', flexWrap: 'wrap' }}>
                           <NumberField
                             value={services}
                             onChange={() => { }}
