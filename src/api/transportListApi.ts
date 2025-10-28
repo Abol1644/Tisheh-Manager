@@ -3,24 +3,23 @@ import { TransportList, GeoFence, ItemResaultPrice, Distance, Account, Project }
 
 export const getTransportListSale = async (
   item: ItemResaultPrice[],
-  geofence: GeoFence,
+  geofence: GeoFence | null,
   distance: Distance[],
   branchDeliveryCenter: boolean,
   warehouseId: number | undefined,
-  account: Account | null,
+  projectId: number | undefined,
   project: Project | null,
 ): Promise<TransportList[]> => {
   try {
     const response = await apiClient.post<TransportList[]>(
-      "Transport/GetListTansportSale",
+      '/Transport/GetListTansportSale',
       {
         branchCenterDelivery: branchDeliveryCenter,
         listDistance: distance,
         warehouseId: warehouseId,
         listModelPrice: item,
         modelGeofences: geofence,
-        codeAccCustomerId: account?.codeAcc,
-        projectCustomerId: project?.id,
+        projectCustomerId: projectId,
         latitudeProject: project?.latitude || 0,
         longitudeProject: project?.longitude || 0,
         elevationProject: project?.elevation || 0,

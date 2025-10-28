@@ -43,7 +43,7 @@ import { flex, width, gap, height } from '@/models/ReadyStyles';
 import { getInventory, getGeoFence, getTransportListSale } from '@/api';
 // Added TransportItem import to handle individual transport items from new nested structure
 import { Inventory, GeoFence, TransportList, TransportTableProps, ItemResaultPrice, TransportItem } from '@/models';
-import { useProductsStore, useProjectStore, useBranchDeliveryStore, useDistanceStore, useAccountStore } from '@/stores';
+import { useProductsStore, useProjectStore, useBranchDeliveryStore, useDistanceStore, useAccountStore, } from '@/stores';
 import { toPersianDigits } from '@/utils/persianNumbers'
 import { useSnackbar } from "@/contexts/SnackBarContext";
 import { filterVehicleCosts, groupTransportByVehicleAndAlternate } from '@/hooks/filterVehicleCosts';
@@ -65,7 +65,7 @@ export default function OrderConfirm({ selectedTransport, setSelectedTransport }
   // Changed from TransportList to TransportItem to match new nested structure
   // const [selectedTransport, setSelectedTransport] = useState<TransportItem | null>(null);
 
-  const { products, selectedItem, getAvailableUnits, setSelectedItem } = useProductsStore();
+  const { products, selectedItem, getAvailableUnits, setSelectedItem, selectedWarehouse } = useProductsStore();
 
   const selectedPeriod = React.useMemo(() => {
     const item = localStorage.getItem('periodData');
@@ -131,74 +131,74 @@ export default function OrderConfirm({ selectedTransport, setSelectedTransport }
       .finally(() => setLoading(false));
   }, [products, selectedPeriod]);
 
-  // Fetch geofence
-  React.useEffect(() => {
-    if (!selectedProject) return;
+  const fetchGeoFence = async () => {
+    if (!selectedProject) return null;
 
     setLoading(true);
-    getGeoFence(selectedProject)
-      .then(setgeofence)
-      .catch((error) => {
-        let errorMessage = 'خطا در دریافت محدوده جغرافیایی';
-        if (error.response?.data) {
-          errorMessage = error.response.data;
-        } else if (error.message) {
-          errorMessage = error.message;
-        }
-        showSnackbar(errorMessage, 'error', 5000, <ErrorOutlineRoundedIcon />);
-      })
-      .finally(() => setLoading(false));
-  }, [selectedProject]);
+    try {
+      const result = await getGeoFence(selectedProject);
+      setgeofence(result);
+      return result;
+    } catch (error: any) {
+      const errorMessage = error.response?.data || error.message || 'خطا در دریافت محدوده جغرافیایی';
+      showSnackbar(errorMessage, 'error', 5000, <ErrorOutlineRoundedIcon />);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
 
   React.useEffect(() => {
-    const priceIdSale = selectedItem?.priceId;
+    const fetchAndGetTransport = async () => {
+      if (!selectedItem?.priceId || !products.length) return;
 
-    if (!priceIdSale || !geofence || !products.length) return;
+      setTransportLoading(true);
 
-    const transportListPrice = products.filter((p) => p.priceId === priceIdSale);
-    if (transportListPrice.length === 0) return;
+      try {
+        const fetchedGeofence = await fetchGeoFence();
 
-    setTransportLoading(true);
-    getTransportListSale(transportListPrice, geofence, distance, isBranchDelivery, primaryDistance, selectedAccount, selectedProject)
-      .then(data => {
+        const transportListPrice = products.filter((p) => p.priceId === selectedItem.priceId);
+        if (!transportListPrice.length) return;
+
+        const data = await getTransportListSale(
+          transportListPrice,
+          isBranchDelivery ? null : fetchedGeofence,
+          distance,
+          isBranchDelivery,
+          selectedWarehouse?.id,
+          isBranchDelivery ? 0 : selectedProject?.id,
+          selectedProject
+        );
+
         const list = Array.isArray(data) ? data : [data];
         setTransportListSale(list);
-        // console.log("✔ ~ OrderConfirm ~ list:", list)
 
-        // Update distance store with listDistance from transport API response
-        if (list.length > 0 && list[0].listDistance) {
+        if (list[0]?.listDistance) {
           setDistance(list[0].listDistance);
         }
 
-        // Auto-select the first transport item
-        const Costs = filterVehicleCosts(list, false, false);
-        const groupedCosts = groupTransportByVehicleAndAlternate(Costs);
-        const displayItems = Object.values(groupedCosts).sort((a, b) => {
-          const getOrder = (item: (typeof groupedCosts)[string]) => {
-            if (item.transit) return 1;
-            if (item.alternate) return 2;
-            return 0;
-          };
-          return getOrder(a) - getOrder(b);
+        // Auto-select first transport item
+        const costs = filterVehicleCosts(list, false, false);
+        const grouped = groupTransportByVehicleAndAlternate(costs);
+        const sorted = Object.values(grouped).sort((a, b) => {
+          if (a.transit) return 1;
+          if (a.alternate) return 2;
+          return b.transit ? -1 : b.alternate ? -2 : 0;
         });
 
-        if (displayItems.length > 0) {
-          const firstItem = displayItems[0];
-          setSelectedTransport({ ...firstItem.costs[0], ...firstItem } as TransportItem);
+        if (sorted[0]) {
+          setSelectedTransport({ ...sorted[0].costs[0], ...sorted[0] } as TransportItem);
         }
-      })
-      .catch((error) => {
-        let errorMessage = 'خطا در دریافت لیست حمل و نقل';
-        if (error.response?.data) {
-          errorMessage = error.response.data;
-        } else if (error.message) {
-          errorMessage = error.message;
-        }
+      } catch (error: any) {
+        const errorMessage = error.response?.data || error.message || 'خطا در دریافت لیست حمل و نقل';
         showSnackbar(errorMessage, 'error', 5000, <ErrorOutlineRoundedIcon />);
-      })
-      // Fixed: Use setTransportLoading instead of setLoading for transport-specific loading state
-      .finally(() => setTransportLoading(false));
-  }, [products, geofence, isBranchDelivery, selectedItem?.priceId, primaryDistance]);
+      } finally {
+        setTransportLoading(false);
+      }
+    };
+
+    fetchAndGetTransport();
+  }, [products, isBranchDelivery, selectedItem?.priceId, primaryDistance]);
 
   return (
     <Box sx={{ width: '100%', ...flex.columnBetween }}>
@@ -609,8 +609,8 @@ function Prices({
   selectedItem: ItemResaultPrice | null;
   selectedTransport: TransportItem | null;
 }) {
-  console.log("🚀 ~ Prices ~ selectedTransport:", selectedTransport)
-  console.log("🍒 ~ Prices ~ selectedItem:", selectedItem)
+  // console.log("🚀 ~ Prices ~ selectedTransport:", selectedTransport)
+  // console.log("🍒 ~ Prices ~ selectedItem:", selectedItem)
   const { toPersianPrice } = usePersianNumbers();
   const { resultPrice, price, disPrice } = usePriceCalculator(selectedItem, numberOfProduct, selectedTransport);
   const roundedResultPrice = useRoundedPrice(resultPrice);

@@ -1,6 +1,6 @@
 export interface Project {
   id: number;
-  codeAccConnect: string;
+  codeAccConnect: number | null;
   title: string;
   postalCode: number | 0;
   nationalId: number | 0;
