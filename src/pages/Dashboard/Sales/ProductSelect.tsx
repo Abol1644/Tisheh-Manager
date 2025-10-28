@@ -76,7 +76,8 @@ export function ProductSelect(props: any) {
     setLoading: setProjectsLoading
   } = useProjectStore();
   const { accounts, selectedAccount, setSelectedAccount, setAccounts } = useAccountStore();
-  const [loading, setLoading] = useState(true);
+  const [accountsLoading, setAccountsLoading] = useState(true);
+  const [warehousesLoading, setWarehousesLoading] = useState(true);
   const [isFetchingDistance, setIsFetchingDistance] = useState(false);
   const { mode } = useThemeMode();
   const isBranchDelivery = useBranchDeliveryStore((s) => s.isBranchDelivery);
@@ -134,7 +135,7 @@ export function ProductSelect(props: any) {
   React.useEffect(() => {
     if (accounts.length > 0) return; // Don't fetch if we already have accounts
 
-    setLoading(true);
+    setAccountsLoading(true); 
     getSaleAccounts()
       .then((accounts) => {
         setAccounts(accounts);
@@ -148,7 +149,7 @@ export function ProductSelect(props: any) {
         }
         showSnackbar(errorMessage, 'error', 5000, <ErrorOutlineRoundedIcon />);
       })
-      .finally(() => { setLoading(false) });
+      .finally(() => { setAccountsLoading(false) });
   }, [accounts.length, setAccounts, showSnackbar]);
 
   // Updated to use global project store for unconnected projects - only fetch if store is empty
@@ -216,7 +217,7 @@ export function ProductSelect(props: any) {
   }, [selectedProject, isBranchDelivery, fetchDistance]);
 
   React.useEffect(() => {
-    setLoading(true);
+    setWarehousesLoading(true);
     getWarehouses()
       .then((warehouses) => {
         setWarehouse(warehouses);
@@ -245,7 +246,7 @@ export function ProductSelect(props: any) {
         showSnackbar(errorMessage, 'error', 5000, <ErrorOutlineRoundedIcon />);
       })
       .finally(() => {
-        setLoading(false);
+        setWarehousesLoading(false);
         setInitDone(true);
       });
   }, [isBranchDelivery, setSelectedWarehouse]);
@@ -350,7 +351,7 @@ export function ProductSelect(props: any) {
         return;
       }
       if (!isBranchDelivery) {
-        setLoading(true);
+        setWarehousesLoading(false);
       }
     },
     [isBranchDelivery]
@@ -396,7 +397,7 @@ export function ProductSelect(props: any) {
             options={accounts}
             value={selectedAccount}
             onChange={handleAccountChange}
-            loading={loading}
+            loading={accountsLoading}
             loadingText="در حال بارگذاری..."
             noOptionsText="هیچ گزینه‌ای موجود نیست"
             getOptionLabel={(option) => {
@@ -489,7 +490,7 @@ export function ProductSelect(props: any) {
             options={Warehouse}
             value={selectedWarehouse}
             onChange={handleWarehouseChange}
-            loading={loading}
+            loading={warehousesLoading}
             loadingText="در حال بارگذاری..."
             noOptionsText="هیچ گزینه‌ای موجود نیست"
             disabled={!isBranchDelivery}
