@@ -7,7 +7,6 @@ export const getTransportListSale = async (
   distance: Distance[],
   branchDeliveryCenter: boolean,
   warehouseId: number | undefined,
-  projectId: number | undefined,
   project: Project | null,
 ): Promise<TransportList[]> => {
   try {
@@ -19,12 +18,13 @@ export const getTransportListSale = async (
         warehouseId: warehouseId,
         listModelPrice: item,
         modelGeofences: geofence,
-        projectCustomerId: projectId,
+        projectCustomerId: project?.id,
         latitudeProject: project?.latitude || 0,
         longitudeProject: project?.longitude || 0,
         elevationProject: project?.elevation || 0,
       }
     );
+    console.log('🦈🦈🦈🦈 get transport sale list', project?.id)
     console.log('❤ get transport sale list', response.data)
     return response.data;
   } catch (error: any) {

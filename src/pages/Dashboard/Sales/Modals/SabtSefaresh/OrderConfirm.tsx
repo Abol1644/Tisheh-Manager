@@ -24,23 +24,19 @@ import NumberField from '@/components/elements/NumberField';
 import Btn, { BtnGroup } from '@/components/elements/Btn';
 
 import InfoRoundedIcon from '@mui/icons-material/InfoRounded';
-import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
 import LocationPinIcon from '@mui/icons-material/LocationPin';
-import PersonRoundedIcon from '@mui/icons-material/PersonRounded';
-import DoneAllRoundedIcon from '@mui/icons-material/DoneAllRounded';
 import ErrorOutlineRoundedIcon from '@mui/icons-material/ErrorOutlineRounded';
 import ScaleRoundedIcon from '@mui/icons-material/ScaleRounded';
 import Inventory2RoundedIcon from '@mui/icons-material/Inventory2Rounded';
 import AccessTimeRoundedIcon from '@mui/icons-material/AccessTimeRounded';
 
-import { TomanIcon, RialIcon } from '@/components/elements/TomanIcon';
+import { RialIcon } from '@/components/elements/TomanIcon';
 
 import usePersianNumbers from '@/hooks/usePersianNumbers';
 import { useWeekdays, useFormattedWeekdays, usePreparationTime } from '@/hooks/weekDayConverter';
 import { flex, width, gap, height } from '@/models/ReadyStyles';
 import { getInventory, getGeoFence, getTransportListSale, addCart } from '@/api';
-// Added TransportItem import to handle individual transport items from new nested structure
-import { Inventory, GeoFence, TransportList, TransportTableProps, ItemResaultPrice, TransportItem } from '@/models';
+import { Inventory, GeoFence, TransportList, ItemResaultPrice, TransportItem } from '@/models';
 import { useProductsStore, useProjectStore, useBranchDeliveryStore, useDistanceStore, useAccountStore, } from '@/stores';
 import { toPersianDigits } from '@/utils/persianNumbers'
 import { useSnackbar } from "@/contexts/SnackBarContext";
@@ -182,9 +178,9 @@ export default function OrderConfirm({ selectedTransport, setSelectedTransport }
           distance,
           isBranchDelivery,
           selectedWarehouse?.id,
-          selectedProject?.id,
           selectedProject
         );
+        console.log("🚀 ~ fetchAndGetTransport ~ selectedProject:", selectedProject)
 
         const list = Array.isArray(data) ? data : [data];
         setTransportListSale(list);

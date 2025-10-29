@@ -95,7 +95,7 @@ export const addCart = async (item: ItemResaultPrice, account: Account, project:
       `/Cart/Add`,
       {
         codeAccCustomer: account.codeAcc,
-        projectIdCustomer: item.id,
+        projectIdCustomer: project.id,
         branchCenterDelivery: branchCenterDelivery,
         transit: item.activateTransit,
         warehouseId: item.warehouseId,

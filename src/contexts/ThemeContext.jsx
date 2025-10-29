@@ -136,7 +136,7 @@ export function CustomThemeProvider({ children }) {
       document.body.style.setProperty('--background-secondaryShade', '#F5F5F5');
       document.body.style.setProperty('--background-paper', '#ffffff');
       document.body.style.setProperty('--background-overlay', '#ECEBEB');
-      document.body.style.setProperty('--background-overlay-light', '#fbfbfb');
+      document.body.style.setProperty('--background-overlay-light', '#f5f5f5');
       document.body.style.setProperty('--background-fade', 'rgb(255, 255, 255, 0.1)');
       document.body.style.setProperty('--background-glass', 'rgb(255, 255, 255, 0.3)');
       document.body.style.setProperty('--text-primary', '#000000');
