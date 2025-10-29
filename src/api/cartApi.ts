@@ -1,5 +1,12 @@
 import apiClient from "./apiClient";
-import { ListCart, Cart, CartDetails, ItemResaultPrice, Account, Project } from "@/models/";
+import {
+  ListCart,
+  Cart,
+  CartDetails,
+  ItemResaultPrice,
+  Account,
+  Project,
+} from "@/models/";
 
 export const getCartList = async (): Promise<ListCart[]> => {
   try {
@@ -89,24 +96,48 @@ export const editCartDetails = async (
   }
 };
 
-export const addCart = async (item: ItemResaultPrice, account: Account, project: Project, branchCenterDelivery: boolean, vehicleId: string): Promise<Cart> => {
+export const addCart = async (
+  item: ItemResaultPrice,
+  account: Account,
+  project: Project,
+  branchCenterDelivery: boolean,
+  vehicleId: string
+): Promise<Cart> => {
   try {
-    const response = await apiClient.post<Cart>(
-      `/Cart/Add`,
-      {
-        codeAccCustomer: account.codeAcc,
-        projectIdCustomer: project.id,
-        branchCenterDelivery: branchCenterDelivery,
-        transit: item.activateTransit,
-        warehouseId: item.warehouseId,
-        vehicleId: vehicleId,
-      }
-    );
+    const response = await apiClient.post<Cart>(`/Cart/Add`, {
+      codeAccCustomer: account.codeAcc,
+      projectIdCustomer: project.id,
+      branchCenterDelivery: branchCenterDelivery,
+      transit: item.activateTransit,
+      warehouseId: item.warehouseId,
+      vehicleId: vehicleId,
+    });
     return response.data;
   } catch (error: any) {
     console.error("get Cart API error: ", error);
 
     const serverMessage = error.response?.data || "get Cart failed";
+    throw new Error(serverMessage);
+  }
+};
+
+export const addItemToCart = async (
+  item: ItemResaultPrice,
+  cart: Cart
+): Promise<Cart> => {
+  try {
+    const response = await apiClient.post<Cart>(`/Cart/AddItem`, {
+      cartId: cart.id,
+      priceId: item,
+      value: item,
+      valueId: item,
+    });
+    console.log("🎂 ~ addItemToCart ~ response.data:", response.data)
+    return response.data;
+  } catch (error: any) {
+    console.error("get CartAddItem API error: ", error);
+
+    const serverMessage = error.response?.data || "get CartAddItem failed";
     throw new Error(serverMessage);
   }
 };
