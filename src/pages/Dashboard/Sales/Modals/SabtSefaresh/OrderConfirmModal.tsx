@@ -19,6 +19,7 @@ import ProjectInfo from './ProjectInfo'
 import ProductInfo from './ProductInfo'
 import OrderConfirm from './OrderConfirm'
 import { TransportItem } from '@/models'
+import { useBranchDeliveryStore } from '@/stores';
 
 interface SaleModalProps {
   open: boolean;
@@ -35,6 +36,7 @@ export default function SabtKalaModal({ open, onClose }: SaleModalProps) {
   const [value, setValue] = React.useState(0);
   const [addToOrderModalOpen, setAddToOrderModalOpen] = React.useState(false);
   const [selectedTransport, setSelectedTransport] = useState<TransportItem | null>(null);
+  const isBranchDelivery = useBranchDeliveryStore((s) => s.isBranchDelivery);
 
   const handleCloseAddToOrderModal = () => {
     if (addToOrderModalOpen === true) {
@@ -63,8 +65,8 @@ export default function SabtKalaModal({ open, onClose }: SaleModalProps) {
             top: '50%',
             left: '50%',
             width: '700px',
-            minHeight: '680px',
-            margin: '-340px 0 0 -350px',
+            minHeight: isBranchDelivery ? '580px' : '680px',
+            margin: isBranchDelivery ? '-290px 0 0 -350px' : '-340px 0 0 -350px',
             backgroundColor: 'background.paper',
             background: 'linear-gradient(-165deg, #00ff684d, var(--transparent) 75%)',
             border: 'none',
@@ -75,7 +77,6 @@ export default function SabtKalaModal({ open, onClose }: SaleModalProps) {
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'space-between',
-            
             '&:focus-visible': {
               outline: 'none'
             },
