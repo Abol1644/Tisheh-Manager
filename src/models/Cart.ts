@@ -82,3 +82,11 @@ export interface CartShipment {
   deliveryMethod: string | null;
   deliveryDate: string | null;
 }
+
+export interface CartItem {
+  ididentity?: number; // missing = new item
+  cartId: number;
+  priceId: number;
+  valueId: number;
+  value: number; // quantity
+}

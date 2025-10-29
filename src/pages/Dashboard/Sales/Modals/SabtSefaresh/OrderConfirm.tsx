@@ -35,8 +35,8 @@ import { RialIcon } from '@/components/elements/TomanIcon';
 import usePersianNumbers from '@/hooks/usePersianNumbers';
 import { useWeekdays, useFormattedWeekdays, usePreparationTime } from '@/hooks/weekDayConverter';
 import { flex, width, gap, height } from '@/models/ReadyStyles';
-import { getInventory, getGeoFence, getTransportListSale, addCart } from '@/api';
-import { Inventory, GeoFence, TransportList, ItemResaultPrice, TransportItem } from '@/models';
+import { getInventory, getGeoFence, getTransportListSale, addCart, getCartList } from '@/api';
+import { Inventory, GeoFence, TransportList, ItemResaultPrice, TransportItem, ListCart } from '@/models';
 import { useProductsStore, useProjectStore, useBranchDeliveryStore, useDistanceStore, useAccountStore, } from '@/stores';
 import { toPersianDigits } from '@/utils/persianNumbers'
 import { useSnackbar } from "@/contexts/SnackBarContext";
@@ -64,7 +64,7 @@ export default function OrderConfirm({ selectedTransport, setSelectedTransport }
   }, []);
 
   const { selectedProject } = useProjectStore();
-  const { selectedAccount } = useAccountStore();
+
   const isBranchDelivery = useBranchDeliveryStore((s) => s.isBranchDelivery);
 
   const [selectedUnit, setSelectedUnit] = useState<ItemResaultPrice | null>(null);
@@ -72,27 +72,13 @@ export default function OrderConfirm({ selectedTransport, setSelectedTransport }
   const { distance, setDistance } = useDistanceStore();
   const { showSnackbar } = useSnackbar();
 
-  const [cart, setCart] = React.useState<string[]>([]);
+
   const [addToOrderModalOpen, setAddToOrderModalOpen] = React.useState(false);
 
   const primaryDistance = useMemo(
     () => distance.find((d) => d.warehouseId > 0)?.warehouseId,
     [distance]
   );
-
-  const submitCart = () => {
-    if (!selectedItem || !selectedAccount || !selectedProject) return;
-    console.log("🚀 ~ submitCart ~ selectedProject:", selectedAccount.codeAcc, selectedProject, selectedProject.codeAccConnect, selectedProject.id)
-    addCart(selectedItem, selectedAccount, selectedProject, false, '0')
-
-      .then((response) => {
-        console.log("🚀 ~ submitCart ~ response:", response)
-        showSnackbar('Item added to cart successfully', 'success');
-      })
-      .catch((error) => {
-        showSnackbar(error.message, 'error');
-      });
-  };
 
   React.useEffect(() => {
     if (selectedItem && !selectedUnit && availableUnits.length > 0) {
@@ -201,22 +187,6 @@ export default function OrderConfirm({ selectedTransport, setSelectedTransport }
   }, [products, isBranchDelivery, selectedItem?.priceId, primaryDistance]);
 
 
-
-  const addToOrderClick = () => {
-    setAddToOrderModalOpen(true)
-  }
-
-  const handleCartChange = (event: SelectChangeEvent<typeof cart>) => {
-    const {
-      target: { value },
-    } = event;
-    setCart(
-      typeof value === 'string' ? value.split(',') : value,
-    );
-  };
-
-  const buttonState = selectedTransport ? false : true;
-
   return (
     <Box sx={{ width: '100%', ...flex.columnBetween }}>
       <Box>
@@ -255,41 +225,7 @@ export default function OrderConfirm({ selectedTransport, setSelectedTransport }
           />
         </Box>
         <Divider sx={{ my: 2, mx: 2 }} />
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2 }}>
-          <FormControl size="small" sx={{ minWidth: '200px', flex: 1 }}>
-            <Select
-              displayEmpty
-              value={cart}
-              onChange={handleCartChange}
-              input={<OutlinedInput />}
-              renderValue={(selected) => {
-                if (selected.length === 0) {
-                  return <em style={{ opacity: 0.6 }}>سبد خرید</em>;
-                }
-                return selected.join(', ');
-              }}
-            >
-              <MenuItem disabled value="">
-                <em>سبد خرید</em>
-              </MenuItem>
-              <MenuItem value="سبد خرید جدید">سبد خرید جدید</MenuItem>
-              <MenuItem value="سبد خرید شماره 2">سبد خرید شماره 2</MenuItem>
-            </Select>
-          </FormControl>
-          <div style={{ display: 'flex', gap: '10px', flexDirection: 'row' }}>
-            <Btn disabled={true} onClick={addToOrderClick} color='info' variant="contained" sx={{ whiteSpace: 'nowrap' }}>
-              افزودن به سفارش
-            </Btn>
-            <BtnGroup variant="contained" color='success'>
-              <Btn onClick={submitCart} disabled={buttonState} color='success' variant="contained" sx={{ width: '70px' }}>
-                ثبت
-              </Btn>
-              <Btn disabled={buttonState} color='success' variant="contained" sx={{ whiteSpace: 'nowrap' }}>
-                رفتن به سبد خرید
-              </Btn>
-            </BtnGroup>
-          </div>
-        </Box>
+        <CartSelection selectedTransport={selectedTransport} selectedItem={selectedItem} />
       </Box>
 
     </Box>
@@ -776,7 +712,6 @@ function OrderInput({
   numberOfProduct: number;
   setNumberOfProduct: (value: number) => void;
 }) {
-  const { selectedItem } = useProductsStore();
 
   const units = availableUnits;
   const hasMultipleUnits = availableUnits.length > 1;
@@ -798,7 +733,7 @@ function OrderInput({
         step={1}
         min={0}
         max={maxInventory}
-        
+
       />
 
       <FormControl size='small' sx={{ minWidth: '200px', flex: 1 }}>
@@ -833,4 +768,126 @@ function OrderInput({
       </FormControl>
     </Box>
   );
+}
+
+function CartSelection({ selectedTransport, selectedItem }: { selectedTransport: TransportItem | null; selectedItem: ItemResaultPrice | null; }) {
+  const [cart, setCart] = React.useState<string[]>([]);
+  const [loading, setLoading] = React.useState(false);
+  const [groupedItems, setGroupedItems] = useState<Record<string, ListCart[]>>({});
+  const buttonState = selectedTransport ? false : true;
+  const { selectedAccount } = useAccountStore();
+  const { selectedProject } = useProjectStore();
+  const { showSnackbar } = useSnackbar();
+  const { toPersianPrice } = usePersianNumbers();
+
+  React.useEffect(() => {
+    const fetchListCarts = async () => {
+      getCartList()
+        .then((data: ListCart[]) => {
+          const grouped = data.reduce((acc, item) => {
+            const key = item.name || 'بدون نام';
+            if (!acc[key]) {
+              acc[key] = [];
+            }
+            acc[key].push(item);
+            return acc;
+          }, {} as Record<string, ListCart[]>);
+
+          setGroupedItems(grouped);
+          setLoading(false);
+        })
+        .catch((error) => {
+          console.error('Error fetching cart list:', error);
+          setLoading(false);
+        });
+    }
+    fetchListCarts();
+  }, []);
+
+  const handleCartChange = (event: SelectChangeEvent<string>) => {
+    const value = event.target.value;
+    setCart(value === "new-cart" ? [] : [value]);
+  };
+
+  const submitCart = () => {
+    if (!selectedItem || !selectedAccount || !selectedProject) return;
+    
+    addCart(selectedItem, selectedAccount, selectedProject, false, '0')
+      .then((response) => {
+        console.log("🚀 ~ submitCart ~ response:", response)
+        showSnackbar('Item added to cart successfully', 'success');
+      })
+      .catch((error) => {
+        showSnackbar(error.message, 'error');
+      });
+  };
+
+  return (
+    <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2 }}>
+      <FormControl size="small" sx={{ minWidth: '200px', flex: 1 }}>
+        <Select
+          displayEmpty
+          value={cart.length ? cart[0] : ""}
+          onChange={handleCartChange}
+          input={<OutlinedInput />}
+          renderValue={(selected) => {
+            if (!selected) {
+              return <em style={{ opacity: 0.6 }}>سبد خرید</em>;
+            }
+            return selected;
+          }}
+          MenuProps={{
+            PaperProps: {
+              sx: { maxHeight: 400 }
+            }
+          }}
+        >
+          {/* سبد جدید - Always First */}
+          <MenuItem value="new-cart">
+            <em>سبد جدید</em>
+          </MenuItem>
+
+          {/* Divider after "سبد جدید" */}
+          <Divider sx={{ my: 1 }} />
+
+          {/* Render Grouped Carts */}
+          {Object.keys(groupedItems).length === 0 ? (
+            <MenuItem disabled>هیچ سبدی موجود نیست</MenuItem>
+          ) : (
+            Object.entries(groupedItems).map(([name, items]) => (
+              <React.Fragment key={name}>
+                {/* Group Header */}
+                <MenuItem disabled sx={{ fontWeight: 600, color: "text.primary", py: 1 }}>
+                  {name} ({items.length})
+                </MenuItem>
+                {/* Cart Items */}
+                {items.map((item) => (
+                  <MenuItem
+                    key={item.id}
+                    value={item.id.toString()}
+                    sx={{ pl: 4, fontSize: "0.95rem" }}
+                  >
+                    {toPersianPrice(item.id)} - {item.codeAccCustomerTitle}
+                  </MenuItem>
+                ))}
+              </React.Fragment>
+            ))
+          )}
+        </Select>
+      </FormControl>
+      <div style={{ display: 'flex', gap: '10px', flexDirection: 'row' }}>
+        <Btn disabled={true} color='info' variant="contained" sx={{ whiteSpace: 'nowrap' }}>
+          افزودن به سفارش
+        </Btn>
+        <BtnGroup variant="contained" color='success'>
+          <Btn onClick={submitCart} disabled={buttonState} color='success' variant="contained" sx={{ width: '70px' }}>
+            ثبت
+          </Btn>
+          <Btn disabled={buttonState} color='success' variant="contained" sx={{ whiteSpace: 'nowrap' }}>
+            رفتن به سبد خرید
+          </Btn>
+        </BtnGroup>
+      </div>
+    </Box>
+  )
 }
