@@ -72,34 +72,26 @@ function CartItemSkeleton() {
   )
 }
 
-export function CartDrawer({ onDrawerToggle } : { onDrawerToggle: () => void; }) {
+export function CartDrawer({ onDrawerToggle }: { onDrawerToggle: () => void; }) {
   const [loading, setLoading] = useState(false);
   const [deleteItemModal, setDeleteItemModal] = useState(false);
   const [cartId, setCartId] = useState<number | null>(null);
-  const [cartDetails, setCartDetails] = useState<CartDetails | null>(null);
   const [groupedItems, setGroupedItems] = useState<Record<string, ListCart[]>>({});
   const { decodedToken } = useAuth();
   const userName = (decodedToken as DecodedToken)?.Name;
   const [expanded, setExpanded] = useState<string | false>(userName || false);
 
-  const { showSnackbar, closeSnackbarById } = useSnackbar();
+  const { showSnackbar } = useSnackbar();
   const { selectedAccount, setSelectedAccount, } = useAccountStore()
   const { setConnectedProjects, setSelectedProject, } = useProjectStore()
   const { isBranchDelivery, setIsBranchDelivery } = useBranchDeliveryStore()
   const {
-      cartOpen,
-      setCartProducts,
-      products: cartProducts,
-      isFetchingItems,
-      isSelectingProject,
-      isSelectingTransit,
-      isFindingWarehouse,
-      setIsFetchingItems,
-      setIsSelectingProject,
-      setIsSelectingTransit,
-      setIsFindingWarehouse,
-      setSelectedCartWarehouse
-    } = useControlCart()
+    cartOpen,
+    setCartProducts,
+    setIsFetchingItems,
+    setIsSelectingProject,
+    setSelectedCartWarehouse
+  } = useControlCart()
 
   useEffect(() => {
     setExpanded(userName || false);
@@ -293,112 +285,72 @@ export function CartDrawer({ onDrawerToggle } : { onDrawerToggle: () => void; })
                 transitionDelay: `${index * 30}ms`
               }}
             >
-              <Badge
-                anchorOrigin={{
-                  vertical: 'top',
-                  horizontal: 'left',
-                }}
-                badgeContent={items.length}
-                color={userName === name ? "info" : "primary"}
+              <Accordion
+                expanded={expanded === name}
+                onChange={(_, isExpanded) => setExpanded(isExpanded ? name : false)}
                 sx={{
-                  width: '100%',
-                  '& .MuiBadge-badge': {
-                    left: 1,
-                    top: '50%',
+                  transition: 'all 0.3s ease',
+                  margin: '4px 0',
+                  '&.MuiPaper-root': {
+                    borderRadius: '12px !important',
+                    borderLeft: userName === name ? '2px solid var(--icon-main)' : '2px solid var(--primary-main)',
                   },
+                  '&.MuiPaper-root::before': {
+                    display: 'none !important'
+                  },
+                  '&.MuiPaper-root.Mui-expanded': {
+                    margin: '4px 0',
+                    transition: 'all 0.3s ease',
+                  },
+                  '&.MuiPaper-root, .Mui-expanded ': {
+                    transition: 'all 0.3s ease'
+                  },
+                  width: '100%'
                 }}
               >
-                <Accordion
-                  expanded={expanded === name}
-                  onChange={(_, isExpanded) => setExpanded(isExpanded ? name : false)}
-                  sx={{
-                    transition: 'all 0.3s ease',
-                    margin: '4px 0',
-                    '&.MuiPaper-root': {
-                      borderRadius: '12px !important',
-                      borderLeft: userName === name ? '2px solid var(--icon-main)' : '2px solid var(--primary-main)',
-                    },
-                    '&.MuiPaper-root::before': {
-                      display: 'none !important'
-                    },
-                    '&.MuiPaper-root.Mui-expanded': {
-                      margin: '4px 0',
-                      transition: 'all 0.3s ease',
-                    },
-                    '&.MuiPaper-root, .Mui-expanded ': {
-                      transition: 'all 0.3s ease'
-                    },
-                    width: '100%'
-                  }}
+                <AccordionSummary
+                  expandIcon={<ExpandMoreIcon />}
                 >
-                  <AccordionSummary
-                    expandIcon={<ExpandMoreIcon />}
-                  >
-                    {/* <Badge
-                      anchorOrigin={{
-                        vertical: 'top',
-                        horizontal: 'left',
-                      }}
-                      badgeContent={items.length}
-                      color={userName !== name ? "primary" : "info"}
-                      sx={{ mr: 1 }}
-                    >
-                      <ShoppingCartRoundedIcon color="action" />
-                    </Badge> */}
-                    <Typography>
-                      {name}
-                    </Typography>
-                  </AccordionSummary>
-                  <AccordionDetails>
-                    <List dense>
-                      {items.map((item) => (
-                        <ListItem
-                          key={item.id}
-                          sx={{
-                            p: 0,
-                            transition: 'all 0.3s ease',
-                            '&:hover': {
-                              transform: 'translateY(-4px)',
-                              scale: 1.02,
-                            },
-                          }}
+                  <Typography>
+                    {name}
+                  </Typography>
+                </AccordionSummary>
+                <AccordionDetails>
+                  <List dense>
+                    {items.map((item) => (
+                      <ListItem
+                        key={item.id}
+                        sx={{ p: 0, transition: 'all 0.3s ease', mb: 1, '&:hover': { transform: 'translateX(4px)' } }} >
+                        <Tooltip
+                          title={<p><strong>پروژه</strong> {item.projectIdCustomerTitle}</p>}
+                          placement="left"
+                          arrow
+                          disableInteractive
+                          slots={{ transition: Zoom }}
                         >
-                          <Tooltip
-                            title={<p><strong>پروژه</strong> {item.projectIdCustomerTitle}</p>}
-                            placement="left"
-                            arrow
-                            disableInteractive
-                            slots={{ transition: Zoom }}
+                          <Btn
+                            color='inherit'
+                            variant='outlined'
+                            fullWidth
+                            sx={{ ...flex.justifyBetween }}
                           >
-                            <Btn
-                              variant='outlined'
-                              fullWidth
-                              onClick={() => sendCartId(item)}
-                              sx={{ py: 1, mb: 1, ...flex.justifyBetween }}
-                            >
-                              <Box sx={{ ...flex.row }}>
-                                <ShoppingCartRoundedIcon sx={{ mr: 1 }} />
-                                <Typography variant="body2" align='right'>
-                                  {item.codeAccCustomerTitle}
+                            <Box sx={{ ...flex.row, width: '100%', py: 0.5 }} onClick={() => sendCartId(item)}>
+                              <ShoppingCartRoundedIcon sx={{ mr: 1 }} />
+                              
+                                <Typography className='disable-line-height' color='textPrimary' variant="body2">
+                                  {items.length} - {item.codeAccCustomerTitle}
                                 </Typography>
-                              </Box>
-                              <DeleteRoundedIcon
-                                onClick={() => openDeleteModal(item.id)}
-                                sx={{
-                                  transition: 'all 0.3s ease',
-                                  '&:hover': {
-                                    color: 'error.main',
-                                  },
-                                }}
-                              />
-                            </Btn>
-                          </Tooltip>
-                        </ListItem>
-                      ))}
-                    </List>
-                  </AccordionDetails>
-                </Accordion>
-              </Badge>
+                            </Box>
+                            <DeleteRoundedIcon
+                              onClick={() => openDeleteModal(item.id)}
+                              sx={{ transition: 'all 0.3s ease', '&:hover': { color: 'error.main' } }} />
+                          </Btn>
+                        </Tooltip>
+                      </ListItem>
+                    ))}
+                  </List>
+                </AccordionDetails>
+              </Accordion>
             </Grow>
           ))
         ) : (
