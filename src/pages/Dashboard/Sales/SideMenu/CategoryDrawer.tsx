@@ -11,7 +11,6 @@ import {
   Slide,
   CircularProgress,
   Zoom,
-  Grow,
   Fade,
   Divider,
 } from '@mui/material';
@@ -310,8 +309,7 @@ export function Category({
   loading,
   onRefresh,
   onCategorySelect,
-  setDrawerOpen,
-  drawerPinned
+  onDrawerToggle
 }: {
   value: number;
   drawerOpen?: boolean;
@@ -320,8 +318,7 @@ export function Category({
   loading: boolean;
   onRefresh: () => void;
   onCategorySelect?: (category: CategorySale | null) => void;
-  setDrawerOpen: (open: boolean) => void;
-  drawerPinned: boolean;
+  onDrawerToggle: () => void;
 }) {
   const isServer = typeof window === 'undefined';
 
@@ -344,11 +341,7 @@ export function Category({
   const handleCategorySelect = React.useCallback((category: CategorySale) => {
     if (onCategorySelect) {
       onCategorySelect(category);
-      if (!drawerPinned) {
-        setDrawerOpen(false);
-      } else {
-        setDrawerOpen(true);
-      }
+      onDrawerToggle()
     }
   }, [onCategorySelect]);
 

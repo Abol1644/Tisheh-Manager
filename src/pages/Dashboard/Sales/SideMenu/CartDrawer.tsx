@@ -72,7 +72,7 @@ function CartItemSkeleton() {
   )
 }
 
-export function CartDrawer() {
+export function CartDrawer({ onDrawerToggle } : { onDrawerToggle: () => void; }) {
   const [loading, setLoading] = useState(false);
   const [deleteItemModal, setDeleteItemModal] = useState(false);
   const [cartId, setCartId] = useState<number | null>(null);
@@ -188,7 +188,7 @@ export function CartDrawer() {
               .then((data) => {
                 setConnectedProjects(data);
                 setIsSelectingProject(true);
-
+                onDrawerToggle();
                 const matchedProject = data.find(project => project.id === cart.projectIdCustomer);
 
                 if (matchedProject) {

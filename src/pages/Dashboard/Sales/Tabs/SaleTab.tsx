@@ -14,9 +14,8 @@ import DeleteProjectModal from '@/pages/Dashboard/Sales/Modals/Projects/DeletePr
 import ConnectProjectModal from '@/pages/Dashboard/Sales/Modals/Projects/ConnectProject';
 import DisconnectProjectModal from '@/pages/Dashboard/Sales/Modals/Projects/DisconnectProject';
 import RecalculateProjectModal from '@/pages/Dashboard/Sales/Modals/Projects/RecalculateProject';
-import PushPinRoundedIcon from '@mui/icons-material/PushPinRounded';
-import PushPinOutlinedIcon from '@mui/icons-material/PushPinOutlined';
 
+import MoreVertRoundedIcon from '@mui/icons-material/MoreVertRounded';
 import {
   Box,
   Drawer,
@@ -24,25 +23,13 @@ import {
   IconButton,
 } from '@mui/material';
 
-import MoreVertIcon from '@mui/icons-material/MoreVert';
-import DeleteForeverRoundedIcon from '@mui/icons-material/DeleteForeverRounded';
-import LinkOffRoundedIcon from '@mui/icons-material/LinkOffRounded';
-
 import { useThemeMode } from '@/contexts/ThemeContext';
-import Btn from '@/components/elements/Btn';
 import { height } from '@/models/ReadyStyles';
 
-import { getSaleCategories, getItemPrice, getCartList, getCart } from '@/api';
-import { CategorySale, ItemResaultPrice, ListCart, Warehouse } from '@/models';
+import { getSaleCategories } from '@/api';
+import { CategorySale } from '@/models';
 
-import { useProductsStore, useProjectStore, useControlCart } from '@/stores';
-
-const MemoizedProductSelect = React.memo(ProductSelect);
-const MemoizedCart = React.memo(Cart);
-const MemCartDrawer = React.memo(CartDrawer);
-const MemCategoryDrawer = React.memo(Category);
-const MemTabPanel = React.memo(TabPanel);
-const MemDrawer = React.memo(Drawer);
+import { useProductsStore, useControlCart } from '@/stores';
 
 const drawerWidth = 340;
 
@@ -52,7 +39,7 @@ export default function Sale() {
   const [categoryEnable, setCategoryEnable] = useState(true);
   const { mode } = useThemeMode();
   const [value, setValue] = useState(0);
-  const { isCartOpen, toggleCart, cartOpen, cartClose } = useControlCart();
+  const { isCartOpen, cartOpen } = useControlCart();
 
 
   const [modals, setModals] = useState({
@@ -69,9 +56,7 @@ export default function Sale() {
   });
 
   const [categories, setCategories] = useState<CategorySale[]>([]);
-  const [listCart, setListCart] = useState<ListCart[]>([]);
   const { setSelectedCategory } = useProductsStore();
-  const { setSelectedProject } = useProjectStore();
   const [loading, setLoading] = useState(true);
 
   const handleCategorySelect = useCallback((category: CategorySale | null) => {
@@ -123,12 +108,29 @@ export default function Sale() {
     setModals(prev => ({ ...prev, [modalName]: false }));
   };
 
-  const handleDrawerToggle = () => {
-    setDrawerOpen(!drawerOpen);
+  const drawerPinnedRef = React.useRef(drawerPinned);
+
+  useEffect(() => {
+    drawerPinnedRef.current = drawerPinned;
+  }, [drawerPinned]);
+
+  const handleDrawerOpen = () => {
+    setDrawerOpen(true);
   };
 
-  const handleDrawerPin = () => {
-    setDrawerPinned(!drawerPinned);
+  const handleDrawerClose = () => {
+    console.log("🎦 ~ handleDrawerClose ~ drawerPinned:", drawerPinnedRef.current);
+    if (!drawerPinnedRef.current) {
+      setDrawerOpen(false);
+    }
+  };
+
+  const handlePinToggle = () => {
+    setDrawerPinned((prev) => {
+      const newValue = !prev;
+      console.log("🚀 ~ handlePinToggle ~ drawerPinned:", newValue);
+      return newValue;
+    });
   };
 
   const memoizedCategories = useMemo(() => categories, [categories]);
@@ -149,15 +151,14 @@ export default function Sale() {
             top: 0,
             zIndex: 1,
             backgroundColor: mode === 'light' ? '#fff' : '#121212',
-            borderBottom: mode === 'light' ? '1px solid #e0e0e0' : '1px solid #616161',
           }}
         >
-          <CustomTab value={value} onChange={(event, newValue) => setValue(newValue)} />
+          <CustomTab drawerPinned={drawerPinned} onPinToggle={handlePinToggle} value={value} onChange={(event, newValue) => setValue(newValue)} />
         </Box>
 
         <Box
           sx={{
-            width: 'calc(100% - 10px)',
+            width: '100%',
             minHeight: 0,
             flex: 1,
             overflow: 'auto',
@@ -166,11 +167,11 @@ export default function Sale() {
             scrollbarWidth: 'none',
           }}
         >
-          <MemTabPanel value={value} index={1}>
-            <MemCartDrawer />
-          </MemTabPanel>
-          <MemTabPanel value={value} index={0}>
-            <MemCategoryDrawer
+          <TabPanel value={value} index={1}>
+            <CartDrawer onDrawerToggle={handleDrawerClose} />
+          </TabPanel>
+          <TabPanel value={value} index={0}>
+            <Category
               value={value}
               drawerOpen={drawerOpen}
               categoryEnable={categoryEnable}
@@ -178,51 +179,17 @@ export default function Sale() {
               loading={loading}
               onRefresh={handleRefresh}
               onCategorySelect={handleCategorySelect}
-              setDrawerOpen={setDrawerOpen}
-              drawerPinned={drawerPinned}
+              onDrawerToggle={handleDrawerClose}
             />
-          </MemTabPanel>
+          </TabPanel>
         </Box>
       </Box>
-      {drawerOpen ?
-        <IconButton
-          color="info"
-          onClick={handleDrawerPin}
-          sx={{
-            position: 'absolute',
-            right: 0,
-            width: '25px',
-            height: '100%',
-            borderRadius: 0,
-            '& .MuiSvgIcon-root': { fontSize: '20px', rotate: '-45deg' },
-            bgcolor: 'background.paper',
-          }}
-        >
-          {drawerPinned ? <PushPinRoundedIcon /> : <PushPinOutlinedIcon />}
-        </IconButton>
-        :
-        <IconButton
-          color="info"
-          onClick={handleDrawerToggle}
-          sx={{
-            position: 'absolute',
-            right: 0,
-            width: '25px',
-            height: '100%',
-            borderRadius: 0,
-            '& .MuiSvgIcon-root': { fontSize: '30px' },
-            bgcolor: 'background.paper',
-          }}
-        >
-          <MoreVertIcon />
-        </IconButton>
-      }
+
     </>
   );
 
   return (
     <>
-      {/* ... rest of your return JSX (unchanged) */}
       <Box
         className='sale-tab-page'
         sx={{
@@ -232,7 +199,7 @@ export default function Sale() {
           ...height.full
         }}
       >
-        <MemDrawer
+        <Drawer
           variant="persistent"
           anchor="left"
           open={drawerOpen}
@@ -251,27 +218,27 @@ export default function Sale() {
           }}
         >
           {drawerContent}
-        </MemDrawer>
+        </Drawer>
 
         <Paper
           sx={{
-            alignItems: 'center', justifyContent: 'center', mr: 1, borderRadius: '0 20px 20px 0', boxShadow: 'none',
+            flexDirection: 'column', alignItems: 'center', justifyContent: 'start', mr: 1, borderRadius: '0 20px 20px 0', boxShadow: 'none',
             display: drawerOpen ? 'none' : 'flex'
           }}
         >
           <IconButton
-            color='info'
-            onClick={handleDrawerToggle}
+            color='default'
+            onClick={handleDrawerOpen}
             sx={{
-              width: '20px',
+              width: '24px',
               height: '100%',
               '& .MuiSvgIcon-root ': {
-                fontSize: '30px'
+                fontSize: '32px',
               },
               borderRadius: 0
             }}
           >
-            <MoreVertIcon />
+            <MoreVertRoundedIcon />
           </IconButton>
         </Paper>
 
@@ -315,7 +282,7 @@ export default function Sale() {
                   zIndex: isCartOpen ? 0 : 10
                 }}
               >
-                <MemoizedProductSelect
+                <ProductSelect
                   drawerOpen={drawerOpen}
                   setDrawerOpen={setDrawerOpen}
                   openModal={openModal}

@@ -1,20 +1,10 @@
-import { useEffect } from 'react';
-import MenuIcon from '@mui/icons-material/Menu';
-import CloseFullscreenIcon from '@mui/icons-material/CloseFullscreen';
-
-import {
-  ToggleButton,
-  Box,
-  Drawer,
-  Divider,
-  IconButton,
-  Tabs, Tab,
-} from '@mui/material';
+import { Box, Tabs, Tab, Tooltip, IconButton, Zoom,  } from '@mui/material';
 import SortIcon from '@mui/icons-material/Sort';
 import AddShoppingCartRoundedIcon from '@mui/icons-material/AddShoppingCartRounded';
+import PushPinIcon from '@mui/icons-material/PushPin';
+import PushPinTwoToneIcon from '@mui/icons-material/PushPinTwoTone';
 
-import { useThemeMode } from '@/contexts/ThemeContext';
-import { flex, width, height } from '@/models/ReadyStyles';
+import { flex, height } from '@/models/ReadyStyles';
 
 
 export function TabPanel(props: any) {
@@ -27,7 +17,7 @@ export function TabPanel(props: any) {
       sx={{
         display: value === index ? 'block' : 'none',
         bgcolor: 'background.paper',
-        ...height.full
+        ...height.full,
       }}
       {...other}
     >
@@ -36,15 +26,22 @@ export function TabPanel(props: any) {
   );
 }
 
-export function CustomTab({ value, onChange }: { value: number; onChange: (event: React.SyntheticEvent, newValue: number) => void; }) {
-  const { mode } = useThemeMode();
+interface CustomTabProps {
+  value: number;
+  drawerPinned: boolean;
+  onChange: (event: React.SyntheticEvent, newValue: number) => void;
+  onPinToggle: () => void;
+}
+
+export function CustomTab({ value, onChange, onPinToggle, drawerPinned }: CustomTabProps) {
 
   return (
     <Box
       className='sales-menu-tabs'
       sx={{
-        backgroundColor: 'background.paper',
-        ...flex.one
+        ...flex.one,
+        ...flex.row,
+        borderBottom: '2px solid var(--table-border-overlay)'
       }}
     >
       <Tabs
@@ -67,6 +64,26 @@ export function CustomTab({ value, onChange }: { value: number; onChange: (event
           iconPosition='start'
         />
       </Tabs>
+      <Tooltip
+        title='سنجاق پنل'
+        placement="left"
+        arrow
+        disableInteractive
+        slots={{ transition: Zoom }}
+        color='info'
+      >
+        <IconButton
+          color="info"
+          onClick={onPinToggle}
+          sx={{
+            height: '100%',
+            borderRadius: 0,
+            '& .MuiSvgIcon-root': { fontSize: '22px' },
+          }}
+        >
+          {!drawerPinned ? <PushPinTwoToneIcon /> : <PushPinIcon />}
+        </IconButton>
+      </Tooltip>
     </Box>
   );
 }
