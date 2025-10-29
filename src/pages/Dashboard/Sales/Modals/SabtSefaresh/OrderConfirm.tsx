@@ -36,7 +36,7 @@ import usePersianNumbers from '@/hooks/usePersianNumbers';
 import { useWeekdays, useFormattedWeekdays, usePreparationTime } from '@/hooks/weekDayConverter';
 import { flex, width, gap, height } from '@/models/ReadyStyles';
 import { getInventory, getGeoFence, getTransportListSale, addCart, getCartList } from '@/api';
-import { Inventory, GeoFence, TransportList, ItemResaultPrice, TransportItem, ListCart } from '@/models';
+import { Inventory, GeoFence, TransportList, ItemResaultPrice, TransportItem, ListCart, Cart } from '@/models';
 import { useProductsStore, useProjectStore, useBranchDeliveryStore, useDistanceStore, useAccountStore, } from '@/stores';
 import { toPersianDigits } from '@/utils/persianNumbers'
 import { useSnackbar } from "@/contexts/SnackBarContext";
@@ -771,7 +771,7 @@ function OrderInput({
 }
 
 function CartSelection({ selectedTransport, selectedItem }: { selectedTransport: TransportItem | null; selectedItem: ItemResaultPrice | null; }) {
-  const [cart, setCart] = React.useState<string[]>([]);
+  const [cart, setCart] = React.useState<Cart | null>(null);
   const [loading, setLoading] = React.useState(false);
   const [groupedItems, setGroupedItems] = useState<Record<string, ListCart[]>>({});
   const buttonState = selectedTransport ? false : true;
@@ -806,12 +806,23 @@ function CartSelection({ selectedTransport, selectedItem }: { selectedTransport:
 
   const handleCartChange = (event: SelectChangeEvent<string>) => {
     const value = event.target.value;
-    setCart(value === "new-cart" ? [] : [value]);
+
+    if (value === "new-cart") {
+      setCart(null); 
+    } else {
+      for (const [, items] of Object.entries(groupedItems)) {
+        const found = items.find(item => String(item.id) === value);
+        if (found) {
+          setCart(found);
+          return;
+        }
+      }
+    }
   };
 
   const submitCart = () => {
     if (!selectedItem || !selectedAccount || !selectedProject) return;
-    
+
     addCart(selectedItem, selectedAccount, selectedProject, false, '0')
       .then((response) => {
         console.log("🚀 ~ submitCart ~ response:", response)
@@ -827,7 +838,7 @@ function CartSelection({ selectedTransport, selectedItem }: { selectedTransport:
       <FormControl size="small" sx={{ minWidth: '200px', flex: 1 }}>
         <Select
           displayEmpty
-          value={cart.length ? cart[0] : ""}
+          value={cart ? String(cart.id) : ""}
           onChange={handleCartChange}
           input={<OutlinedInput />}
           renderValue={(selected) => {
@@ -842,25 +853,18 @@ function CartSelection({ selectedTransport, selectedItem }: { selectedTransport:
             }
           }}
         >
-          {/* سبد جدید - Always First */}
           <MenuItem value="new-cart">
             <em>سبد جدید</em>
           </MenuItem>
 
-          {/* Divider after "سبد جدید" */}
-          <Divider sx={{ my: 1 }} />
-
-          {/* Render Grouped Carts */}
           {Object.keys(groupedItems).length === 0 ? (
             <MenuItem disabled>هیچ سبدی موجود نیست</MenuItem>
           ) : (
             Object.entries(groupedItems).map(([name, items]) => (
               <React.Fragment key={name}>
-                {/* Group Header */}
                 <MenuItem disabled sx={{ fontWeight: 600, color: "text.primary", py: 1 }}>
                   {name} ({items.length})
                 </MenuItem>
-                {/* Cart Items */}
                 {items.map((item) => (
                   <MenuItem
                     key={item.id}
