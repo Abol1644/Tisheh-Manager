@@ -152,41 +152,6 @@ export default function SabtKalaModal({ open, onClose }: SaleModalProps) {
               </Box>
             </Zoom>
           </CustomTabPanel>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2, mt: 2 }}>
-            <FormControl size='small' sx={{ minWidth: '200px', flex: 1 }}>
-              <Select
-                displayEmpty
-                value={cart}
-                onChange={handleCartChange}
-                input={<OutlinedInput />}
-                renderValue={(selected) => {
-                  if (selected.length === 0) {
-                    return <em>سبد خرید</em>;
-                  }
-                  return selected.join(', ');
-                }}
-              >
-                <MenuItem disabled value="">
-                  <em>سبد خرید</em>
-                </MenuItem>
-                <MenuItem value={'سبد خرید جدید'}>سبد خرید جدید</MenuItem>
-                <MenuItem value={'سبد خرید شماره 2'}>سبد خرید شماره 2</MenuItem>
-              </Select>
-            </FormControl>
-            <div style={{ display: 'flex', gap: '10px', flexDirection: 'row' }}>
-              <Btn disabled={buttonState} onClick={addToOrderClick} color='info' variant="contained" sx={{ whiteSpace: 'nowrap' }}>
-                افزودن به سفارش
-              </Btn>
-              <BtnGroup variant="contained" color='success'>
-                <Btn disabled={buttonState} color='success' variant="contained" sx={{ width: '70px' }}>
-                  ثبت
-                </Btn>
-                <Btn disabled={buttonState} color='success' variant="contained" sx={{ whiteSpace: 'nowrap' }}>
-                  رفتن به سبد خرید
-                </Btn>
-              </BtnGroup>
-            </div>
-          </Box>
           <AddToOrderModal
             open={addToOrderModalOpen}
             onClose={handleCloseAddToOrderModal}
