@@ -138,6 +138,7 @@ export function ProductSelect(props: any) {
     getSaleAccounts()
       .then((accounts) => {
         setAccounts(accounts);
+        setAccountsLoading(false);
       })
       .catch((error) => {
         let errorMessage = 'خطا در دریافت حساب ها';

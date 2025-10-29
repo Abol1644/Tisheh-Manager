@@ -1,5 +1,5 @@
 import apiClient from "./apiClient";
-import { ListCart, Cart, CartDetails, ItemResaultPrice } from "@/models/";
+import { ListCart, Cart, CartDetails, ItemResaultPrice, Account, Project } from "@/models/";
 
 export const getCartList = async (): Promise<ListCart[]> => {
   try {
@@ -63,31 +63,50 @@ export const editCartDetails = async (
   cart: CartDetails
 ): Promise<CartDetails> => {
   try {
-    const response = await apiClient.put<CartDetails>(
-      `/Cart/UpdatePut`,
-      {
-        id: cart.id,
-        cash: cart.cash,
-        codeAccCustomer: cart.codeAccCustomer,
-        projectIdCustomer: cart.projectIdCustomer,
-        byWhom: cart.byWhom,
-        branchCenterDelivery: cart.branchCenterDelivery,
-        fastSending: cart.fastSending,
-        preSell: cart.preSell,
-        transit: cart.transit,
-        alternate: cart.alternate,
-        installment: cart.installment,
-        warehouseId: cart.warehouseId,
-        valueDeliveryService: cart.valueDeliveryService,
-        vehicleId: cart.vehicleId,
-      }
-    );
+    const response = await apiClient.put<CartDetails>(`/Cart/UpdatePut`, {
+      id: cart.id,
+      cash: cart.cash,
+      codeAccCustomer: cart.codeAccCustomer,
+      projectIdCustomer: cart.projectIdCustomer,
+      byWhom: cart.byWhom,
+      branchCenterDelivery: cart.branchCenterDelivery,
+      fastSending: cart.fastSending,
+      preSell: cart.preSell,
+      transit: cart.transit,
+      alternate: cart.alternate,
+      installment: cart.installment,
+      warehouseId: cart.warehouseId,
+      valueDeliveryService: cart.valueDeliveryService,
+      vehicleId: cart.vehicleId,
+    });
     console.log("✏ Edit CartDetails responce: ", response.data);
     return response.data;
   } catch (error: any) {
     console.error("Edit CartDetails API error: ", error);
 
     const serverMessage = error.response?.data || "Edit CartDetails failed";
+    throw new Error(serverMessage);
+  }
+};
+
+export const addCart = async (item: ItemResaultPrice, account: Account, project: Project, branchCenterDelivery: boolean, vehicleId: string): Promise<Cart> => {
+  try {
+    const response = await apiClient.post<Cart>(
+      `/Cart/Add`,
+      {
+        codeAccCustomer: account.codeAcc,
+        projectIdCustomer: item.id,
+        branchCenterDelivery: branchCenterDelivery,
+        transit: item.activateTransit,
+        warehouseId: item.warehouseId,
+        vehicleId: vehicleId,
+      }
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error("get Cart API error: ", error);
+
+    const serverMessage = error.response?.data || "get Cart failed";
     throw new Error(serverMessage);
   }
 };

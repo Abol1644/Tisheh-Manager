@@ -4,8 +4,6 @@ import {
   Typography,
   Modal,
   Box,
-  IconButton,
-  Tabs, Tab,
   Tooltip,
   Table,
   TableBody,
@@ -17,13 +15,13 @@ import {
   FormControl,
   Select, SelectChangeEvent,
   OutlinedInput,
-  Slide, Backdrop,
   Zoom, Grow,
   Divider,
-  CircularProgress
+  CircularProgress,
 } from '@mui/material';
 
 import NumberField from '@/components/elements/NumberField';
+import Btn, { BtnGroup } from '@/components/elements/Btn';
 
 import InfoRoundedIcon from '@mui/icons-material/InfoRounded';
 import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
@@ -40,7 +38,7 @@ import { TomanIcon, RialIcon } from '@/components/elements/TomanIcon';
 import usePersianNumbers from '@/hooks/usePersianNumbers';
 import { useWeekdays, useFormattedWeekdays, usePreparationTime } from '@/hooks/weekDayConverter';
 import { flex, width, gap, height } from '@/models/ReadyStyles';
-import { getInventory, getGeoFence, getTransportListSale } from '@/api';
+import { getInventory, getGeoFence, getTransportListSale, addCart } from '@/api';
 // Added TransportItem import to handle individual transport items from new nested structure
 import { Inventory, GeoFence, TransportList, TransportTableProps, ItemResaultPrice, TransportItem } from '@/models';
 import { useProductsStore, useProjectStore, useBranchDeliveryStore, useDistanceStore, useAccountStore, } from '@/stores';
@@ -48,6 +46,7 @@ import { toPersianDigits } from '@/utils/persianNumbers'
 import { useSnackbar } from "@/contexts/SnackBarContext";
 import { filterVehicleCosts, groupTransportByVehicleAndAlternate } from '@/hooks/filterVehicleCosts';
 import { usePriceCalculator, useRoundedPrice } from '@/hooks/usePriceCalculator';
+import { Account, Project } from '@/models'
 
 interface OrderConfirmProps {
   selectedTransport: TransportItem | null;
@@ -82,10 +81,27 @@ export default function OrderConfirm({ selectedTransport, setSelectedTransport }
   const { distance, setDistance } = useDistanceStore();
   const { showSnackbar } = useSnackbar();
 
+  const [cart, setCart] = React.useState<string[]>([]);
+  const [addToOrderModalOpen, setAddToOrderModalOpen] = React.useState(false);
+
   const primaryDistance = useMemo(
     () => distance.find((d) => d.warehouseId > 0)?.warehouseId,
     [distance]
   );
+
+  const submitCart = () => {
+    if (!selectedItem || !selectedAccount || !selectedProject) return;
+  console.log("🚀 ~ submitCart ~ selectedProject:", selectedAccount.codeAcc, selectedProject,selectedProject.codeAccConnect, selectedProject.id)
+    addCart(selectedItem, selectedAccount, selectedProject, false, '0')
+      
+      .then((response) => {
+        console.log("🚀 ~ submitCart ~ response:", response)
+        showSnackbar('Item added to cart successfully', 'success');
+      })
+      .catch((error) => {
+        showSnackbar(error.message, 'error');
+      });
+  };
 
   React.useEffect(() => {
     if (selectedItem && !selectedUnit && availableUnits.length > 0) {
@@ -162,11 +178,11 @@ export default function OrderConfirm({ selectedTransport, setSelectedTransport }
 
         const data = await getTransportListSale(
           transportListPrice,
-          isBranchDelivery ? null : fetchedGeofence,
+          fetchedGeofence,
           distance,
           isBranchDelivery,
           selectedWarehouse?.id,
-          isBranchDelivery ? 0 : selectedProject?.id,
+          selectedProject?.id,
           selectedProject
         );
 
@@ -200,6 +216,21 @@ export default function OrderConfirm({ selectedTransport, setSelectedTransport }
     fetchAndGetTransport();
   }, [products, isBranchDelivery, selectedItem?.priceId, primaryDistance]);
 
+  const addToOrderClick = () => {
+    setAddToOrderModalOpen(true)
+  }
+
+  const handleCartChange = (event: SelectChangeEvent<typeof cart>) => {
+    const {
+      target: { value },
+    } = event;
+    setCart(
+      typeof value === 'string' ? value.split(',') : value,
+    );
+  };
+
+  const buttonState = selectedTransport ? false : true;
+
   return (
     <Box sx={{ width: '100%', ...flex.columnBetween }}>
       <Box>
@@ -221,21 +252,58 @@ export default function OrderConfirm({ selectedTransport, setSelectedTransport }
           selectedItem={selectedItem}
         />
       </Box>
-
-      <Box sx={{ ...flex.rowBetween, ...width.full, ...gap.ten, mb: 2 }}>
-        <OrderInput
-          maxInventory={inventory?.fullInvestory ?? undefined}
-          selectedUnit={selectedUnit}
-          onUnitChange={handleUnitChange}
-          availableUnits={availableUnits}
-          numberOfProduct={numberOfProduct}
-          setNumberOfProduct={setNumberOfProduct}
-        />
-        <Prices
-          numberOfProduct={numberOfProduct}
-          selectedItem={selectedItem}
-          selectedTransport={selectedTransport}
-        />
+      <Box>
+        <Box sx={{ ...flex.rowBetween, ...width.full, ...gap.ten }}>
+          <OrderInput
+            maxInventory={inventory?.fullInvestory ?? undefined}
+            selectedUnit={selectedUnit}
+            onUnitChange={handleUnitChange}
+            availableUnits={availableUnits}
+            numberOfProduct={numberOfProduct}
+            setNumberOfProduct={setNumberOfProduct}
+          />
+          <Prices
+            numberOfProduct={numberOfProduct}
+            selectedItem={selectedItem}
+            selectedTransport={selectedTransport}
+          />
+        </Box>
+        <Divider sx={{ my: 2, mx: 2 }} />
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2}}>
+          <FormControl size='small' sx={{ minWidth: '200px', flex: 1 }}>
+            <Select
+              displayEmpty
+              value={cart}
+              onChange={handleCartChange}
+              input={<OutlinedInput />}
+              renderValue={(selected) => {
+                if (selected.length === 0) {
+                  return <em>سبد خرید</em>;
+                }
+                return selected.join(', ');
+              }}
+            >
+              <MenuItem disabled value="">
+                <em>سبد خرید</em>
+              </MenuItem>
+              <MenuItem value={'سبد خرید جدید'}>سبد خرید جدید</MenuItem>
+              <MenuItem value={'سبد خرید شماره 2'}>سبد خرید شماره 2</MenuItem>
+            </Select>
+          </FormControl>
+          <div style={{ display: 'flex', gap: '10px', flexDirection: 'row' }}>
+            <Btn disabled={true} onClick={addToOrderClick} color='info' variant="contained" sx={{ whiteSpace: 'nowrap' }}>
+              افزودن به سفارش
+            </Btn>
+            <BtnGroup variant="contained" color='success'>
+              <Btn onClick={submitCart} disabled={buttonState} color='success' variant="contained" sx={{ width: '70px' }}>
+                ثبت
+              </Btn>
+              <Btn disabled={buttonState} color='success' variant="contained" sx={{ whiteSpace: 'nowrap' }}>
+                رفتن به سبد خرید
+              </Btn>
+            </BtnGroup>
+          </div>
+        </Box>
       </Box>
 
     </Box>
