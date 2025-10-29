@@ -41,7 +41,8 @@ export function CustomTab({ value, onChange, onPinToggle, drawerPinned }: Custom
       sx={{
         ...flex.one,
         ...flex.row,
-        borderBottom: '2px solid var(--table-border-overlay)'
+        borderBottom: '2px solid var(--table-border-overlay)',
+        bgcolor: 'background.paper'
       }}
     >
       <Tabs
