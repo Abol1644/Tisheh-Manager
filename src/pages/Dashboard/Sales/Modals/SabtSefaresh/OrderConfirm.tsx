@@ -50,15 +50,11 @@ interface OrderConfirmProps {
 }
 
 export default function OrderConfirm({ selectedTransport, setSelectedTransport }: OrderConfirmProps) {
-  const { toPersianPrice } = usePersianNumbers();
-  const [loading, setLoading] = useState(true);
   const [numberOfProduct, setNumberOfProduct] = React.useState(0);
   const [transportloading, setTransportLoading] = useState(true);
   const [inventory, setInventory] = useState<Inventory | null>(null);
   const [geofence, setgeofence] = useState<GeoFence | null>(null);
   const [transportListSale, setTransportListSale] = useState<TransportList[]>([]);
-  // Changed from TransportList to TransportItem to match new nested structure
-  // const [selectedTransport, setSelectedTransport] = useState<TransportItem | null>(null);
 
   const { products, selectedItem, getAvailableUnits, setSelectedItem, selectedWarehouse } = useProductsStore();
 
@@ -71,7 +67,6 @@ export default function OrderConfirm({ selectedTransport, setSelectedTransport }
   const { selectedAccount } = useAccountStore();
   const isBranchDelivery = useBranchDeliveryStore((s) => s.isBranchDelivery);
 
-  // Unit selection state
   const [selectedUnit, setSelectedUnit] = useState<ItemResaultPrice | null>(null);
   const availableUnits = selectedItem ? getAvailableUnits(selectedItem.priceId) : [];
   const { distance, setDistance } = useDistanceStore();
@@ -123,12 +118,10 @@ export default function OrderConfirm({ selectedTransport, setSelectedTransport }
     }
   };
 
-  // Fetch inventory
   React.useEffect(() => {
     const firstProduct = Array.isArray(products) ? products[0] : products;
     if (!firstProduct) return;
 
-    setLoading(true);
     getInventory(firstProduct, selectedPeriod, 0)
       .then(setInventory)
       .catch((error) => {
@@ -140,13 +133,11 @@ export default function OrderConfirm({ selectedTransport, setSelectedTransport }
         }
         showSnackbar(errorMessage, 'error', 5000, <ErrorOutlineRoundedIcon />);
       })
-      .finally(() => setLoading(false));
   }, [products, selectedPeriod]);
 
   const fetchGeoFence = async () => {
     if (!selectedProject) return null;
 
-    setLoading(true);
     try {
       const result = await getGeoFence(selectedProject);
       setgeofence(result);
@@ -155,8 +146,6 @@ export default function OrderConfirm({ selectedTransport, setSelectedTransport }
       const errorMessage = error.response?.data || error.message || 'خطا در دریافت محدوده جغرافیایی';
       showSnackbar(errorMessage, 'error', 5000, <ErrorOutlineRoundedIcon />);
       return null;
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -189,7 +178,6 @@ export default function OrderConfirm({ selectedTransport, setSelectedTransport }
           setDistance(list[0].listDistance);
         }
 
-        // Auto-select first transport item
         const costs = filterVehicleCosts(list, false, false);
         const grouped = groupTransportByVehicleAndAlternate(costs);
         const sorted = Object.values(grouped).sort((a, b) => {
@@ -325,7 +313,6 @@ export function ShipmentTable({
 }) {
   const { toPersianPrice } = usePersianNumbers();
   const Costs = filterVehicleCosts(transportList, false, false);
-  // console.log("🦈 ~ ShipmentTable ~ Costs:", transportList)
   const groupedCosts = groupTransportByVehicleAndAlternate(Costs);
   const displayItems = Object.values(groupedCosts).sort((a, b) => {
     const getOrder = (item: (typeof groupedCosts)[string]) => {
@@ -335,7 +322,6 @@ export function ShipmentTable({
     };
     return getOrder(a) - getOrder(b);
   });
-  // console.log("😅 ~ ShipmentTable ~ displayItems:", displayItems)
 
   return (
     <Box className="income-modal-table-container" sx={{ mb: 1 }}>
@@ -382,7 +368,6 @@ export function ShipmentTable({
                 return (
                   <TableRow
                     key={`${group.vehicleId}-${Boolean(group.alternate)}-${Boolean(group.transit)}`}
-                    // Updated to cast combined object as TransportItem instead of TransportList
                     onClick={() => onSelectTransport({ ...group.costs[0], ...group } as TransportItem)}
                     hover
                     sx={{
@@ -551,7 +536,6 @@ function OrderOptions({
     borderRadius: '14px',
     ...gap.ten,
   };
-  // Updated to handle new nested structure: flatten listItemVehicleShipp arrays before filtering
   const selectedTransport = transportList?.flatMap(t => t.listItemVehicleShipp).filter(t =>
     t.vehicleId === selectedId &&
     Boolean(t.alternate) === Boolean(selectedAlternate) &&
@@ -676,8 +660,6 @@ function Prices({
   selectedItem: ItemResaultPrice | null;
   selectedTransport: TransportItem | null;
 }) {
-  // console.log("🚀 ~ Prices ~ selectedTransport:", selectedTransport)
-  // console.log("🍒 ~ Prices ~ selectedItem:", selectedItem)
   const { toPersianPrice } = usePersianNumbers();
   const { resultPrice, price, disPrice } = usePriceCalculator(selectedItem, numberOfProduct, selectedTransport);
   const roundedResultPrice = useRoundedPrice(resultPrice);
