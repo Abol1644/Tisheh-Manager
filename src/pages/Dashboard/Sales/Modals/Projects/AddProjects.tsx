@@ -363,7 +363,7 @@ export default React.memo(function AddProjectModal({ open, onClose, formMode }: 
                 flexDirection: 'column',
                 justifyContent: 'flex-start',
                 transition: 'all 0.3s ease',
-                // backdropFilter: 'blur(5px)',
+                // 
                 '&:focus-visible': {
                   outline: 'none'
                 },
@@ -483,7 +483,7 @@ export default React.memo(function AddProjectModal({ open, onClose, formMode }: 
                           border: '2px solid var(--border-main)',
                           borderRadius: '30px',
                           backdropFilter: mode === 'dark' ? 'blur(5px) brightness(0.8)' : 'blur(5px) brightness(1.1)',
-                          bgcolor: 'var(--background-glass)'
+                          bgcolor: 'var(--background-paper)'
                         }}
                       >
                         <Tooltip title="دریافت موقعیت کنونی" placement='top' arrow disableInteractive slots={{ transition: Zoom }} >
@@ -568,7 +568,7 @@ export default React.memo(function AddProjectModal({ open, onClose, formMode }: 
                               sx={{
                                 borderRadius: '12px',
                                 backdropFilter: mode === 'dark' ? 'blur(5px) brightness(0.8)' : 'blur(5px) brightness(1.1)',
-                                bgcolor: 'var(--background-glass)',
+                                bgcolor: 'var(--background-paper)',
                                 '& .MuiOutlinedInput-root': {
                                   '& fieldset': {
                                     borderColor: 'var(--border-main)',

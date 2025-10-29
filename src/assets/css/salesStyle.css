@@ -509,6 +509,6 @@
   transition: opacity 0.3s ease;
 }
 
-.MuiModal-backdrop {
+/* .MuiModal-backdrop {
   opacity: 0 !important;
-}
+} */

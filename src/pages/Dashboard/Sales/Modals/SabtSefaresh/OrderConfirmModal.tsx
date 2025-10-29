@@ -6,15 +6,10 @@ import {
   IconButton,
   Tabs, Tab,
   Tooltip,
-  MenuItem,
-  FormControl,
-  Select, SelectChangeEvent,
-  OutlinedInput,
-  Slide, Backdrop,
+  SelectChangeEvent,
+  Slide,
   Zoom,
 } from '@mui/material';
-
-import Btn, { BtnGroup } from '@/components/elements/Btn';
 
 import CloseIcon from '@mui/icons-material/Close';
 
@@ -38,12 +33,8 @@ interface TabPanelProps {
 }
 export default function SabtKalaModal({ open, onClose }: SaleModalProps) {
   const [value, setValue] = React.useState(0);
-  const [listOpen, setListOpen] = React.useState(true);
-  const [cart, setCart] = React.useState<string[]>([]);
   const [addToOrderModalOpen, setAddToOrderModalOpen] = React.useState(false);
   const [selectedTransport, setSelectedTransport] = useState<TransportItem | null>(null);
-
-  const buttonState = selectedTransport ? false : true;
 
   const handleCloseAddToOrderModal = () => {
     if (addToOrderModalOpen === true) {
@@ -51,25 +42,8 @@ export default function SabtKalaModal({ open, onClose }: SaleModalProps) {
     }
   };
 
-  const addToOrderClick = () => {
-    setAddToOrderModalOpen(true)
-  }
-
-  const handleClick = () => {
-    setListOpen(!listOpen);
-  };
-
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setValue(newValue);
-  };
-
-  const handleCartChange = (event: SelectChangeEvent<typeof cart>) => {
-    const {
-      target: { value },
-    } = event;
-    setCart(
-      typeof value === 'string' ? value.split(',') : value,
-    );
   };
 
   return (
@@ -91,7 +65,7 @@ export default function SabtKalaModal({ open, onClose }: SaleModalProps) {
             width: '700px',
             minHeight: '680px',
             margin: '-340px 0 0 -350px',
-            backgroundColor: 'background.glass',
+            backgroundColor: 'background.paper',
             background: 'linear-gradient(-165deg, #00ff684d, var(--transparent) 75%)',
             border: 'none',
             boxShadow: 'inset 0 0 10px 1px rgba(255, 255, 255, 0.2), 0px 11px 15px -7px rgba(0,0,0,0.2),0px 24px 38px 3px rgba(0,0,0,0.14),0px 9px 46px 8px rgba(0,0,0,0.12)',
@@ -101,7 +75,7 @@ export default function SabtKalaModal({ open, onClose }: SaleModalProps) {
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'space-between',
-            backdropFilter: 'blur(5px)',
+            
             '&:focus-visible': {
               outline: 'none'
             },

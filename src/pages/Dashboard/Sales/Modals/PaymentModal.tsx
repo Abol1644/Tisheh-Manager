@@ -439,7 +439,7 @@ export function OrderEditModal({ open, onClose }: { open: boolean, onClose: () =
               sx={{
                 width: '95vw',
                 maxWidth: '900px',
-                bgcolor: 'background.glass',
+                bgcolor: 'background.paper',
                 background: 'linear-gradient(-165deg, #00ff684d, var(--transparent) 75%)',
                 borderRadius: '25px',
                 p: 2,
@@ -447,7 +447,7 @@ export function OrderEditModal({ open, onClose }: { open: boolean, onClose: () =
                 pointerEvents: 'auto',
                 overflow: 'auto',
                 maxHeight: '95vh',
-                backdropFilter: 'blur(5px)',
+                
               }}
             >
               <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
