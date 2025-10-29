@@ -35,7 +35,10 @@ const drawerWidth = 340;
 
 export default function Sale() {
   const [drawerOpen, setDrawerOpen] = useState(true);
-  const [drawerPinned, setDrawerPinned] = useState(false);
+  const [drawerPinned, setDrawerPinned] = useState(() => {
+    const saved = localStorage.getItem('drawerPinned');
+    return saved ? JSON.parse(saved) : false;
+  });
   const [categoryEnable, setCategoryEnable] = useState(true);
   const { mode } = useThemeMode();
   const [value, setValue] = useState(0);
@@ -112,6 +115,7 @@ export default function Sale() {
 
   useEffect(() => {
     drawerPinnedRef.current = drawerPinned;
+    localStorage.setItem('drawerPinned', JSON.stringify(drawerPinned));
   }, [drawerPinned]);
 
   const handleDrawerOpen = () => {
@@ -119,16 +123,14 @@ export default function Sale() {
   };
 
   const handleDrawerClose = () => {
-    console.log("🎦 ~ handleDrawerClose ~ drawerPinned:", drawerPinnedRef.current);
     if (!drawerPinnedRef.current) {
       setDrawerOpen(false);
     }
   };
 
   const handlePinToggle = () => {
-    setDrawerPinned((prev) => {
+    setDrawerPinned((prev:boolean) => {
       const newValue = !prev;
-      console.log("🚀 ~ handlePinToggle ~ drawerPinned:", newValue);
       return newValue;
     });
   };
