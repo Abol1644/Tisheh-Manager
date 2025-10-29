@@ -22,7 +22,6 @@ import RefreshRoundedIcon from '@mui/icons-material/RefreshRounded';
 
 import Btn from '@/components/elements/Btn';
 import { flex } from '@/models';
-import { formatPrice } from '@/utils/persianNumbers';
 import DeleteModal from '@/pages/Dashboard/Sales/Modals/DeleteModal';
 
 import { useAuth } from '@/contexts/AuthContext';
@@ -30,6 +29,7 @@ import { useSnackbar } from "@/contexts/SnackBarContext";
 import { ListCart, Cart, CartDetails, ItemResaultPrice } from '@/models';
 import { getCartList, deleteCart, getCart, getListOfCartItems, findAccount, getConnectedProject, findWarehouse } from '@/api';
 import { useControlCart, useAccountStore, useProjectStore, useBranchDeliveryStore } from '@/stores';
+import usePersianNumbers from '@/hooks/usePersianNumbers';
 
 interface DecodedToken {
   [key: string]: any;
@@ -92,6 +92,8 @@ export function CartDrawer({ onDrawerToggle }: { onDrawerToggle: () => void; }) 
     setIsSelectingProject,
     setSelectedCartWarehouse
   } = useControlCart()
+
+  const { toPersianPrice } = usePersianNumbers();
 
   useEffect(() => {
     setExpanded(userName || false);
@@ -312,7 +314,7 @@ export function CartDrawer({ onDrawerToggle }: { onDrawerToggle: () => void; }) 
                   expandIcon={<ExpandMoreIcon />}
                 >
                   <Typography>
-                    {name}
+                    {name} - {toPersianPrice(items.length)}
                   </Typography>
                 </AccordionSummary>
                 <AccordionDetails>
@@ -338,7 +340,7 @@ export function CartDrawer({ onDrawerToggle }: { onDrawerToggle: () => void; }) 
                               <ShoppingCartRoundedIcon sx={{ mr: 1 }} />
                               
                                 <Typography className='disable-line-height' color='textPrimary' variant="body2">
-                                  {items.length} - {item.codeAccCustomerTitle}
+                                  {toPersianPrice(item.id)} - {item.codeAccCustomerTitle}
                                 </Typography>
                             </Box>
                             <DeleteRoundedIcon
