@@ -156,10 +156,10 @@
   background-color: aquamarine !important;
 }
 
-.combo-without-button {
+/* .combo-without-button {
   height: 56px;
   max-height: 56px;
-}
+} */
 
 .sabt-kala-modal {
   transition: all 0.3s ease-in-out;

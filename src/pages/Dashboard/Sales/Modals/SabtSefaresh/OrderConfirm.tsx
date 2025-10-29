@@ -87,9 +87,9 @@ export default function OrderConfirm({ selectedTransport, setSelectedTransport }
 
   const submitCart = () => {
     if (!selectedItem || !selectedAccount || !selectedProject) return;
-  console.log("🚀 ~ submitCart ~ selectedProject:", selectedAccount.codeAcc, selectedProject,selectedProject.codeAccConnect, selectedProject.id)
+    console.log("🚀 ~ submitCart ~ selectedProject:", selectedAccount.codeAcc, selectedProject, selectedProject.codeAccConnect, selectedProject.id)
     addCart(selectedItem, selectedAccount, selectedProject, false, '0')
-      
+
       .then((response) => {
         console.log("🚀 ~ submitCart ~ response:", response)
         showSnackbar('Item added to cart successfully', 'success');
@@ -212,6 +212,8 @@ export default function OrderConfirm({ selectedTransport, setSelectedTransport }
     fetchAndGetTransport();
   }, [products, isBranchDelivery, selectedItem?.priceId, primaryDistance]);
 
+
+
   const addToOrderClick = () => {
     setAddToOrderModalOpen(true)
   }
@@ -265,8 +267,8 @@ export default function OrderConfirm({ selectedTransport, setSelectedTransport }
           />
         </Box>
         <Divider sx={{ my: 2, mx: 2 }} />
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2}}>
-          <FormControl size='small' sx={{ minWidth: '200px', flex: 1 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2 }}>
+          <FormControl size="small" sx={{ minWidth: '200px', flex: 1 }}>
             <Select
               displayEmpty
               value={cart}
@@ -274,7 +276,7 @@ export default function OrderConfirm({ selectedTransport, setSelectedTransport }
               input={<OutlinedInput />}
               renderValue={(selected) => {
                 if (selected.length === 0) {
-                  return <em>سبد خرید</em>;
+                  return <em style={{ opacity: 0.6 }}>سبد خرید</em>;
                 }
                 return selected.join(', ');
               }}
@@ -282,8 +284,8 @@ export default function OrderConfirm({ selectedTransport, setSelectedTransport }
               <MenuItem disabled value="">
                 <em>سبد خرید</em>
               </MenuItem>
-              <MenuItem value={'سبد خرید جدید'}>سبد خرید جدید</MenuItem>
-              <MenuItem value={'سبد خرید شماره 2'}>سبد خرید شماره 2</MenuItem>
+              <MenuItem value="سبد خرید جدید">سبد خرید جدید</MenuItem>
+              <MenuItem value="سبد خرید شماره 2">سبد خرید شماره 2</MenuItem>
             </Select>
           </FormControl>
           <div style={{ display: 'flex', gap: '10px', flexDirection: 'row' }}>
@@ -570,6 +572,8 @@ function OrderOptions({
   const transitStartPreaper = selectedItem?.shippingStartTimeTransit;
   const transitPreparationTime = usePreparationTime({ start: transitStartPreaper });
 
+  const isBranchDelivery = useBranchDeliveryStore((s) => s.isBranchDelivery);
+
   return (
     <Box sx={{ ...flex.column, gap: 1, py: 0.5 }}>
       <Box sx={{
@@ -601,7 +605,6 @@ function OrderOptions({
           </Box>
         </Grow>
 
-        {/* Transit Box */}
         <Grow in={!visibleInventory} timeout={300} mountOnEnter>
           <Box sx={{ ...detailBox, ...flex.rowAround }}>
             <Typography sx={typoStyles}>
@@ -616,7 +619,7 @@ function OrderOptions({
         </Grow>
       </Box>
 
-      <Grow in={selectedTransport.length > 0} timeout={300} unmountOnExit>
+      <Grow in={!isBranchDelivery} timeout={300} unmountOnExit>
         <Box
           sx={{
             ...flex.column, ...gap.ten, ...detailBox,
@@ -813,6 +816,7 @@ function OrderInput({
         step={1}
         min={0}
         max={maxInventory}
+        
       />
 
       <FormControl size='small' sx={{ minWidth: '200px', flex: 1 }}>
