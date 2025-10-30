@@ -843,7 +843,7 @@ function CartSelection({ selectedTransport, selectedItem }: { selectedTransport:
       <FormControl size="small" sx={{ minWidth: '200px', flex: 1 }}>
         <Select
           displayEmpty
-          value={String(selectedCartId)}
+          value={selectedCartId}
           input={<OutlinedInput />}
           renderValue={(selected) => {
             if (Number(selected) === 0) return 'سبد جدید';
