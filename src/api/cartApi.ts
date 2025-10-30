@@ -97,19 +97,19 @@ export const editCartDetails = async (
 };
 
 export const addCart = async (
-  item: ItemResaultPrice,
-  account: Account,
-  project: Project,
-  branchCenterDelivery: boolean,
+  item: ItemResaultPrice | null,
+  account: Account| null,
+  project: Project| null,
+  branchCenterDelivery: boolean | null,
   vehicleId: string
 ): Promise<Cart> => {
   try {
     const response = await apiClient.post<Cart>(`/Cart/Add`, {
-      codeAccCustomer: account.codeAcc,
-      projectIdCustomer: project.id,
+      codeAccCustomer: account?.codeAcc,
+      projectIdCustomer: project?.id,
       branchCenterDelivery: branchCenterDelivery,
-      transit: item.activateTransit,
-      warehouseId: item.warehouseId,
+      transit: item?.activateTransit,
+      warehouseId: item?.warehouseId,
       vehicleId: vehicleId,
     });
     return response.data;
@@ -122,17 +122,19 @@ export const addCart = async (
 };
 
 export const addItemToCart = async (
-  item: ItemResaultPrice,
-  cart: Cart
+  cartId: number | number,
+  priceId: number | undefined,
+  value: number | number,
+  valueId: number | undefined
 ): Promise<Cart> => {
   try {
     const response = await apiClient.post<Cart>(`/Cart/AddItem`, {
-      cartId: cart.id,
-      priceId: item,
-      value: item,
-      valueId: item,
+      cartId: cartId,
+      priceId: priceId,
+      value: value,
+      valueId: valueId,
     });
-    console.log("🎂 ~ addItemToCart ~ response.data:", response.data)
+    console.log("🎂 ~ addItemToCart ~ response.data:", response.data);
     return response.data;
   } catch (error: any) {
     console.error("get CartAddItem API error: ", error);

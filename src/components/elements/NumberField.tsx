@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, ChangeEvent } from 'react';
 import {
   Box,
   IconButton,
@@ -6,11 +6,9 @@ import {
   OutlinedInput,
   FormControl,
   FormHelperText,
-  OutlinedInputProps,
+  OutlinedInputProps
 } from '@mui/material';
-import { Add, Remove, SixKOutlined } from '@mui/icons-material';
-import usePersianNumbers from '@/hooks/usePersianNumbers';
-import { toPersianDigits } from '@/utils/persianNumbers';
+import { Add, Remove } from '@mui/icons-material';
 
 interface NumberFieldProps extends Omit<OutlinedInputProps, 'value' | 'onChange'> {
   label?: string;
@@ -23,6 +21,7 @@ interface NumberFieldProps extends Omit<OutlinedInputProps, 'value' | 'onChange'
   helperText?: string;
   decimal?: boolean;
   sx?: object;
+  fullWidth?: boolean;
 }
 
 const NumberField: React.FC<NumberFieldProps> = ({
@@ -32,80 +31,111 @@ const NumberField: React.FC<NumberFieldProps> = ({
   min = 0,
   max,
   step = 1,
-  error,
+  error = false,
   helperText,
   decimal = false,
   fullWidth = false,
   sx,
   ...props
 }) => {
-  const { toPersianPrice, toEnglishNumber } = usePersianNumbers();
+  const [internalValue, setInternalValue] = useState<string>(value.toString());
+  const [isFocused, setIsFocused] = useState<boolean>(false);
 
-  const decimalRegex = /^(\d+)?(\.\d*)?$/;
-  const integerRegex = /^\d*$/;
-  const validationRegex = decimal ? decimalRegex : integerRegex;
+  // Regex for valid partial input
+  const regex = decimal
+    ? /^-?(\d+)?(\.)?(\d*)?$/
+    : /^\d*$/;
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const inputValue = e.target.value;
+  // Convert any Persian digits/punctuation to English
+  const toEnglishDigits = (str: string): string => {
+    return str
+      .replace(/[۰-۹]/g, (char) => ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'].indexOf(char).toString())
+      .replace(/[,٫]/g, '.'); // Normalize decimal separators
+  };
 
-    // Allow empty
-    if (inputValue === '') {
-      onChange(0);
-      return ; 
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const rawValue = e.target.value;
+    let value = toEnglishDigits(rawValue);
+
+    // Show live input
+    setInternalValue(value);
+
+    // Validate format
+    if (!regex.test(value) && value !== '-') return;
+
+    // If only "-" or "." → allow editing
+    if (value === '.' || value === '-') return;
+
+    const num = parseFloat(value);
+    if (isNaN(num)) return;
+
+    // Clamp within bounds
+    const finalValue = Math.min(
+      Math.max(num, min ?? -Infinity),
+      max ?? Infinity
+    );
+
+    // Only update external state if valid number
+    onChange(decimal ? parseFloat(finalValue.toFixed(2)) : Math.floor(finalValue));
+  };
+
+  const handleBlur = () => {
+    setIsFocused(false);
+    const num = parseFloat(internalValue);
+    if (!isNaN(num)) {
+      const rounded = decimal ? parseFloat(num.toFixed(2)) : Math.floor(num);
+      setInternalValue(rounded.toString());
+      onChange(rounded);
+    } else {
+      setInternalValue(value.toString());
     }
-
-    // Convert Persian digits to English for validation
-    const englishValue = inputValue.replace(/[۰-۹]/g, (char) => {
-      const persianDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
-      return persianDigits.indexOf(char).toString();
-    });
-
-    // Must match number pattern
-    if (!validationRegex.test(englishValue)) {
-      return;
-    }
-
-    const num = parseFloat(englishValue);
-
-    // Check bounds
-    if (min !== undefined && num < min) return; // ❌ Below min
-    if (max !== undefined && num > max) return; // ❌ Above max
-
-    onChange(num); // ✅ Valid
   };
 
   const increase = () => {
-    const current = value || 0;
-    const stepVal = step ?? 1;
-    const maxVal = max ?? Infinity;
-    const newVal = Math.min(current + stepVal, maxVal);
-    onChange(newVal);
+    const current = parseFloat(internalValue) || 0;
+    const newVal = decimal
+      ? parseFloat((current + step).toFixed(2))
+      : Math.floor(current + step);
+    const clamped = Math.min(newVal, max ?? Infinity);
+    setInternalValue(clamped.toString());
+    onChange(clamped);
   };
 
   const decrease = () => {
-    const current = value || 0;
-    const stepVal = step ?? 1;
-    const minVal = min ?? -Infinity;
-    const newVal = Math.max(current - stepVal, minVal);
-    onChange(newVal);
+    const current = parseFloat(internalValue) || 0;
+    const newVal = decimal
+      ? parseFloat((current - step).toFixed(2))
+      : Math.ceil(current - step);
+    const clamped = Math.max(newVal, min ?? -Infinity);
+    setInternalValue(clamped.toString());
+    onChange(clamped);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      increase();
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      decrease();
+    }
   };
 
   return (
     <FormControl fullWidth={fullWidth} variant="outlined" size="small" error={error} sx={{ flex: 1, ...sx }}>
-      {
-        label &&
+      {label && (
         <InputLabel
           shrink
           sx={{
             backgroundColor: 'var(--background-paper) !important',
             width: '50px',
             padding: '0 0 0 7px',
-            top: '3px'
+            top: '3px',
           }}
         >
           {label}
         </InputLabel>
-      }
+      )}
       <Box
         sx={{
           display: 'flex',
@@ -122,56 +152,34 @@ const NumberField: React.FC<NumberFieldProps> = ({
           },
         }}
       >
-
         <OutlinedInput
           fullWidth
           {...props}
-          value={toPersianDigits(value.toString())}
+          value={internalValue}
           onChange={handleChange}
+          onKeyDown={handleKeyDown}
+          onBlur={handleBlur}
+          onFocus={() => setIsFocused(true)}
           inputProps={{
             inputMode: decimal ? 'decimal' : 'numeric',
-            style: { textAlign: 'start', direction: 'ltr' },
+            style: { paddingRight: '4px', paddingLeft: '4px', textAlign: 'start', direction: 'ltr' },
           }}
           sx={{
             flex: 1,
             border: 'none',
-            px: 1,
             '& fieldset': { display: 'none' },
             '& input': {
               textAlign: 'center',
               fontSize: '1rem',
               fontFamily: 'SansX',
             },
-            '& .MuiInputLabel-root ': {
-              backgroundColor: 'var(--background-paper) !important',
-              width: '50px',
-              padding: '0 5px 0 0',
-            },
-            '& .MuiOutlinedInput-input': {
-              padding: '8.5px 0 !important'
-            }
           }}
         />
-        <Box
-          sx={{
-            display: 'flex',
-            flexDirection: 'row',
-          }}
-        >
-          <IconButton
-            size="small"
-            onClick={increase}
-            color='inherit'
-            sx={{ p: '1.2px' }}
-          >
+        <Box sx={{ display: 'flex', flexDirection: 'row' }}>
+          <IconButton size="small" onClick={increase} color="inherit" sx={{ p: '1.2px' }}>
             <Add fontSize="small" />
           </IconButton>
-          <IconButton
-            size="small"
-            onClick={decrease}
-            color='inherit'
-            sx={{ p: '1.2px' }}
-          >
+          <IconButton size="small" onClick={decrease} color="inherit" sx={{ p: '1.2px' }}>
             <Remove fontSize="small" />
           </IconButton>
         </Box>

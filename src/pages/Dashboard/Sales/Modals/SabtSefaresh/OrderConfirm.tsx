@@ -18,6 +18,7 @@ import {
   Zoom, Grow,
   Divider,
   CircularProgress,
+  InputLabel,
 } from '@mui/material';
 
 import NumberField from '@/components/elements/NumberField';
@@ -35,7 +36,7 @@ import { RialIcon } from '@/components/elements/TomanIcon';
 import usePersianNumbers from '@/hooks/usePersianNumbers';
 import { useWeekdays, useFormattedWeekdays, usePreparationTime } from '@/hooks/weekDayConverter';
 import { flex, width, gap, height } from '@/models/ReadyStyles';
-import { getInventory, getGeoFence, getTransportListSale, addCart, getCartList } from '@/api';
+import { getInventory, getGeoFence, getTransportListSale, addCart, getCartList, addItemToCart } from '@/api';
 import { Inventory, GeoFence, TransportList, ItemResaultPrice, TransportItem, ListCart, Cart } from '@/models';
 import { useProductsStore, useProjectStore, useBranchDeliveryStore, useDistanceStore, useAccountStore, } from '@/stores';
 import { toPersianDigits } from '@/utils/persianNumbers'
@@ -100,7 +101,9 @@ export default function OrderConfirm({ selectedTransport, setSelectedTransport }
     const unit = availableUnits.find(u => u.valueTitle === title);
     if (unit) {
       setSelectedUnit(unit);
+      console.log("🏋️‍♀️ ~ handleUnitChange ~ unit:", selectedUnit)
       setSelectedItem(unit);
+
     }
   };
 
@@ -127,7 +130,11 @@ export default function OrderConfirm({ selectedTransport, setSelectedTransport }
     try {
       const result = await getGeoFence(selectedProject);
       setgeofence(result);
-      return result;
+      if (result === null) {
+        return null;
+      } else {
+        return result
+      }
     } catch (error: any) {
       const errorMessage = error.response?.data || error.message || 'خطا در دریافت محدوده جغرافیایی';
       showSnackbar(errorMessage, 'error', 5000, <ErrorOutlineRoundedIcon />);
@@ -143,6 +150,7 @@ export default function OrderConfirm({ selectedTransport, setSelectedTransport }
 
       try {
         const fetchedGeofence = await fetchGeoFence();
+        console.log("🗺 ~ fetchAndGetTransport ~ fetchedGeofence:", fetchedGeofence)
 
         const transportListPrice = products.filter((p) => p.priceId === selectedItem.priceId);
         if (!transportListPrice.length) return;
@@ -155,7 +163,6 @@ export default function OrderConfirm({ selectedTransport, setSelectedTransport }
           selectedWarehouse?.id,
           selectedProject
         );
-        // console.log("🚀 ~ fetchAndGetTransport ~ selectedProject:", selectedProject)
 
         const list = Array.isArray(data) ? data : [data];
         setTransportListSale(list);
@@ -225,7 +232,12 @@ export default function OrderConfirm({ selectedTransport, setSelectedTransport }
           />
         </Box>
         <Divider sx={{ my: 2, mx: 2 }} />
-        <CartSelection selectedTransport={selectedTransport} selectedItem={selectedItem} />
+        <CartSelection
+          selectedTransport={selectedTransport}
+          selectedItem={selectedItem}
+          selectedUnit={selectedUnit}
+          numberOfProduct={numberOfProduct}
+        />
       </Box>
 
     </Box>
@@ -697,22 +709,23 @@ function Prices({
   )
 }
 
-function OrderInput({
+interface OrderInputProps {
+  maxInventory?: number;
+  selectedUnit: ItemResaultPrice | null;
+  onUnitChange: (e: SelectChangeEvent<string>) => void;  // Use SelectChangeEvent type
+  availableUnits: ItemResaultPrice[];
+  numberOfProduct: number;
+  setNumberOfProduct: (value: number) => void;
+}
+
+const OrderInput: React.FC<OrderInputProps> = ({
   maxInventory,
   selectedUnit,
   onUnitChange,
   availableUnits,
   numberOfProduct,
-  setNumberOfProduct
-}: {
-  maxInventory?: number;
-  selectedUnit: ItemResaultPrice | null;
-  onUnitChange: (e: SelectChangeEvent<string>) => void;
-  availableUnits: ItemResaultPrice[];
-  numberOfProduct: number;
-  setNumberOfProduct: (value: number) => void;
-}) {
-
+  setNumberOfProduct,
+}) => {
   const units = availableUnits;
   const hasMultipleUnits = availableUnits.length > 1;
 
@@ -725,24 +738,25 @@ function OrderInput({
         width: '50%',
       }}
     >
+      {/* Controlled NumberField component */}
       <NumberField
         label="تعداد"
-        value={numberOfProduct}
-        onChange={setNumberOfProduct}
+        value={numberOfProduct} // Passing the numberOfProduct as value to make it controlled
+        onChange={setNumberOfProduct} // Using the setNumberOfProduct function to update the state
         decimal={true}
         step={1}
         min={0}
-        max={maxInventory}
-
+        max={maxInventory} // You can pass maxInventory to limit the value
       />
 
-      <FormControl size='small' sx={{ minWidth: '200px', flex: 1 }}>
+      {/* Unit selection dropdown */}
+      <FormControl size="small" sx={{ minWidth: '200px', flex: 1 }}>
         <Select
           value={selectedUnit?.valueTitle || ''}
           onChange={onUnitChange}
           input={
             <OutlinedInput
-              label={units.length > 1 ? <span style={{ color: 'var(--icon-main)' }}><ScaleRoundedIcon sx={{ fontSize: 'small', p: 0 }} /> واحد</span> : 'واحد'}
+              label={hasMultipleUnits ? 'واحد' : 'واحد'}
               sx={{
                 '& .MuiOutlinedInput-notchedOutline span': {
                   opacity: 1,
@@ -750,17 +764,14 @@ function OrderInput({
                   top: '-4px',
                   left: '6px',
                   backgroundColor: 'var(--background-paper)',
-                  px: 0.5
-                }
+                  px: 0.5,
+                },
               }}
             />
           }
         >
           {units.map((unitItem) => (
-            <MenuItem
-              key={unitItem.valueId}
-              value={unitItem.valueTitle}
-            >
+            <MenuItem key={unitItem.valueId} value={unitItem.valueTitle}>
               {unitItem.valueTitle}
             </MenuItem>
           ))}
@@ -768,13 +779,20 @@ function OrderInput({
       </FormControl>
     </Box>
   );
+};
+
+interface CartSelectionProps {
+  selectedTransport: TransportItem | null;
+  selectedItem: ItemResaultPrice | null;
+  selectedUnit: ItemResaultPrice | null;
+  numberOfProduct: number;
 }
 
-function CartSelection({ selectedTransport, selectedItem }: { selectedTransport: TransportItem | null; selectedItem: ItemResaultPrice | null; }) {
+function CartSelection({ selectedTransport, selectedItem, selectedUnit, numberOfProduct }: CartSelectionProps) {
   const [cart, setCart] = React.useState<Cart | null>(null);
   const [loading, setLoading] = React.useState(false);
   const [groupedItems, setGroupedItems] = useState<Record<string, ListCart[]>>({});
-  const [selectedCartId, setSelectedCartId] = useState<number>(0); 
+  const [selectedCartId, setSelectedCartId] = useState<number>(0);
 
   const buttonState = !selectedTransport;
   const { selectedAccount } = useAccountStore();
@@ -782,26 +800,28 @@ function CartSelection({ selectedTransport, selectedItem }: { selectedTransport:
   const { showSnackbar } = useSnackbar();
   const { toPersianPrice } = usePersianNumbers();
 
-  React.useEffect(() => {
-    const fetchListCarts = async () => {
-      setLoading(true);
-      try {
-        const data: ListCart[] = await getCartList();
-        console.log("👨‍💻 ~ fetchListCarts ~ data:", data)
-        const grouped = data.reduce((acc, item) => {
-          const key = item.name || 'بدون نام';
-          if (!acc[key]) acc[key] = [];
-          acc[key].push(item);
-          return acc;
-        }, {} as Record<string, ListCart[]>);
 
-        setGroupedItems(grouped);
-      } catch (error) {
-        console.error('Error fetching cart list:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchListCarts = async () => {
+    setLoading(true);
+    try {
+      const data: ListCart[] = await getCartList();
+      console.log("👨‍💻 ~ fetchListCarts ~ data:", data)
+      const grouped = data.reduce((acc, item) => {
+        const key = item.name || 'بدون نام';
+        if (!acc[key]) acc[key] = [];
+        acc[key].push(item);
+        return acc;
+      }, {} as Record<string, ListCart[]>);
+
+      setGroupedItems(grouped);
+    } catch (error) {
+      console.error('Error fetching cart list:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
     fetchListCarts();
   }, []);
 
@@ -820,22 +840,53 @@ function CartSelection({ selectedTransport, selectedItem }: { selectedTransport:
     if (foundCart) {
       setCart(foundCart);
       setSelectedCartId(value);
+      showSnackbar('سبد جدید انتخاب شد', 'error');
     } else {
       console.warn(`Cart with id ${value} not found`);
     }
   };
 
-  const submitCart = () => {
-    if (!selectedItem || !selectedAccount || !selectedProject) return;
+  const createCart = async () => {
+    try {
+      const response = await addCart(selectedItem, selectedAccount, selectedProject, false, '0');
+      console.log("🐱‍👤 ~ createCart ~ response.id:", response.id);
+      showSnackbar('سبد جدید ایجاد شد', 'success');
+      return response.id;
+    } catch (error) {
+      showSnackbar('خطا در ایجاد سبد جدید', 'error');
+      return;
+    }
+  };
 
-    addCart(selectedItem, selectedAccount, selectedProject, false, '0')
-      .then((response) => {
-        console.log("🚀 ~ submitCart ~ response:", response);
-        showSnackbar('Item added to cart successfully', 'success');
-      })
-      .catch((error) => {
-        showSnackbar(error.message, 'error');
+  const addItemCart = async (cartId: number) => {
+    try {
+      const response = await
+        addItemToCart(
+          cartId,
+          selectedItem?.priceId,
+          numberOfProduct,
+          selectedUnit?.valueId
+        );
+      console.log("🐱 ~ createCart ~ response.id:", response);
+      showSnackbar('آیتم به سبد اضافه شد', 'success');
+      return response.id;
+    } catch (error) {
+      showSnackbar('خطا در اضافه کردن آیتم', 'error');
+      return;
+    }
+  };
+
+  const submitCart = async () => {
+    if (!selectedItem || !selectedAccount || !selectedProject) return;
+    if (selectedCartId === 0) {
+      createCart().then(async (id) => {
+        if (id) {
+          await fetchListCarts();
+          handleCartChange(id);
+          await addItemCart(id);
+        }
       });
+    }
   };
 
   return (
