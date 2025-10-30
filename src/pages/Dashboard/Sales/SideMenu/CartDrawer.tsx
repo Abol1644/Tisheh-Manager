@@ -319,37 +319,41 @@ export function CartDrawer({ onDrawerToggle }: { onDrawerToggle: () => void; }) 
                 </AccordionSummary>
                 <AccordionDetails>
                   <List dense>
-                    {items.map((item) => (
-                      <ListItem
-                        key={item.id}
-                        sx={{ p: 0, transition: 'all 0.3s ease', mb: 1, '&:hover': { transform: 'translateX(4px)' } }} >
-                        <Tooltip
-                          title={<p><strong>پروژه</strong> {item.projectIdCustomerTitle}</p>}
-                          placement="left"
-                          arrow
-                          disableInteractive
-                          slots={{ transition: Zoom }}
-                        >
-                          <Btn
-                            color='inherit'
-                            variant='outlined'
-                            fullWidth
-                            sx={{ ...flex.justifyBetween }}
+                    {items.map((item) => {
+                      const accountTitle = item.codeAccCustomerTitle ? item.codeAccCustomerTitle : 'نامشخص';
+                      const projectTitle = item.projectIdCustomerTitle ? item.branchCenterDelivery ? 'تحویل درب انبار' :<p><strong>پروژه</strong> {item.projectIdCustomerTitle}</p> : item.branchCenterDelivery ? 'تحویل درب انبار' : 'بدون پروژه';
+                      return (
+                        <ListItem
+                          key={item.id}
+                          sx={{ p: 0, transition: 'all 0.3s ease', mb: 1, '&:hover': { transform: 'translateX(4px)' } }} >
+                          <Tooltip
+                            title={projectTitle}
+                            placement="left"
+                            arrow
+                            disableInteractive
+                            slots={{ transition: Zoom }}
                           >
-                            <Box sx={{ ...flex.row, width: '100%', py: 0.5 }} onClick={() => sendCartId(item)}>
-                              <ShoppingCartRoundedIcon sx={{ mr: 1 }} />
-                              
+                            <Btn
+                              color='inherit'
+                              variant='outlined'
+                              fullWidth
+                              sx={{ ...flex.justifyBetween }}
+                            >
+                              <Box sx={{ ...flex.row, width: '100%', py: 0.5 }} onClick={() => sendCartId(item)}>
+                                <ShoppingCartRoundedIcon sx={{ mr: 1 }} />
+
                                 <Typography className='disable-line-height' color='textPrimary' variant="body2">
-                                  {toPersianPrice(item.id)} - {item.codeAccCustomerTitle}
+                                  {toPersianPrice(item.id)} - {accountTitle}
                                 </Typography>
-                            </Box>
-                            <DeleteRoundedIcon
-                              onClick={() => openDeleteModal(item.id)}
-                              sx={{ transition: 'all 0.3s ease', '&:hover': { color: 'error.main' } }} />
-                          </Btn>
-                        </Tooltip>
-                      </ListItem>
-                    ))}
+                              </Box>
+                              <DeleteRoundedIcon
+                                onClick={() => openDeleteModal(item.id)}
+                                sx={{ transition: 'all 0.3s ease', '&:hover': { color: 'error.main' } }} />
+                            </Btn>
+                          </Tooltip>
+                        </ListItem>
+                      )
+                    })}
                   </List>
                 </AccordionDetails>
               </Accordion>
