@@ -11,7 +11,7 @@ import {
 export const getCartList = async (): Promise<ListCart[]> => {
   try {
     const response = await apiClient.get<ListCart[]>(`Cart/GetAllListCart`);
-    console.log("Get ListCart: ", response.data);
+    console.log("📃 Get ListCart: ", response.data);
     return response.data;
   } catch (error: any) {
     console.error("Get ListCart API error: ", error);

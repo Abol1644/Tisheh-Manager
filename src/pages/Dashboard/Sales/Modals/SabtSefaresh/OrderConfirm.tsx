@@ -155,7 +155,7 @@ export default function OrderConfirm({ selectedTransport, setSelectedTransport }
           selectedWarehouse?.id,
           selectedProject
         );
-        console.log("🚀 ~ fetchAndGetTransport ~ selectedProject:", selectedProject)
+        // console.log("🚀 ~ fetchAndGetTransport ~ selectedProject:", selectedProject)
 
         const list = Array.isArray(data) ? data : [data];
         setTransportListSale(list);
@@ -774,7 +774,7 @@ function CartSelection({ selectedTransport, selectedItem }: { selectedTransport:
   const [cart, setCart] = React.useState<Cart | null>(null);
   const [loading, setLoading] = React.useState(false);
   const [groupedItems, setGroupedItems] = useState<Record<string, ListCart[]>>({});
-  const [selectedCartId, setSelectedCartId] = useState<number>(-1); // ✅ -1 means "new cart"
+  const [selectedCartId, setSelectedCartId] = useState<number>(0); 
 
   const buttonState = !selectedTransport;
   const { selectedAccount } = useAccountStore();
@@ -787,6 +787,7 @@ function CartSelection({ selectedTransport, selectedItem }: { selectedTransport:
       setLoading(true);
       try {
         const data: ListCart[] = await getCartList();
+        console.log("👨‍💻 ~ fetchListCarts ~ data:", data)
         const grouped = data.reduce((acc, item) => {
           const key = item.name || 'بدون نام';
           if (!acc[key]) acc[key] = [];
@@ -804,22 +805,23 @@ function CartSelection({ selectedTransport, selectedItem }: { selectedTransport:
     fetchListCarts();
   }, []);
 
-  const handleCartChange = (event: SelectChangeEvent<string>) => {
-    const value = Number(event.target.value);
-    setSelectedCartId(value);
+  const handleCartChange = (cartId: number) => {
+    const value = cartId;
 
-    if (value === -1) {
+    if (value === 0) {
       setCart(null);
+      setSelectedCartId(value);
       return;
     }
 
-    for (const [, items] of Object.entries(groupedItems)) {
-      const found = items.find(item => item.id === value);
-      console.log("🚀 ~ handleCartChange ~ found:", found)
-      if (found) {
-        setCart(found);
-        return;
-      }
+    const allItems = Object.values(groupedItems).flat();
+    const foundCart = allItems.find(item => item.id === value);
+
+    if (foundCart) {
+      setCart(foundCart);
+      setSelectedCartId(value);
+    } else {
+      console.warn(`Cart with id ${value} not found`);
     }
   };
 
@@ -842,14 +844,21 @@ function CartSelection({ selectedTransport, selectedItem }: { selectedTransport:
         <Select
           displayEmpty
           value={String(selectedCartId)}
-          onChange={handleCartChange}
           input={<OutlinedInput />}
           renderValue={(selected) => {
-            if (Number(selected) === -1) return <em style={{ opacity: 0.6 }}>سبد جدید</em>;
+            if (Number(selected) === 0) return 'سبد جدید';
             const found = Object.values(groupedItems)
               .flat()
               .find(item => item.id === Number(selected));
-            return found ? found.name || found.codeAccCustomerTitle : 'سبد انتخاب شده';
+            const accountTitle = found?.codeAccCustomerTitle || 'نامشخص';
+            const projectTitle = found?.projectIdCustomerTitle
+              ? found?.branchCenterDelivery
+                ? 'تحویل درب انبار'
+                : `پروژه ${found?.projectIdCustomerTitle}`
+              : found?.branchCenterDelivery
+                ? 'تحویل درب انبار'
+                : 'بدون پروژه';
+            return found ? `${found.id} - ${accountTitle} - ${projectTitle}` : 'سبد انتخاب شده';
           }}
           MenuProps={{
             PaperProps: {
@@ -857,7 +866,7 @@ function CartSelection({ selectedTransport, selectedItem }: { selectedTransport:
             },
           }}
         >
-          <MenuItem value={-1}>
+          <MenuItem value={0} onClick={() => handleCartChange(0)}>
             <em>سبد جدید</em>
           </MenuItem>
 
@@ -882,8 +891,7 @@ function CartSelection({ selectedTransport, selectedItem }: { selectedTransport:
                       : 'بدون پروژه';
 
                   return (
-                    <MenuItem key={item.id} value={item.id.toString()} sx={{ pl: 4, }}
-                    >
+                    <MenuItem key={item.id} value={item.id} sx={{ pl: 4, }} onClick={() => handleCartChange(item.id)}>
                       <Typography variant="body2" color="textPrimary" className='nowarp'>
                         {toPersianPrice(item.id)} - {accountTitle} - {projectTitle}
                       </Typography>

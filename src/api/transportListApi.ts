@@ -24,7 +24,7 @@ export const getTransportListSale = async (
         elevationProject: project?.elevation || 0,
       }
     );
-    console.log('🦈🦈🦈🦈 get transport sale list', project?.id)
+    // console.log('🦈🦈🦈🦈 get transport sale list', project?.id)
     console.log('❤ get transport sale list', response.data)
     return response.data;
   } catch (error: any) {
