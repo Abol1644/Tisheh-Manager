@@ -7,9 +7,7 @@ export const getGeoFence = async (project: Project): Promise<GeoFence> => {
 
     const response = await apiClient.get<GeoFence>(requestUrl);
 
-    // console.log("GeoFence API Response:", response.data);
-
-    return response.data;
+    return response.data || null;
   } catch (error: any) {
     console.error("Get GeoFence API error:", error);
     
