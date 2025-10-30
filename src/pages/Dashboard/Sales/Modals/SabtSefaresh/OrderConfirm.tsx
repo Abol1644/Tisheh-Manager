@@ -886,6 +886,8 @@ function CartSelection({ selectedTransport, selectedItem, selectedUnit, numberOf
           await addItemCart(id);
         }
       });
+    } else {
+      await addItemCart(selectedCartId);
     }
   };
 
