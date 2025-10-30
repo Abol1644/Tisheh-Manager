@@ -774,7 +774,9 @@ function CartSelection({ selectedTransport, selectedItem }: { selectedTransport:
   const [cart, setCart] = React.useState<Cart | null>(null);
   const [loading, setLoading] = React.useState(false);
   const [groupedItems, setGroupedItems] = useState<Record<string, ListCart[]>>({});
-  const buttonState = selectedTransport ? false : true;
+  const [selectedCartId, setSelectedCartId] = useState<number>(-1); // ✅ -1 means "new cart"
+
+  const buttonState = !selectedTransport;
   const { selectedAccount } = useAccountStore();
   const { selectedProject } = useProjectStore();
   const { showSnackbar } = useSnackbar();
@@ -782,40 +784,41 @@ function CartSelection({ selectedTransport, selectedItem }: { selectedTransport:
 
   React.useEffect(() => {
     const fetchListCarts = async () => {
-      getCartList()
-        .then((data: ListCart[]) => {
-          const grouped = data.reduce((acc, item) => {
-            const key = item.name || 'بدون نام';
-            if (!acc[key]) {
-              acc[key] = [];
-            }
-            acc[key].push(item);
-            return acc;
-          }, {} as Record<string, ListCart[]>);
+      setLoading(true);
+      try {
+        const data: ListCart[] = await getCartList();
+        const grouped = data.reduce((acc, item) => {
+          const key = item.name || 'بدون نام';
+          if (!acc[key]) acc[key] = [];
+          acc[key].push(item);
+          return acc;
+        }, {} as Record<string, ListCart[]>);
 
-          setGroupedItems(grouped);
-          setLoading(false);
-        })
-        .catch((error) => {
-          console.error('Error fetching cart list:', error);
-          setLoading(false);
-        });
-    }
+        setGroupedItems(grouped);
+      } catch (error) {
+        console.error('Error fetching cart list:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
     fetchListCarts();
   }, []);
 
   const handleCartChange = (event: SelectChangeEvent<string>) => {
-    const value = event.target.value;
+    const value = Number(event.target.value);
+    setSelectedCartId(value);
 
-    if (value === "new-cart") {
-      setCart(null); 
-    } else {
-      for (const [, items] of Object.entries(groupedItems)) {
-        const found = items.find(item => String(item.id) === value);
-        if (found) {
-          setCart(found);
-          return;
-        }
+    if (value === -1) {
+      setCart(null);
+      return;
+    }
+
+    for (const [, items] of Object.entries(groupedItems)) {
+      const found = items.find(item => item.id === value);
+      console.log("🚀 ~ handleCartChange ~ found:", found)
+      if (found) {
+        setCart(found);
+        return;
       }
     }
   };
@@ -825,7 +828,7 @@ function CartSelection({ selectedTransport, selectedItem }: { selectedTransport:
 
     addCart(selectedItem, selectedAccount, selectedProject, false, '0')
       .then((response) => {
-        console.log("🚀 ~ submitCart ~ response:", response)
+        console.log("🚀 ~ submitCart ~ response:", response);
         showSnackbar('Item added to cart successfully', 'success');
       })
       .catch((error) => {
@@ -838,53 +841,74 @@ function CartSelection({ selectedTransport, selectedItem }: { selectedTransport:
       <FormControl size="small" sx={{ minWidth: '200px', flex: 1 }}>
         <Select
           displayEmpty
-          value={cart ? String(cart.id) : ""}
+          value={String(selectedCartId)}
           onChange={handleCartChange}
           input={<OutlinedInput />}
           renderValue={(selected) => {
-            if (!selected) {
-              return <em style={{ opacity: 0.6 }}>سبد خرید</em>;
-            }
-            return selected;
+            if (Number(selected) === -1) return <em style={{ opacity: 0.6 }}>سبد جدید</em>;
+            const found = Object.values(groupedItems)
+              .flat()
+              .find(item => item.id === Number(selected));
+            return found ? found.name || found.codeAccCustomerTitle : 'سبد انتخاب شده';
           }}
           MenuProps={{
             PaperProps: {
-              sx: { maxHeight: 400 }
-            }
+              sx: { maxHeight: 400 },
+            },
           }}
         >
-          <MenuItem value="new-cart">
+          <MenuItem value={-1}>
             <em>سبد جدید</em>
           </MenuItem>
 
-          {Object.keys(groupedItems).length === 0 ? (
+          {loading ? (
+            <MenuItem disabled>در حال بارگذاری...</MenuItem>
+          ) : Object.keys(groupedItems).length === 0 ? (
             <MenuItem disabled>هیچ سبدی موجود نیست</MenuItem>
           ) : (
             Object.entries(groupedItems).map(([name, items]) => (
-              <React.Fragment key={name}>
+              <div key={name}>
                 <MenuItem disabled sx={{ fontWeight: 600, color: "text.primary", py: 1 }}>
                   {name} ({items.length})
                 </MenuItem>
-                {items.map((item) => (
-                  <MenuItem
-                    key={item.id}
-                    value={item.id.toString()}
-                    sx={{ pl: 4, fontSize: "0.95rem" }}
-                  >
-                    {toPersianPrice(item.id)} - {item.codeAccCustomerTitle}
-                  </MenuItem>
-                ))}
-              </React.Fragment>
+                {items.map((item) => {
+                  const accountTitle = item.codeAccCustomerTitle || 'نامشخص';
+                  const projectTitle = item.projectIdCustomerTitle
+                    ? item.branchCenterDelivery
+                      ? 'تحویل درب انبار'
+                      : `پروژه ${item.projectIdCustomerTitle}`
+                    : item.branchCenterDelivery
+                      ? 'تحویل درب انبار'
+                      : 'بدون پروژه';
+
+                  return (
+                    <MenuItem key={item.id} value={item.id.toString()} sx={{ pl: 4, }}
+                    >
+                      <Typography variant="body2" color="textPrimary" className='nowarp'>
+                        {toPersianPrice(item.id)} - {accountTitle} - {projectTitle}
+                      </Typography>
+                    </MenuItem>
+                  );
+                })}
+
+              </div>
             ))
           )}
         </Select>
       </FormControl>
+
       <div style={{ display: 'flex', gap: '10px', flexDirection: 'row' }}>
-        <Btn disabled={true} color='info' variant="contained" sx={{ whiteSpace: 'nowrap' }}>
+        <Btn disabled color='info' variant="contained" sx={{ whiteSpace: 'nowrap' }}>
           افزودن به سفارش
         </Btn>
         <BtnGroup variant="contained" color='success'>
-          <Btn onClick={submitCart} disabled={buttonState} color='success' variant="contained" sx={{ width: '70px' }}>
+          <Btn
+            onClick={submitCart}
+            disabled={buttonState}
+            color='success'
+            variant="contained"
+            sx={{ width: '70px' }}
+          >
             ثبت
           </Btn>
           <Btn disabled={buttonState} color='success' variant="contained" sx={{ whiteSpace: 'nowrap' }}>
@@ -893,5 +917,5 @@ function CartSelection({ selectedTransport, selectedItem }: { selectedTransport:
         </BtnGroup>
       </div>
     </Box>
-  )
+  );
 }
