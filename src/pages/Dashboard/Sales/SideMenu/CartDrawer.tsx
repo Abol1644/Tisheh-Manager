@@ -72,7 +72,7 @@ function CartItemSkeleton() {
   )
 }
 
-export function CartDrawer({ onDrawerToggle }: { onDrawerToggle: () => void; }) {
+export function CartDrawer({ onDrawerToggle, value }: { onDrawerToggle: () => void; value: number; }) {
   const [loading, setLoading] = useState(false);
   const [deleteItemModal, setDeleteItemModal] = useState(false);
   const [cartId, setCartId] = useState<number | null>(null);
@@ -98,6 +98,12 @@ export function CartDrawer({ onDrawerToggle }: { onDrawerToggle: () => void; }) 
   useEffect(() => {
     setExpanded(userName || false);
   }, [userName]);
+
+  useEffect(() => {
+    if (value === 1) {
+      handleRefresh()
+    }
+  }, [value]);
 
   useEffect(() => {
     setLoading(true);

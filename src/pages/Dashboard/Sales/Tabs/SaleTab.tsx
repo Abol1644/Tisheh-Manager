@@ -170,7 +170,7 @@ export default function Sale() {
           }}
         >
           <TabPanel value={value} index={1}>
-            <CartDrawer onDrawerToggle={handleDrawerClose} />
+            <CartDrawer onDrawerToggle={handleDrawerClose} value={value} />
           </TabPanel>
           <TabPanel value={value} index={0}>
             <Category
