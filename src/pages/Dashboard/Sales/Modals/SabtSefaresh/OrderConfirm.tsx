@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 
 import {
   Typography,
@@ -76,10 +76,7 @@ export default function OrderConfirm({ selectedTransport, setSelectedTransport }
 
   const [addToOrderModalOpen, setAddToOrderModalOpen] = React.useState(false);
 
-  const primaryDistance = useMemo(
-    () => distance.find((d) => d.warehouseId > 0)?.warehouseId,
-    [distance]
-  );
+  const primaryDistance = distance.find((d) => d.warehouseId > 0)?.warehouseId;
 
   React.useEffect(() => {
     if (selectedItem && !selectedUnit && availableUnits.length > 0) {
@@ -89,11 +86,16 @@ export default function OrderConfirm({ selectedTransport, setSelectedTransport }
   }, [selectedItem, availableUnits, selectedUnit]);
 
   React.useEffect(() => {
-    if (selectedTransport && selectedUnit) {
-      const displayWeight = selectedTransport.capacity * (selectedUnit.unitRatio || 1);
-      setNumberOfProduct(displayWeight);
+    if (selectedTransport && selectedItem) {
+      const numericWeight = selectedTransport.capacity * (selectedItem.unitRatio || 1);
+      setNumberOfProduct(numericWeight); // Keep it as a number for input/state
+      console.log("🚀 ~ OrderConfirm ~ numericWeight:", numericWeight)
     }
-  }, [selectedTransport, selectedUnit]);
+  }, [selectedTransport, selectedItem]);
+
+  React.useEffect(() => {
+      console.log("🧮 ~ OrderConfirm ~ numericWeight:", numberOfProduct)
+  }, [numberOfProduct]);
 
 
   const handleUnitChange = (e: SelectChangeEvent<string>) => {
@@ -224,6 +226,8 @@ export default function OrderConfirm({ selectedTransport, setSelectedTransport }
             availableUnits={availableUnits}
             numberOfProduct={numberOfProduct}
             setNumberOfProduct={setNumberOfProduct}
+            selectedTransport={selectedTransport}
+            selectedItem={selectedItem}
           />
           <Prices
             numberOfProduct={numberOfProduct}
@@ -716,6 +720,8 @@ interface OrderInputProps {
   availableUnits: ItemResaultPrice[];
   numberOfProduct: number;
   setNumberOfProduct: (value: number) => void;
+  selectedTransport: TransportItem | null;
+  selectedItem: ItemResaultPrice | null;
 }
 
 const OrderInput: React.FC<OrderInputProps> = ({
@@ -725,9 +731,19 @@ const OrderInput: React.FC<OrderInputProps> = ({
   availableUnits,
   numberOfProduct,
   setNumberOfProduct,
+  selectedTransport,
+  selectedItem
 }) => {
   const units = availableUnits;
   const hasMultipleUnits = availableUnits.length > 1;
+
+  React.useEffect(() => {
+    if (selectedTransport && selectedItem) {
+      const numericWeight = selectedTransport.capacity * (selectedItem.unitRatio || 1);
+      setNumberOfProduct(numericWeight); // Keep it as a number for input/state
+      console.log("🚀 ~ OrderConfirm ~ numericWeight:", numericWeight)
+    }
+  }, [selectedTransport, selectedItem]);
 
   return (
     <Box
