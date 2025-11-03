@@ -812,7 +812,7 @@ function CartSelection({ selectedTransport, selectedItem, selectedUnit, numberOf
   const { selectedProject } = useProjectStore();
   const { showSnackbar } = useSnackbar();
   const { toPersianPrice } = usePersianNumbers();
-
+  const isBranchDelivery = useBranchDeliveryStore((s) => s.isBranchDelivery);
 
   const fetchListCarts = async () => {
     setLoading(true);
@@ -861,7 +861,7 @@ function CartSelection({ selectedTransport, selectedItem, selectedUnit, numberOf
 
   const createCart = async () => {
     try {
-      const response = await addCart(selectedItem, selectedAccount, selectedProject, false, '0');
+      const response = await addCart(selectedItem, selectedAccount, selectedProject, isBranchDelivery, '0');
       console.log("🐱‍👤 ~ createCart ~ response.id:", response.id);
       showSnackbar('سبد جدید ایجاد شد', 'success');
       return response.id;
