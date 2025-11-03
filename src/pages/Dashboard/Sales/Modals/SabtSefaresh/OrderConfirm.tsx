@@ -73,9 +73,6 @@ export default function OrderConfirm({ selectedTransport, setSelectedTransport }
   const { distance, setDistance } = useDistanceStore();
   const { showSnackbar } = useSnackbar();
 
-
-  const [addToOrderModalOpen, setAddToOrderModalOpen] = React.useState(false);
-
   const primaryDistance = distance.find((d) => d.warehouseId > 0)?.warehouseId;
 
   React.useEffect(() => {
