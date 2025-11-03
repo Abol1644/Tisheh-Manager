@@ -100,6 +100,7 @@ export function Cart({ setOpenCart, openCart }: CartProps,) {
     addShipment,
     selectedItemKeys,
     toggleSelectedItem,
+    clearSelectedItems,
     currentCartDetails
   } = useControlCart()
 
@@ -239,6 +240,25 @@ export function Cart({ setOpenCart, openCart }: CartProps,) {
     cartClose();
     console.log("Cart closed", openCart);
   };
+
+  // Helper function to generate consistent item keys
+  const getItemKey = useCallback((item: ItemResaultPrice): string => {
+    return `${item.ididentity}-${item.warehouseId}`;
+  }, []);
+
+  // Helper function to refine shipments (remove empty ones)
+  const refineShipments = useCallback((items: ItemResaultPrice[]) => {
+    const shipmentsWithItems = new Set(
+      items.map(item => item.tempShipmentId).filter((id): id is number => id !== null)
+    );
+
+    cartShipments.forEach(shipment => {
+      if (!shipmentsWithItems.has(shipment.id)) {
+        console.log(`🗑️ Removing empty shipment: ${shipment.id}`);
+        removeShipment(shipment.id);
+      }
+    });
+  }, [cartShipments, removeShipment]);
 
   useEffect(() => {
     if (cartProducts.length === 0) {
@@ -563,182 +583,189 @@ export function Cart({ setOpenCart, openCart }: CartProps,) {
                 cartShipments.map((shipment, index) => {
                   const shipmentNumber = index + 1;
                   const itemsInShipment = rawItems.filter(
-                    (item) => item.tempShipmentId === shipment.id && item.warehouseId === selectedCartWarehouse?.id
+                    (item) => item.tempShipmentId === shipment.id
                   );
 
-                  return [
-                    ...itemsInShipment.map((item, itemIndex) => {
-                      const rowId = item.ididentity + item.warehouseId;
-                      const isChecked = selectedItemKeys.has(rowId);
-                      const hasDiscount = item.discountPriceWarehouse > 0;
-                      const basePrice = item.priceWarehouse;
-                      const finalPrice = hasDiscount ? item.discountPriceWarehouse : basePrice;
-                      const quantity = item.value || 1;
-                      const total = finalPrice * quantity;
+                  // If no items in this shipment, skip rendering entirely
+                  if (itemsInShipment.length === 0) {
+                    return null;
+                  }
 
-                      return (
-                        <TableRow
-                          key={rowId}
-                          sx={{
-                            '& .MuiTableCell-root': {
-                              p: 1.5,
-                              position: 'relative',
-                              whiteSpace: 'nowrap',
-                              '&:not(.first-cell)::before': {
-                                content: '""',
-                                position: 'absolute',
-                                top: '6px',
-                                left: 0,
-                                right: 0,
-                                bottom: '6px',
-                                width: '2px',
-                                backgroundColor: 'var(--table-border-overlay)',
+                  return (
+                    <React.Fragment key={`shipment-${shipment.id}`}>
+                      {itemsInShipment.map((item, itemIndex) => {
+                        const itemKey = getItemKey(item);
+                        const isChecked = selectedItemKeys.has(itemKey);
+                        const hasDiscount = item.discountPriceWarehouse > 0;
+                        const basePrice = item.priceWarehouse;
+                        const finalPrice = hasDiscount ? item.discountPriceWarehouse : basePrice;
+                        const quantity = item.value || 1;
+                        const total = finalPrice * quantity;
+
+                        return (
+                          <TableRow
+                            key={itemKey}
+                            sx={{
+                              '& .MuiTableCell-root': {
+                                p: 1.5,
+                                position: 'relative',
+                                whiteSpace: 'nowrap',
+                                '&:not(.first-cell)::before': {
+                                  content: '""',
+                                  position: 'absolute',
+                                  top: '6px',
+                                  left: 0,
+                                  right: 0,
+                                  bottom: '6px',
+                                  width: '2px',
+                                  backgroundColor: 'var(--table-border-overlay)',
+                                },
                               },
-                            },
-                          }}
-                        >
-                          {/* Only first item renders the shipment cell */}
-                          {itemIndex === 0 && (
-                            <TableCell className='first-cell' rowSpan={itemsInShipment.length} sx={{ verticalAlign: 'center' }}>
-                              <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', height: '100%', justifyContent: 'space-around' }}>
-                                <Typography variant="body1" color="primary" fontWeight="bold">
-                                  مرسوله {toPersianPrice(shipmentNumber)}
-                                </Typography>
-                                <Box>
-                                  <IconButton
-                                    color="info"
-                                    size="small"
-                                    onClick={handleMoveItemModalToggle}
-                                    title="جابجایی مرسوله"
-                                    disabled={selectedItemKeys.size === 0}
-                                  >
-                                    <SwapVertRoundedIcon fontSize="small" />
-                                  </IconButton>
-                                  <IconButton
-                                    color="error"
-                                    size="small"
-                                    onClick={handleDeleteItemModalToggle}
-                                    title="حذف آیتم از مرسوله"
-                                    disabled={selectedItemKeys.size === 0}
-                                  >
-                                    <DeleteRoundedIcon fontSize="small" />
-                                  </IconButton>
+                            }}
+                          >
+                            {/* Only first item renders the shipment cell */}
+                            {itemIndex === 0 && (
+                              <TableCell className='first-cell' rowSpan={itemsInShipment.length} sx={{ verticalAlign: 'center' }}>
+                                <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', height: '100%', justifyContent: 'space-around' }}>
+                                  <Typography variant="body1" color="primary" fontWeight="bold">
+                                    مرسوله {toPersianPrice(shipmentNumber)}
+                                  </Typography>
+                                  <Box>
+                                    <IconButton
+                                      color="info"
+                                      size="small"
+                                      onClick={handleMoveItemModalToggle}
+                                      title="جابجایی مرسوله"
+                                      disabled={selectedItemKeys.size === 0}
+                                    >
+                                      <SwapVertRoundedIcon fontSize="small" />
+                                    </IconButton>
+                                    <IconButton
+                                      color="error"
+                                      size="small"
+                                      onClick={handleDeleteItemModalToggle}
+                                      title="حذف آیتم از مرسوله"
+                                      disabled={selectedItemKeys.size === 0}
+                                    >
+                                      <DeleteRoundedIcon fontSize="small" />
+                                    </IconButton>
+                                  </Box>
                                 </Box>
+                              </TableCell>
+                            )}
+                            <TableCell>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <Checkbox
+                                  checked={isChecked}
+                                  onChange={() => toggleSelectedItem(item)}
+                                  size="small"
+                                />
+                                <Typography variant="body2">
+                                  {`${item.title} ${item.attributeGroupTitle}`.trim()}
+                                </Typography>
                               </Box>
                             </TableCell>
-                          )}
-                          <TableCell>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                              <Checkbox
-                                checked={selectedItemKeys.has(item.ididentity + item.warehouseId)}
-                                onChange={() => toggleSelectedItem(item)}
-                                size="small"
-                              />
-                              <Typography variant="body2">
-                                {`${item.title} ${item.attributeGroupTitle}`.trim()}
-                              </Typography>
-                            </Box>
-                          </TableCell>
-                          <TableCell>
-                            <Box sx={{ ...flex.row, ...flex.alignCenter, gap: 2, width: 'fit-content' }}>
-                              <NumberField
-                                value={quantity}
-                                onChange={(value) => { }}
-                                min={0}
-                                step={1.0}
-                                sx={{ maxWidth: '160px', minWidth: '120px' }}
-                              />
-                              <Typography variant="body2">
-                                {item.valueTitleBase || item.valueTitle || 'عدد'}
-                              </Typography>
-                            </Box>
-                          </TableCell>
-                          <TableCell>
-                            <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                              {hasDiscount && (
-                                <Typography
-                                  variant="caption"
-                                  sx={{ textDecoration: 'line-through', color: 'text.secondary' }}
-                                >
-                                  {toPersianPrice(basePrice)}
+                            <TableCell>
+                              <Box sx={{ ...flex.row, ...flex.alignCenter, gap: 2, width: 'fit-content' }}>
+                                <NumberField
+                                  value={quantity}
+                                  onChange={(value) => { }}
+                                  min={0}
+                                  step={1.0}
+                                  sx={{ maxWidth: '160px', minWidth: '120px' }}
+                                />
+                                <Typography variant="body2">
+                                  {item.valueTitleBase || item.valueTitle || 'عدد'}
                                 </Typography>
-                              )}
-                              <Typography
-                                variant="body1"
-                                color={hasDiscount ? 'error.main' : 'text.primary'}
-                              >
-                                {toPersianPrice(finalPrice)}
+                              </Box>
+                            </TableCell>
+                            <TableCell>
+                              <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                                {hasDiscount && (
+                                  <Typography
+                                    variant="caption"
+                                    sx={{ textDecoration: 'line-through', color: 'text.secondary' }}
+                                  >
+                                    {toPersianPrice(basePrice)}
+                                  </Typography>
+                                )}
+                                <Typography
+                                  variant="body1"
+                                  color={hasDiscount ? 'error.main' : 'text.primary'}
+                                >
+                                  {toPersianPrice(finalPrice)}
+                                </Typography>
+                              </Box>
+                            </TableCell>
+                            <TableCell>
+                              <Typography variant="body1">
+                                {toPersianPrice(total)}
                               </Typography>
-                            </Box>
-                          </TableCell>
-                          <TableCell>
-                            <Typography variant="body1">
-                              {toPersianPrice(total)}
-                            </Typography>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    }),
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
 
-
-                    <TableRow
-                      key={`options-${shipment.id}`}
-                      sx={{
-                        '& .MuiTableCell-root': {
-                          p: 1.5,
-                          position: 'relative',
-                          whiteSpace: 'nowrap',
-                          borderBottomWidth: '2px',
-                          '&:not(.first-cell)::before': {
-                            content: '""',
-                            position: 'absolute',
-                            top: '6px',
-                            left: 0,
-                            right: 0,
-                            bottom: '6px',
-                            width: '2px',
-                            backgroundColor: 'var(--table-border-overlay)',
+                      {/* Shipment Details Row - ALWAYS rendered after items */}
+                      <TableRow
+                        key={`options-${shipment.id}`}
+                        sx={{
+                          '& .MuiTableCell-root': {
+                            p: 1.5,
+                            position: 'relative',
+                            whiteSpace: 'nowrap',
+                            borderBottomWidth: '2px',
+                            '&:not(.first-cell)::before': {
+                              content: '""',
+                              position: 'absolute',
+                              top: '6px',
+                              left: 0,
+                              right: 0,
+                              bottom: '6px',
+                              width: '2px',
+                              backgroundColor: 'var(--table-border-overlay)',
+                            },
                           },
-                        },
-                      }}
-                    >
-                      <TableCell className='first-cell'>
-                        <Combo
-                          value={deliveryMethod}
-                          onChange={setDeliveryMethod}
-                          options={[]}
-                          label="شیوه تحویل"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Combo
-                          value={deliveryTime}
-                          onChange={setDeliveryTime}
-                          options={[]}
-                          label="زمان تحویل"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Box sx={{ ...flex.row, ...flex.alignCenter, gap: 2, width: 'fit-content', flexWrap: 'wrap' }}>
-                          <NumberField
-                            value={services}
-                            onChange={() => { }}
-                            disabled
-                            sx={{ maxWidth: '160px', minWidth: '120px' }}
+                        }}
+                      >
+                        <TableCell className='first-cell'>
+                          <Combo
+                            value={deliveryMethod}
+                            onChange={setDeliveryMethod}
+                            options={[]}
+                            label="شیوه تحویل"
                           />
-                          <Typography variant="body1" color="initial">
-                            سرویس
-                          </Typography>
-                        </Box>
-                      </TableCell>
-                      <TableCell>
-                        <h4>cell 4</h4>
-                      </TableCell>
-                      <TableCell>
-                        <h4>cell 5</h4>
-                      </TableCell>
-                    </TableRow>
-                  ];
+                        </TableCell>
+                        <TableCell>
+                          <Combo
+                            value={deliveryTime}
+                            onChange={setDeliveryTime}
+                            options={[]}
+                            label="زمان تحویل"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Box sx={{ ...flex.row, ...flex.alignCenter, gap: 2, width: 'fit-content', flexWrap: 'wrap' }}>
+                            <NumberField
+                              value={services}
+                              onChange={() => { }}
+                              disabled
+                              sx={{ maxWidth: '160px', minWidth: '120px' }}
+                            />
+                            <Typography variant="body1" color="initial">
+                              سرویس
+                            </Typography>
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          <h4>cell 4</h4>
+                        </TableCell>
+                        <TableCell>
+                          <h4>cell 5</h4>
+                        </TableCell>
+                      </TableRow>
+                    </React.Fragment>
+                  );
                 })
               )}
             </TableBody>
@@ -755,25 +782,6 @@ export function Cart({ setOpenCart, openCart }: CartProps,) {
           mt: 1.5
         }}
       >
-        {/* <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <ShoppingCartRoundedIcon sx={{ fontSize: '22px' }} />
-          <Typography variant="subtitle1" sx={{ display: 'flex', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap', mr: 4 }}>
-            مسئول فروش:
-            <Typography variant="body1"> {currentCartDetails ? toPersianDigits(' ' + currentCartDetails.orderMan) : ' '} </Typography>
-          </Typography>
-          {currentCartDetails && currentCartDetails.broker !== 'none' && (
-            <>
-              <GroupRoundedIcon sx={{ fontSize: '22px' }} />
-              <Typography variant="subtitle1" sx={{ display: 'flex', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap' }}>
-                واسطه گر:
-                <Typography variant="body1">
-                  {toPersianDigits(' ' + currentCartDetails.broker)}
-                </Typography>
-              </Typography>
-            </>
-          )}
-
-        </Box> */}
         <Box
           sx={{
             display: 'flex',
@@ -798,8 +806,11 @@ export function Cart({ setOpenCart, openCart }: CartProps,) {
         onClose={handleMoveItemModalToggle}
         items={rawItems}
         onUpdate={(updatedItems) => {
-
           setRawItems(updatedItems);
+          // Clear selections after move
+          clearSelectedItems();
+          // Refine shipments (remove empty ones)
+          refineShipments(updatedItems);
           showSnackbar('آیتم‌ها منتقل شدند', 'success', 3000, <DoneAllRoundedIcon />);
         }}
       />
