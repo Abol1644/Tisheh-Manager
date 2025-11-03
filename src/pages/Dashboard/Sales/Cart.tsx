@@ -26,7 +26,6 @@ import DoneAllIcon from '@mui/icons-material/DoneAll';
 import DoneAllRoundedIcon from '@mui/icons-material/DoneAllRounded';
 import ErrorOutlineRoundedIcon from '@mui/icons-material/ErrorOutlineRounded';
 import InfoRoundedIcon from '@mui/icons-material/InfoRounded';
-import ErrorRoundedIcon from '@mui/icons-material/ErrorRounded';
 
 import usePersianNumbers from '@/hooks/usePersianNumbers';
 import NumberField from '@/components/elements/NumberField';
