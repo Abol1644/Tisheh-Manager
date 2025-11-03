@@ -26,6 +26,7 @@ import DoneAllIcon from '@mui/icons-material/DoneAll';
 import DoneAllRoundedIcon from '@mui/icons-material/DoneAllRounded';
 import ErrorOutlineRoundedIcon from '@mui/icons-material/ErrorOutlineRounded';
 import InfoRoundedIcon from '@mui/icons-material/InfoRounded';
+import ErrorRoundedIcon from '@mui/icons-material/ErrorRounded';
 
 import usePersianNumbers from '@/hooks/usePersianNumbers';
 import NumberField from '@/components/elements/NumberField';
@@ -60,33 +61,9 @@ const deliverySources = [
 
 const deliverySourceLabels = deliverySources.map(a => a.method);
 
-const createDefaultRow = () => ({
-  id: 9999,
-  shipmentId: null,
-  productServiceName: 'اطلاعات اضافی',
-  quantity: 0,
-  unit: '',
-  pricePerUnite: 0,
-  price: 0,
-  offPrice: null,
-  isDefaultRow: true
-});
-
-interface CartItemRow {
-  id: number;
-  shipmentId: number | null;
-  productServiceName: string;
-  quantity: number;
-  unit: string;
-  price: number;
-  offPrice: number | null;
-  originalItem?: ItemResaultPrice;
-  isDefaultRow?: boolean;
-}
-
 export function Cart({ setOpenCart, openCart }: CartProps,) {
   const [projects, setProjects] = React.useState<string[]>([]);
-  const [selectedProject, setSelectedProjectState] = React.useState<{ title: string; id: number } | null>(null);
+  const [selectedProjectState, setSelectedProjectState] = React.useState<{ title: string; id: number } | null>(null);
   const [projectTitles, setProjectTitles] = React.useState<{ title: string; id: number }[]>([]);
   const [deliveryMethod, setDeliveryMethod] = React.useState<string[]>([]);
   const [deliveryTime, setDeliveryTime] = React.useState<string[]>([]);
@@ -99,16 +76,14 @@ export function Cart({ setOpenCart, openCart }: CartProps,) {
   const [warehouseLoading, setWarehouseLoading] = React.useState(false)
   const [deliveryMethodBot, setDeliveryMethodBot] = React.useState<string | null>('left');
   const [rawItems, setRawItems] = useState<ItemResaultPrice[]>([]);
-  const [loadingItems, setLoadingItems] = useState(false);
   const [Warehouse, setWarehouse] = useState<Warehouse[]>([]);
   const [isFetchingDistance, setIsFetchingDistance] = useState(false);
   const [services, setServices] = useState(0);
 
   const isBranchDelivery = useBranchDeliveryStore((s) => s.isBranchDelivery);
   const setIsBranchDelivery = useBranchDeliveryStore((s) => s.setIsBranchDelivery);
-  const [isTransit, setIsTransit] = useState(false);
 
-  const { setSelectedProject, connectedProjects, setConnectedProjects } = useProjectStore();
+  const { selectedProject, setSelectedProject, connectedProjects } = useProjectStore();
   const { selectedAccount } = useAccountStore();
   const { showSnackbar, closeSnackbarById } = useSnackbar();
   const { distance, fetchDistance } = useDistanceStore();
@@ -117,150 +92,55 @@ export function Cart({ setOpenCart, openCart }: CartProps,) {
     products: cartProducts,
     isFetchingItems,
     isSelectingProject,
-    isSelectingTransit,
     isFindingWarehouse,
-    setIsFetchingItems,
-    setIsSelectingProject,
-    setIsSelectingTransit,
-    setIsFindingWarehouse,
-    currentCartDetails,
     selectedCartWarehouse,
     setSelectedCartWarehouse,
     isCartOpen,
     cartShipments,
+    removeShipment,
+    addShipment,
     selectedItemKeys,
-    toggleSelectedItem
+    toggleSelectedItem,
+    currentCartDetails
   } = useControlCart()
 
   const primaryDistance = useMemo(() => distance.find((d) => d.warehouseId > 0)?.warehouseId || null, [distance]);
 
-  useEffect(() => {
-    if (cartProducts.length === 0) {
-      setRawItems([]);
-      return;
-    }
-
-    // If items don't have tempShipmentId, assign them to first shipment
-    const hasAnyAssigned = cartProducts.some(p => p.tempShipmentId !== undefined && p.tempShipmentId !== null);
-    const firstShipmentId = cartShipments[0]?.id || null;
-
-    const mapped = hasAnyAssigned
-      ? cartProducts
-      : cartProducts.map(item => ({
-        ...item,
-        tempShipmentId: firstShipmentId
-      }));
-
-    setRawItems(mapped);
-  }, [cartProducts, cartShipments]);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      setIsFetchingDistance(true);
-      try {
-        const loadingSnackbarId = showSnackbar('درحال پردازش نزدیکترین انبار', 'info', 0, <InfoRoundedIcon />);
-        await fetchDistance();
-        closeSnackbarById(loadingSnackbarId);
-      } catch (error: any) {
-        setSelectedCartWarehouse(null);
-        let errorMessage = 'خطا در دریافت فاصله';
-        if (error.response?.data) {
-          errorMessage = error.response.data;
-        } else if (error.message) {
-          errorMessage = error.message;
-        }
-        console.error("API error fetching distance:", error);
-        showSnackbar(errorMessage, 'error', 5000, <ErrorOutlineRoundedIcon />);
-      } finally {
-        setIsFetchingDistance(false);
-        showSnackbar('انبار پردازش شد', 'success', 4000, <DoneAllRoundedIcon />);
-      }
-    };
-    if (!isBranchDelivery && isCartOpen) {
-      fetchData();
-    }
-  }, [isBranchDelivery, selectedProject]);
-
-  useEffect(() => {
-    if (!isCartOpen || isBranchDelivery || !primaryDistance || Warehouse.length === 0) {
-      return;
-    }
-
-    const matchedWarehouse = Warehouse.find(wh => wh.id === primaryDistance) || null;
-
-    if (!matchedWarehouse) {
+  const fetchDistanceData = async () => {
+    setIsFetchingDistance(true);
+    try {
+      const loadingSnackbarId = showSnackbar('درحال پردازش نزدیکترین انبار', 'info', 0, <InfoRoundedIcon />);
+      await fetchDistance();
+      closeSnackbarById(loadingSnackbarId);
+    } catch (error: any) {
       setSelectedCartWarehouse(null);
-      return;
-    }
-
-    setSelectedCartWarehouse(matchedWarehouse);
-
-    // 🔁 Clean up shipments & reassign items
-    const { cartShipments, removeShipment, addShipment } = useControlCart.getState();
-
-    // Remove all existing shipments
-    cartShipments.forEach(s => removeShipment(s.id));
-
-    // Create one new shipment for this warehouse
-    const newShipmentId = addShipment({
-      warehouseId: matchedWarehouse.id,
-      deliveryMethod: null,
-      deliveryDate: null,
-    });
-
-    // Reassign all items to this shipment
-    const updatedItems = rawItems.map(item => ({
-      ...item,
-      tempShipmentId: newShipmentId
-    }));
-
-    setRawItems(updatedItems);
-
-    // Optionally update global cart details
-    useControlCart.setState(state => ({
-      currentCartDetails: state.currentCartDetails
-        ? { ...state.currentCartDetails, warehouseId: matchedWarehouse.id }
-        : null
-    }));
-  }, [isCartOpen, isBranchDelivery, primaryDistance, Warehouse, isFetchingDistance]);
-
-  const rows = React.useMemo((): CartItemRow[] => {
-    if (!selectedCartWarehouse) {
-      return [];
-    }
-
-    const filtered = rawItems.filter(
-      item => {
-        console.log("🚀 ~ Cart ~ selectedCartWarehouse:", selectedCartWarehouse)
-        return item.warehouseId === selectedCartWarehouse.id;
+      let errorMessage = 'خطا در دریافت فاصله';
+      if (error.response?.data) {
+        errorMessage = error.response.data;
+      } else if (error.message) {
+        errorMessage = error.message;
       }
-    );
+      console.error("API error fetching distance:", error);
+      showSnackbar(errorMessage, 'error', 5000, <ErrorOutlineRoundedIcon />);
+    } finally {
+      setIsFetchingDistance(false);
+      showSnackbar('انبار پردازش شد', 'success', 4000, <DoneAllRoundedIcon />);
+    }
+  };
 
-    const mappedRows = filtered.map((item): CartItemRow => ({
-      id: item.ididentity, // ← Safe React key
-      shipmentId: item.tempShipmentId ?? 1,
-      productServiceName: `${item.title} ${item.attributeGroupTitle}`.trim(),
-      quantity: item.value ?? 1,
-      unit: item.valueTitleBase || item.valueTitle || 'عدد',
-      price: item.priceWarehouse,
-      offPrice: item.discountPriceWarehouse > 0 ? item.discountPriceWarehouse : null,
-      originalItem: item,
-    }));
-
-    return [...mappedRows, createDefaultRow()];
-
-  }, [rawItems, selectedCartWarehouse]);
+  const checkProjectGeolocation = async () => {
+    if (selectedProject) {
+      if (selectedProject.latitude === 0 || selectedProject.longitude === 0) {
+        return false;
+      } else {
+        return true;
+      }
+    }
+  };
 
   const totalInvoice = useMemo(() => {
-    if (isBranchDelivery || !selectedCartWarehouse) return 0;
-
-    return rows
-      .filter(row => !row.isDefaultRow)
-      .reduce((sum, row) => {
-        const effectivePrice = row.offPrice ?? row.price;
-        return sum + effectivePrice * row.quantity;
-      }, 0);
-  }, [rows, isBranchDelivery, selectedCartWarehouse]);
+    return 100000;
+  }, []);
 
   const handleMoveItemModalToggle = () => {
     setMoveItemModal(prev => !prev)
@@ -288,23 +168,24 @@ export function Cart({ setOpenCart, openCart }: CartProps,) {
     const newQty = parseFloat(newQuantityStr) || 0;
   }, []);
 
-  const handleBranchDeliveryChange = useCallback(
-    (event: React.SyntheticEvent, checked: boolean) => {
-      // Update Zustand store: both UI flag and cart detail
-      setIsBranchDelivery(checked);
+  const setBranchMode = useCallback((isBranch: boolean) => {
+    setIsBranchDelivery(isBranch);
+    useControlCart.setState(state => ({
+      currentCartDetails: state.currentCartDetails
+        ? { ...state.currentCartDetails, branchCenterDelivery: isBranch }
+        : null
+    }));
+  }, []);
 
-      useControlCart.setState((state) => ({
-        currentCartDetails: state.currentCartDetails
-          ? { ...state.currentCartDetails, branchCenterDelivery: checked }
-          : null
-      }));
+  const onProjectSwitch = useCallback((_e: React.SyntheticEvent, checked: boolean) => {
 
-      if (!isBranchDelivery) {
-        setWarehouseLoading(true);
-      }
-    },
-    [isBranchDelivery]
-  );
+    setBranchMode(!checked);
+  }, [setBranchMode]);
+
+  const onBranchSwitch = useCallback((_e: React.SyntheticEvent, checked: boolean) => {
+    setBranchMode(checked);
+  }, [setBranchMode]);
+
 
   const handledeliveryMethodBot = (
     event: React.MouseEvent<HTMLElement>,
@@ -317,7 +198,7 @@ export function Cart({ setOpenCart, openCart }: CartProps,) {
     (newValue: Warehouse | null) => {
       setSelectedCartWarehouse(newValue);
 
-      // Sync with currentCartDetails
+
       if (newValue) {
         useControlCart.setState(state => ({
           currentCartDetails: state.currentCartDetails
@@ -332,20 +213,14 @@ export function Cart({ setOpenCart, openCart }: CartProps,) {
   const handleDeliverySourceChange = useCallback(
     (newSource: string | null) => {
       if (!newSource) return;
-
       const isTransit = newSource === 'مستقیم از کارخانه';
-
-      // Update local state
       setDeliverySource(newSource);
-
-      // Update currentCartDetails.transit
       useControlCart.setState(state => ({
         currentCartDetails: state.currentCartDetails
           ? { ...state.currentCartDetails, transit: isTransit }
           : null
       }));
 
-      // Optional: Auto-set warehouseId from primaryDistance if available
       if (!isTransit && primaryDistance) {
         const matchedWh = Warehouse.find(wh => wh.id === primaryDistance);
         if (matchedWh) {
@@ -358,13 +233,65 @@ export function Cart({ setOpenCart, openCart }: CartProps,) {
         }
       }
     },
-    [primaryDistance, Warehouse]
+    [primaryDistance, JSON.stringify(Warehouse.map(w => w.id))]
   );
 
   const handleCloseCart = () => {
     cartClose();
     console.log("Cart closed", openCart);
   };
+
+  useEffect(() => {
+    if (cartProducts.length === 0) {
+      setRawItems([]);
+      return;
+    }
+    const hasAnyAssigned = cartProducts.some(p => p.tempShipmentId !== undefined && p.tempShipmentId !== null);
+    const firstShipmentId = cartShipments[0]?.id || null;
+    const mapped = hasAnyAssigned
+      ? cartProducts
+      : cartProducts.map(item => ({
+        ...item,
+        tempShipmentId: firstShipmentId
+      }));
+    setRawItems(mapped);
+  }, [cartProducts, cartShipments]);
+
+  useEffect(() => {
+    if (!isCartOpen || isBranchDelivery || !primaryDistance || Warehouse.length === 0) {
+      return;
+    }
+
+    const matchedWarehouse = Warehouse.find(wh => wh.id === primaryDistance) || null;
+
+    if (!matchedWarehouse) {
+      setSelectedCartWarehouse(null);
+      return;
+    }
+
+    setSelectedCartWarehouse(matchedWarehouse);
+
+    cartShipments.forEach(s => removeShipment(s.id));
+
+    const newShipmentId = addShipment({
+      warehouseId: matchedWarehouse.id,
+      deliveryMethod: null,
+      deliveryDate: null,
+    });
+
+    const updatedItems = rawItems.map(item => ({
+      ...item,
+      tempShipmentId: newShipmentId
+    }));
+
+    setRawItems(updatedItems);
+
+    useControlCart.setState(state => ({
+      currentCartDetails: state.currentCartDetails
+        ? { ...state.currentCartDetails, warehouseId: matchedWarehouse.id }
+        : null
+    }));
+  }, [isCartOpen, isBranchDelivery, primaryDistance, Warehouse, isFetchingDistance]);
 
   useEffect(() => {
     if (selectedAccount && connectedProjects.length > 0) {
@@ -375,7 +302,27 @@ export function Cart({ setOpenCart, openCart }: CartProps,) {
       setProjectTitles(combinedProjects);
     }
 
-    // Only fetch warehouses if not in branch delivery AND not already loaded
+    if (selectedProject && projectTitles.length > 0) {
+      const matchedProject = projectTitles.find(pt => pt.id === selectedProject.id);
+      if (matchedProject && !selectedProjectState) {
+        setSelectedProjectState(matchedProject);
+      }
+    }
+  }, [
+    selectedAccount,
+    connectedProjects,
+    isBranchDelivery,
+    Warehouse.length,
+    projectTitles,
+    selectedProjectState
+  ]);
+
+  useEffect(() => {
+    if (!currentCartDetails) return;
+    const branchCenterDelivery = currentCartDetails.branchCenterDelivery;
+    console.log('🔄 Setting isBranchDelivery from currentCartDetails:', branchCenterDelivery);
+    setIsBranchDelivery(branchCenterDelivery);
+
     if (!isBranchDelivery && Warehouse.length === 0) {
       setWarehouseLoading(true);
       getWarehouses()
@@ -386,42 +333,41 @@ export function Cart({ setOpenCart, openCart }: CartProps,) {
           setWarehouseLoading(false);
         });
     }
-  }, [selectedAccount, connectedProjects, isBranchDelivery, Warehouse.length]); // ← add Warehouse.length to deps
+  }, [currentCartDetails]);
 
-  // Sync selectedProject from global store to local state on mount or update
+
   useEffect(() => {
-    const { selectedProject: globalSelectedProject } = useProjectStore.getState();
+    if (!currentCartDetails || !connectedProjects.length || !selectedAccount) return;
+    if (!isBranchDelivery && Warehouse.length === 0) return;
 
-    if (globalSelectedProject && projectTitles.length > 0) {
-      const matchedProject = projectTitles.find(pt => pt.id === globalSelectedProject.id);
-      if (matchedProject && !selectedProject) {
-        setSelectedProjectState(matchedProject);
-        // Optionally also call setSelectedProject if needed for side effects in the store
-        // But avoid infinite loops — only if necessary
+    const { projectIdCustomer, transit, warehouseId } = currentCartDetails;
+
+    const matchedProject = connectedProjects.find(p => p.id === projectIdCustomer);
+    if (matchedProject) {
+      const projectOption = {
+        title: `${selectedAccount.title} - ${matchedProject.title}`,
+        id: matchedProject.id,
+      };
+      setSelectedProject(matchedProject);
+      setSelectedProjectState(projectOption);
+    }
+
+    const deliverySourceLabel = transit ? 'مستقیم از کارخانه' : 'از انبار';
+    setDeliverySource(deliverySourceLabel);
+
+    if (!transit && warehouseId) {
+      const matchedWh = Warehouse.find(wh => wh.id === warehouseId);
+      if (matchedWh) {
+        setSelectedCartWarehouse(matchedWh);
       }
     }
-    // If there's no global selection, you might want to reset or keep current
-  }, [projectTitles, selectedProject]);
-
-  useEffect(() => {
-    // If cart is open, has items, but no shipments → create one
-    if (
-      isCartOpen &&
-      cartProducts.length > 0 &&
-      cartShipments.length === 0
-    ) {
-      // Use selected warehouse or primary distance as fallback
-      const defaultWhId = selectedCartWarehouse?.id || primaryDistance || null;
-
-      useControlCart.getState().addShipment({
-        warehouseId: defaultWhId,
-        deliveryMethod: null,
-        deliveryDate: null,
-      });
-
-      console.log('✅ Created default shipment for items');
-    }
-  }, [isCartOpen, cartProducts.length, cartShipments.length, selectedCartWarehouse, primaryDistance]);
+  }, [
+    currentCartDetails,
+    isBranchDelivery,
+    connectedProjects,
+    selectedAccount,
+    Warehouse
+  ]);
 
 
   return (
@@ -445,10 +391,22 @@ export function Cart({ setOpenCart, openCart }: CartProps,) {
       >
         <Box sx={{ ...flex.columnStart, }} >
           <Box sx={{ ...flex.rowStart }}>
-            <FormControlLabel checked={!isBranchDelivery} onChange={handleBranchDeliveryChange} control={<Switch size='small' defaultChecked color='info' />} label="ارسال به پروژه" sx={{ whiteSpace: 'nowrap' }} />
+            <FormControlLabel
+              checked={!isBranchDelivery}
+              onChange={onProjectSwitch}
+              control={<Switch size="small" color="info" />}
+              label="ارسال به پروژه"
+              sx={{ whiteSpace: 'nowrap' }}
+            />
           </Box>
           <Box sx={{ ...flex.rowStart }}>
-            <FormControlLabel checked={isBranchDelivery} onChange={handleBranchDeliveryChange} control={<Switch size='small' color='info' />} label="تحویل درب انبار" sx={{ whiteSpace: 'nowrap' }} />
+            <FormControlLabel
+              checked={isBranchDelivery}
+              onChange={onBranchSwitch}
+              control={<Switch size="small" color="info" />}
+              label="تحویل درب انبار"
+              sx={{ whiteSpace: 'nowrap' }}
+            />
           </Box>
         </Box>
         <Grow in={!isBranchDelivery} timeout={450}>
@@ -461,7 +419,7 @@ export function Cart({ setOpenCart, openCart }: CartProps,) {
             }}
           >
             <Combo
-              value={selectedProject}
+              value={selectedProjectState}
               onChange={(newValue) => {
                 setSelectedProjectState(newValue);
                 setSelectedProject(newValue);
@@ -723,7 +681,7 @@ export function Cart({ setOpenCart, openCart }: CartProps,) {
                       );
                     }),
 
-                    // Shipment Options Row (one per shipment)
+
                     <TableRow
                       key={`options-${shipment.id}`}
                       sx={{
@@ -749,7 +707,7 @@ export function Cart({ setOpenCart, openCart }: CartProps,) {
                         <Combo
                           value={deliveryMethod}
                           onChange={setDeliveryMethod}
-                          options={[]} // Populate later as needed
+                          options={[]}
                           label="شیوه تحویل"
                         />
                       </TableCell>
@@ -757,7 +715,7 @@ export function Cart({ setOpenCart, openCart }: CartProps,) {
                         <Combo
                           value={deliveryTime}
                           onChange={setDeliveryTime}
-                          options={[]} // Populate later
+                          options={[]}
                           label="زمان تحویل"
                         />
                       </TableCell>
@@ -841,7 +799,7 @@ export function Cart({ setOpenCart, openCart }: CartProps,) {
         onClose={handleMoveItemModalToggle}
         items={rawItems}
         onUpdate={(updatedItems) => {
-          // Update rawItems → triggers re-render of rows
+
           setRawItems(updatedItems);
           showSnackbar('آیتم‌ها منتقل شدند', 'success', 3000, <DoneAllRoundedIcon />);
         }}
