@@ -101,7 +101,7 @@ export const addCart = async (
   account: Account| null,
   project: Project| null,
   branchCenterDelivery: boolean | null,
-  vehicleId: string
+  vehicleId: string | undefined
 ): Promise<Cart> => {
   try {
     const response = await apiClient.post<Cart>(`/Cart/Add`, {

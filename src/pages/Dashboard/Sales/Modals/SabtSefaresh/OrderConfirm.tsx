@@ -85,13 +85,13 @@ export default function OrderConfirm({ selectedTransport, setSelectedTransport }
   React.useEffect(() => {
     if (selectedTransport && selectedItem) {
       const numericWeight = selectedTransport.capacity * (selectedItem.unitRatio || 1);
-      setNumberOfProduct(numericWeight); 
+      setNumberOfProduct(numericWeight);
       console.log("🚀 ~ OrderConfirm ~ numericWeight:", numericWeight)
     }
   }, [selectedTransport, selectedItem]);
 
   React.useEffect(() => {
-      console.log("🧮 ~ OrderConfirm ~ numericWeight:", numberOfProduct)
+    console.log("🧮 ~ OrderConfirm ~ numericWeight:", numberOfProduct)
   }, [numberOfProduct]);
 
 
@@ -713,7 +713,7 @@ function Prices({
 interface OrderInputProps {
   maxInventory?: number;
   selectedUnit: ItemResaultPrice | null;
-  onUnitChange: (e: SelectChangeEvent<string>) => void;  
+  onUnitChange: (e: SelectChangeEvent<string>) => void;
   availableUnits: ItemResaultPrice[];
   numberOfProduct: number;
   setNumberOfProduct: (value: number) => void;
@@ -737,7 +737,7 @@ const OrderInput: React.FC<OrderInputProps> = ({
   React.useEffect(() => {
     if (selectedTransport && selectedItem) {
       const numericWeight = selectedTransport.capacity * (selectedItem.unitRatio || 1);
-      setNumberOfProduct(numericWeight); 
+      setNumberOfProduct(numericWeight);
       console.log("🚀 ~ OrderConfirm ~ numericWeight:", numericWeight)
     }
   }, [selectedTransport, selectedItem]);
@@ -754,12 +754,12 @@ const OrderInput: React.FC<OrderInputProps> = ({
       {/* Controlled NumberField component */}
       <NumberField
         label="تعداد"
-        value={numberOfProduct} 
-        onChange={setNumberOfProduct} 
+        value={numberOfProduct}
+        onChange={setNumberOfProduct}
         decimal={true}
         step={1}
         min={0}
-        max={maxInventory} 
+        max={maxInventory}
       />
 
       {/* Unit selection dropdown */}
@@ -861,7 +861,16 @@ function CartSelection({ selectedTransport, selectedItem, selectedUnit, numberOf
 
   const createCart = async () => {
     try {
-      const response = await addCart(selectedItem, selectedAccount, selectedProject, isBranchDelivery, '0');
+      const numericWeight = selectedTransport
+        ? selectedTransport.capacity * (selectedItem?.unitRatio || 1)
+        : 0;
+      let vehicleId;
+      if (numberOfProduct === numericWeight) {
+        vehicleId = selectedTransport?.vehicleId.toString();
+      } else {
+        vehicleId = '0';
+      }
+      const response = await addCart(selectedItem, selectedAccount, selectedProject, isBranchDelivery, vehicleId);
       console.log("🐱‍👤 ~ createCart ~ response.id:", response.id);
       showSnackbar('سبد جدید ایجاد شد', 'success');
       return response.id;
