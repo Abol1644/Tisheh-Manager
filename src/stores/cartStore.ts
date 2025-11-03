@@ -20,7 +20,7 @@ interface ToggleState {
   selectedCartWarehouse: Warehouse | null;
   currentCartDetails: CartDetails | null;
   cartShipments: CartShipment[];
-  selectedItemKeys: Set<number>;
+  selectedItemKeys: Set<string>; // ✅ CHANGED: Now uses string keys
 
   // Actions
   toggleCart: () => void;
@@ -34,7 +34,7 @@ interface ToggleState {
   setIsSelectingTransit: (selecting: boolean) => void;
   setIsFindingWarehouse: (finding: boolean) => void;
   setSelectedCartWarehouse: (warehouse: Warehouse | null) => void;
-  setSelectedItemKeys: (keys: Set<number>) => void;
+  setSelectedItemKeys: (keys: Set<string>) => void;
   toggleSelectedItem: (item: ItemResaultPrice) => void;
   clearSelectedItems: () => void;
 
@@ -60,7 +60,7 @@ export const useControlCart = create<ToggleState>((set, get) => {
     isFindingWarehouse: false,
     selectedCartWarehouse: null,
     cartShipments: [],
-    selectedItemKeys: new Set(), // ← Initialize here
+    selectedItemKeys: new Set<string>(), // ✅ Explicitly typed as Set<string>
 
     // Actions
     toggleCart: () => set((state) => ({ isCartOpen: !state.isCartOpen })),
@@ -69,7 +69,7 @@ export const useControlCart = create<ToggleState>((set, get) => {
 
     setOpenCart: (cart) => set({ cartList: cart }),
 
-    setCartProducts: (products) => set({ products }), // Pure – no mapping!
+    setCartProducts: (products) => set({ products }),
 
     setCurrentCartDetails: (details) => set({ currentCartDetails: details }),
 
@@ -78,26 +78,35 @@ export const useControlCart = create<ToggleState>((set, get) => {
     setIsSelectingTransit: (selecting) => set({ isSelectingTransit: selecting }),
     setIsFindingWarehouse: (finding) => set({ isFindingWarehouse: finding }),
     setSelectedCartWarehouse: (warehouse) => set({ selectedCartWarehouse: warehouse }),
-    setSelectedItemKeys: (keys: Set<number>) => set({ selectedItemKeys: new Set(keys) }),
+    setSelectedItemKeys: (keys: Set<string>) => set({ selectedItemKeys: new Set(keys) }),
 
     toggleSelectedItem: (item: ItemResaultPrice) => {
-      const key = item.ididentity + item.warehouseId;
+      // ✅ Generate consistent string key: "ididentity-warehouseId"
+      const key = `${item.ididentity}-${item.warehouseId}`;
+      console.log('🔄 Toggling item:', key, 'Current selected:', Array.from(get().selectedItemKeys));
+      
       set((state) => {
         const newSet = new Set(state.selectedItemKeys);
         if (newSet.has(key)) {
           newSet.delete(key);
+          console.log('❌ Removed:', key);
         } else {
           newSet.add(key);
+          console.log('✅ Added:', key);
         }
         return { selectedItemKeys: newSet };
       });
     },
 
-    clearSelectedItems: () => set({ selectedItemKeys: new Set() }),
+    clearSelectedItems: () => {
+      console.log('🗑️ Clearing all selected items');
+      set({ selectedItemKeys: new Set<string>() });
+    },
 
     // Shipment Management
     addShipment: (shipment) => {
       const id = nextId++;
+      console.log('➕ Adding shipment:', id);
       set((state) => ({
         cartShipments: [...state.cartShipments, { id, ...shipment }],
       }));
@@ -105,6 +114,7 @@ export const useControlCart = create<ToggleState>((set, get) => {
     },
 
     removeShipment: (id) => {
+      console.log('🗑️ Removing shipment:', id);
       set((state) => ({
         cartShipments: state.cartShipments.filter((s) => s.id !== id),
         products: state.products.map((p) =>
@@ -114,6 +124,7 @@ export const useControlCart = create<ToggleState>((set, get) => {
     },
 
     updateShipment: (id, updates) => {
+      console.log('📝 Updating shipment:', id, updates);
       set((state) => ({
         cartShipments: state.cartShipments.map((s) =>
           s.id === id ? { ...s, ...updates } : s

@@ -39,7 +39,7 @@ export const getConnectedProject = async (
     const response = await apiClient.get<Project[]>(
       `Projects/GetAll?CodeAccConnect=${id}&BranchCenterDelivery=${BranchCenterDelivery}`
     );
-    // console.error("Get Projects API : ", response.data);
+    console.warn("Get getConnectedProject API : ", response.data);
     return response.data;
   } catch (error: any) {
     console.error("Get Projects API error: ", error);

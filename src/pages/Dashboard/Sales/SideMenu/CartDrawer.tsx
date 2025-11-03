@@ -177,69 +177,50 @@ export function CartDrawer({ onDrawerToggle, value }: { onDrawerToggle: () => vo
   }
 
   const sendCartId = (cart: ListCart) => {
+    const controlCart = useControlCart.getState();
+
+    // ===== FULL RESET FIRST =====
+    controlCart.setCartProducts([]);
+    controlCart.clearSelectedItems();
+    controlCart.cartShipments.forEach(s => controlCart.removeShipment(s.id));
+    controlCart.setCurrentCartDetails(null); // ← Triggers useEffect in Cart
+
+    // Reset other stores
+    setSelectedAccount(null);
+    setSelectedProject(null);
+    setConnectedProjects([]);
+    setSelectedCartWarehouse(null);
+    setIsBranchDelivery(false);
+
+    // ===== THEN FETCH NEW DATA =====
     findAccount(cart.codeAccCustomer)
-      .then((account) => {
+      .then(account => {
         setSelectedAccount(account);
-
-        const tryGetConnectedProject = (retryCount = 0) => {
-          const acc = selectedAccount || account;
-          if (acc) {
-            getConnectedProject(isBranchDelivery, acc.codeAcc)
-              .then((data) => {
-                setConnectedProjects(data);
-                setIsSelectingProject(true);
-                onDrawerToggle();
-                const matchedProject = data.find(project => project.id === cart.projectIdCustomer);
-
-                if (matchedProject) {
-                  // 🎯 Set the selected project in the store
-                  setSelectedProject(matchedProject);
-                  setIsSelectingProject(false);
-                } else {
-                  // Optional: reset if no match
-                  setSelectedProject(null);
-                }
-                setIsSelectingProject(false);
-              });
-          } else if (retryCount < 3) {
-            setTimeout(() => tryGetConnectedProject(retryCount + 1), 100);
-          }
-        };
-
-        tryGetConnectedProject();
-      });
-
-    cartOpen();
-
-    // Fetch items
-    getListOfCartItems(cart)
-      .then((data: ItemResaultPrice[]) => {
-        setCartProducts(data);
+        return getConnectedProject(cart.branchCenterDelivery, account.codeAcc);
       })
-      .catch((error) => {
-        console.error('Error fetching cart items:', error);
-      });
+      .then(projects => {
+        setConnectedProjects(projects);
+        const matchedProject = projects.find(p => p.id === cart.projectIdCustomer);
+        if (matchedProject) setSelectedProject(matchedProject);
+      })
+      .catch(console.error);
 
-    // 👇 Fetch cart details
+    // Fetch cart details (this will trigger the useEffect in Cart)
     getCart(cart.id)
       .then((details: CartDetails) => {
-        console.log("🎁 ~ sendCartId ~ details:", details)
-        // Use the action we just added
-        useControlCart.getState().setCurrentCartDetails(details);
-        if (details.branchCenterDelivery) {
-          setIsBranchDelivery(true);
-          findWarehouse(details.warehouseId)
-            .then((warehouse) => {
-              setSelectedCartWarehouse(warehouse);
-            })
-        } else {
-          setIsBranchDelivery(false);
+        controlCart.setCurrentCartDetails(details); // ← This triggers Cart's useEffect
+        if (details.branchCenterDelivery && details.warehouseId) {
+          return findWarehouse(details.warehouseId).then(setSelectedCartWarehouse);
         }
       })
-      .catch((error) => {
-        console.error('Failed to load cart details:', error);
-      });
-    getCartItems(cart)
+      .catch(console.error);
+
+    // Re-fetch items
+    getCartItems(cart);
+
+    // Open UI
+    cartOpen();
+    onDrawerToggle();
   };
 
   const getCartItems = (cart: ListCart) => {
@@ -327,7 +308,7 @@ export function CartDrawer({ onDrawerToggle, value }: { onDrawerToggle: () => vo
                   <List dense>
                     {items.map((item) => {
                       const accountTitle = item.codeAccCustomerTitle ? item.codeAccCustomerTitle : 'نامشخص';
-                      const projectTitle = item.projectIdCustomerTitle ? item.branchCenterDelivery ? 'تحویل درب انبار' :<p><strong>پروژه</strong> {item.projectIdCustomerTitle}</p> : item.branchCenterDelivery ? 'تحویل درب انبار' : 'بدون پروژه';
+                      const projectTitle = item.projectIdCustomerTitle ? item.branchCenterDelivery ? 'تحویل درب انبار' : <p><strong>پروژه</strong> {item.projectIdCustomerTitle}</p> : item.branchCenterDelivery ? 'تحویل درب انبار' : 'بدون پروژه';
                       return (
                         <ListItem
                           key={item.id}
