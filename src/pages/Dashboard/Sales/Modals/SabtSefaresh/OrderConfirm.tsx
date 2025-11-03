@@ -85,7 +85,7 @@ export default function OrderConfirm({ selectedTransport, setSelectedTransport }
   React.useEffect(() => {
     if (selectedTransport && selectedItem) {
       const numericWeight = selectedTransport.capacity * (selectedItem.unitRatio || 1);
-      setNumberOfProduct(numericWeight); // Keep it as a number for input/state
+      setNumberOfProduct(numericWeight); 
       console.log("🚀 ~ OrderConfirm ~ numericWeight:", numericWeight)
     }
   }, [selectedTransport, selectedItem]);
@@ -713,7 +713,7 @@ function Prices({
 interface OrderInputProps {
   maxInventory?: number;
   selectedUnit: ItemResaultPrice | null;
-  onUnitChange: (e: SelectChangeEvent<string>) => void;  // Use SelectChangeEvent type
+  onUnitChange: (e: SelectChangeEvent<string>) => void;  
   availableUnits: ItemResaultPrice[];
   numberOfProduct: number;
   setNumberOfProduct: (value: number) => void;
@@ -737,7 +737,7 @@ const OrderInput: React.FC<OrderInputProps> = ({
   React.useEffect(() => {
     if (selectedTransport && selectedItem) {
       const numericWeight = selectedTransport.capacity * (selectedItem.unitRatio || 1);
-      setNumberOfProduct(numericWeight); // Keep it as a number for input/state
+      setNumberOfProduct(numericWeight); 
       console.log("🚀 ~ OrderConfirm ~ numericWeight:", numericWeight)
     }
   }, [selectedTransport, selectedItem]);
@@ -754,12 +754,12 @@ const OrderInput: React.FC<OrderInputProps> = ({
       {/* Controlled NumberField component */}
       <NumberField
         label="تعداد"
-        value={numberOfProduct} // Passing the numberOfProduct as value to make it controlled
-        onChange={setNumberOfProduct} // Using the setNumberOfProduct function to update the state
+        value={numberOfProduct} 
+        onChange={setNumberOfProduct} 
         decimal={true}
         step={1}
         min={0}
-        max={maxInventory} // You can pass maxInventory to limit the value
+        max={maxInventory} 
       />
 
       {/* Unit selection dropdown */}
