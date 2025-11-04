@@ -756,8 +756,8 @@ const OrderInput: React.FC<OrderInputProps> = ({
         label="تعداد"
         value={numberOfProduct}
         onChange={setNumberOfProduct}
-        decimal={true}
-        step={1}
+        decimal={selectedTransport?.decimalCapacity}
+        step={selectedTransport?.decimalCapacity ? 0.1 : 1}
         min={0}
         max={maxInventory}
       />

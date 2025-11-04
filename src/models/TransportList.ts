@@ -85,6 +85,7 @@ export interface TransportList {
     limitOfHoursVehiclesCost: string | null;
     limitToHoursVehiclesCost: string | null;
     geofencesIdVehiclesCost: number;
+    decimalCapacity: boolean;
   }[];
 }
 

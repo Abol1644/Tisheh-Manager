@@ -1,0 +1,84 @@
+.number-field {
+  position: relative;
+  font-family: sans-serif;
+  width: 100%;
+}
+
+.number-field-label {
+  position: absolute;
+  font-size: 12px;
+  color: var(--text-primary);
+  display: block;
+  padding: 0 5px;
+  top: -9px;
+  right: 10px;
+  background-color: var(--background-paper);
+  transition: color 0.2s ease;
+}
+
+.number-field-input-wrapper {
+  height: 48px;
+  display: flex;
+  border: 1px solid var(--border-main);
+  border-radius: 14px;
+  overflow: hidden;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 8px 0 12px;
+  transition: border-color 0.2s ease;
+}
+
+.number-field-input-wrapper:hover {
+  border-color: var(--primary-main);
+}
+
+.number-field.focused .number-field-input-wrapper {
+  border-color: var(--primary-main);
+}
+
+.number-field.focused .number-field-label {
+    color: var(--primary-main);
+}
+
+.number-field-input {
+  flex: 1;
+  height: 100%;
+  border: none;
+  outline: none;
+  font-size: 1rem;
+  text-align: left;
+  background: transparent;
+  color: var(--text-primary);
+}
+
+.number-field-input::placeholder {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.number-field-buttons {
+  display: flex;
+  gap: 2px;
+}
+
+.number-field button {
+  appearance: none;
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary-main);
+  opacity: 0.8;
+}
+
+.number-field button:hover {
+  opacity: 1;
+}
+
+.number-field button:active {
+  transform: scale(0.95);
+}

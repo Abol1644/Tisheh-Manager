@@ -1,191 +1,148 @@
-import React, { useState, ChangeEvent } from 'react';
-import {
-  Box,
-  IconButton,
-  InputLabel,
-  OutlinedInput,
-  FormControl,
-  FormHelperText,
-  OutlinedInputProps
-} from '@mui/material';
+import React, { useState, useCallback } from 'react';
 import { Add, Remove } from '@mui/icons-material';
+import './NumberField.css';
 
-interface NumberFieldProps extends Omit<OutlinedInputProps, 'value' | 'onChange'> {
-  label?: string;
-  value: number;
+
+interface NumberFieldProps {
+  value?: number;
   onChange: (value: number) => void;
   min?: number;
   max?: number;
   step?: number;
-  error?: boolean;
-  helperText?: string;
   decimal?: boolean;
-  sx?: object;
-  fullWidth?: boolean;
+  label?: string;
+  width?: number | string;
 }
 
 const NumberField: React.FC<NumberFieldProps> = ({
-  label = '',
-  value,
+  value: propValue = 0,
   onChange,
-  min = 0,
-  max,
+  min = -Infinity,
+  max = Infinity,
   step = 1,
-  error = false,
-  helperText,
   decimal = false,
-  fullWidth = false,
-  sx,
-  ...props
+  label,
+  width = '100%',
 }) => {
-  const [internalValue, setInternalValue] = useState<string>(value.toString());
-  const [isFocused, setIsFocused] = useState<boolean>(false);
+  const [focused, setFocused] = useState(false);
+  const [inputValue, setInputValue] = useState<string>(propValue.toString());
 
-  // Regex for valid partial input
-  const regex = decimal
-    ? /^-?(\d+)?(\.)?(\d*)?$/
-    : /^\d*$/;
+  // Sync internal input if external value changes
+  React.useEffect(() => {
+    if (propValue !== undefined && !isNaN(propValue)) {
+      setInputValue(propValue.toString());
+    }
+  }, [propValue]);
 
-  // Convert any Persian digits/punctuation to English
-  const toEnglishDigits = (str: string): string => {
-    return str
-      .replace(/[۰-۹]/g, (char) => ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'].indexOf(char).toString())
-      .replace(/[,٫]/g, '.'); // Normalize decimal separators
+  const clamp = useCallback(
+    (n: number) => Math.min(Math.max(n, min), max),
+    [min, max]
+  );
+
+  const commitValue = useCallback(
+    (num: number) => {
+      const clamped = clamp(num);
+      onChange(decimal ? parseFloat(clamped.toFixed(2)) : Math.floor(clamped));
+      return clamped;
+    },
+    [onChange, clamp, decimal]
+  );
+
+  const increment = () => {
+    const current = propValue ?? 0;
+    const next = decimal
+      ? parseFloat((current + step).toFixed(2))
+      : Math.floor(current + step);
+    const committed = commitValue(next);
+    setInputValue(committed.toString());
   };
 
-  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const rawValue = e.target.value;
-    let value = toEnglishDigits(rawValue);
+  const decrement = () => {
+    const current = propValue ?? 0;
+    const next = decimal
+      ? parseFloat((current - step).toFixed(2))
+      : Math.ceil(current - step);
+    const committed = commitValue(next);
+    setInputValue(committed.toString());
+  };
 
-    // Show live input
-    setInternalValue(value);
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value;
+    setInputValue(raw);
 
-    // Validate format
-    if (!regex.test(value) && value !== '-') return;
+    // Allow empty or partial during typing
+    if (raw === '' || raw === '-' || raw === '.') {
+      return;
+    }
 
-    // If only "-" or "." → allow editing
-    if (value === '.' || value === '-') return;
+    // Prevent multiple dots
+    if ((raw.match(/\./g) || []).length > 1) {
+      return;
+    }
 
-    const num = parseFloat(value);
+    // Prevent leading zeros: "01", "001", etc.
+    if (raw !== '0' && /^0\d/.test(raw)) {
+      return;
+    }
+
+    // Only allow digits and one dot
+    const validFormat = decimal ? /^-?\d*\.?\d*$/ : /^\d*$/.test(raw);
+    if (!validFormat) return;
+
+    const num = parseFloat(raw);
     if (isNaN(num)) return;
 
-    // Clamp within bounds
-    const finalValue = Math.min(
-      Math.max(num, min ?? -Infinity),
-      max ?? Infinity
-    );
-
-    // Only update external state if valid number
-    onChange(decimal ? parseFloat(finalValue.toFixed(2)) : Math.floor(finalValue));
+    commitValue(num);
   };
 
   const handleBlur = () => {
-    setIsFocused(false);
-    const num = parseFloat(internalValue);
-    if (!isNaN(num)) {
-      const rounded = decimal ? parseFloat(num.toFixed(2)) : Math.floor(num);
-      setInternalValue(rounded.toString());
-      onChange(rounded);
+    setFocused(false);
+    const num = parseFloat(inputValue);
+    if (isNaN(num)) {
+      setInputValue(propValue?.toString() ?? '0');
     } else {
-      setInternalValue(value.toString());
+      const committed = commitValue(num);
+      setInputValue(committed.toString());
     }
-  };
-
-  const increase = () => {
-    const current = parseFloat(internalValue) || 0;
-    const newVal = decimal
-      ? parseFloat((current + step).toFixed(2))
-      : Math.floor(current + step);
-    const clamped = Math.min(newVal, max ?? Infinity);
-    setInternalValue(clamped.toString());
-    onChange(clamped);
-  };
-
-  const decrease = () => {
-    const current = parseFloat(internalValue) || 0;
-    const newVal = decimal
-      ? parseFloat((current - step).toFixed(2))
-      : Math.ceil(current - step);
-    const clamped = Math.max(newVal, min ?? -Infinity);
-    setInternalValue(clamped.toString());
-    onChange(clamped);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'ArrowUp') {
       e.preventDefault();
-      increase();
+      increment();
     } else if (e.key === 'ArrowDown') {
       e.preventDefault();
-      decrease();
+      decrement();
     }
   };
 
+  const displayValue = inputValue === '' ? '' : inputValue;
+
   return (
-    <FormControl fullWidth={fullWidth} variant="outlined" size="small" error={error} sx={{ flex: 1, ...sx }}>
-      {label && (
-        <InputLabel
-          shrink
-          sx={{
-            backgroundColor: 'var(--background-paper) !important',
-            width: '50px',
-            padding: '0 0 0 7px',
-            top: '3px',
-          }}
-        >
-          {label}
-        </InputLabel>
-      )}
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: 'row-reverse',
-          border: '1px solid',
-          borderColor: error ? 'error.main' : 'grey.400',
-          borderRadius: '14px',
-          alignItems: 'center',
-          justifyContent: 'flex-start',
-          px: 1.2,
-          py: 0.4,
-          '&:hover': {
-            borderColor: 'primary.main',
-          },
-        }}
-      >
-        <OutlinedInput
-          fullWidth
-          {...props}
-          value={internalValue}
-          onChange={handleChange}
-          onKeyDown={handleKeyDown}
-          onBlur={handleBlur}
-          onFocus={() => setIsFocused(true)}
-          inputProps={{
-            inputMode: decimal ? 'decimal' : 'numeric',
-            style: { paddingRight: '4px', paddingLeft: '4px', textAlign: 'start', direction: 'ltr' },
-          }}
-          sx={{
-            flex: 1,
-            border: 'none',
-            '& fieldset': { display: 'none' },
-            '& input': {
-              textAlign: 'center',
-              fontSize: '1rem',
-              fontFamily: 'SansX',
-            },
-          }}
-        />
-        <Box sx={{ display: 'flex', flexDirection: 'row' }}>
-          <IconButton size="small" onClick={increase} color="inherit" sx={{ p: '1.2px' }}>
+    <div className={`number-field ${focused ? 'focused' : ''}`} style={{ width }}>
+      {label && <label className="number-field-label">{label}</label>}
+      <div className="number-field-input-wrapper">
+        <div className="number-field-buttons">
+          <button type="button" onClick={increment} className="btn-inc">
             <Add fontSize="small" />
-          </IconButton>
-          <IconButton size="small" onClick={decrease} color="inherit" sx={{ p: '1.2px' }}>
+          </button>
+          <button type="button" onClick={decrement} className="btn-dec">
             <Remove fontSize="small" />
-          </IconButton>
-        </Box>
-      </Box>
-      {helperText && <FormHelperText>{helperText}</FormHelperText>}
-    </FormControl>
+          </button>
+        </div>
+        <input
+          type="text"
+          inputMode="decimal"
+          value={displayValue}
+          onChange={handleChange}
+          onFocus={() => setFocused(true)}
+          onBlur={handleBlur}
+          onKeyDown={handleKeyDown} // ← Added
+          placeholder={label}
+          className="number-field-input"
+        />
+      </div>
+    </div>
   );
 };
 
