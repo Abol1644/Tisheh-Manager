@@ -1,4 +1,4 @@
-// store/useToggleStore.js
+
 import { create } from "zustand";
 import {
   ListCart,
@@ -20,9 +20,9 @@ interface ToggleState {
   selectedCartWarehouse: Warehouse | null;
   currentCartDetails: CartDetails | null;
   cartShipments: CartShipment[];
-  selectedItemKeys: Set<string>; // ✅ CHANGED: Now uses string keys
+  selectedItemKeys: Set<string>; 
 
-  // Actions
+  
   toggleCart: () => void;
   cartOpen: () => void;
   cartClose: () => void;
@@ -38,17 +38,17 @@ interface ToggleState {
   toggleSelectedItem: (item: ItemResaultPrice) => void;
   clearSelectedItems: () => void;
 
-  // Shipment Actions
+  
   addShipment: (shipment: Omit<CartShipment, 'id'>) => number;
   removeShipment: (id: number) => void;
   updateShipment: (id: number, updates: Partial<CartShipment>) => void;
 }
 
 export const useControlCart = create<ToggleState>((set, get) => {
-  let nextId = 1; // Simple ID counter
+  let nextId = 1; 
 
   return {
-    // Initial State
+    
     products: [],
     isCartOpen: false,
     openCartId: null,
@@ -60,9 +60,9 @@ export const useControlCart = create<ToggleState>((set, get) => {
     isFindingWarehouse: false,
     selectedCartWarehouse: null,
     cartShipments: [],
-    selectedItemKeys: new Set<string>(), // ✅ Explicitly typed as Set<string>
+    selectedItemKeys: new Set<string>(),
 
-    // Actions
+    
     toggleCart: () => set((state) => ({ isCartOpen: !state.isCartOpen })),
     cartOpen: () => set({ isCartOpen: true }),
     cartClose: () => set({ isCartOpen: false }),
@@ -81,7 +81,7 @@ export const useControlCart = create<ToggleState>((set, get) => {
     setSelectedItemKeys: (keys: Set<string>) => set({ selectedItemKeys: new Set(keys) }),
 
     toggleSelectedItem: (item: ItemResaultPrice) => {
-      // ✅ Generate consistent string key: "ididentity-warehouseId"
+      
       const key = `${item.ididentity}-${item.warehouseId}-${item.tempShipmentId ?? 'null'}`;
       console.log('🔄 Toggling item:', key, 'Current selected:', Array.from(get().selectedItemKeys));
       
@@ -103,7 +103,7 @@ export const useControlCart = create<ToggleState>((set, get) => {
       set({ selectedItemKeys: new Set<string>() });
     },
 
-    // Shipment Management
+    
     addShipment: (shipment) => {
       const id = nextId++;
       console.log('➕ Adding shipment:', id);
