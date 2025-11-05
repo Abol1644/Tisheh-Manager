@@ -686,7 +686,6 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
                                   onChange={() => { }}
                                   min={0}
                                   step={1.0}
-                                  sx={{ maxWidth: '160px', minWidth: '120px' }}
                                 />
                                 <Typography variant="body2">
                                   {item.valueTitleBase || item.valueTitle || 'عدد'}
@@ -763,12 +762,11 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
                           />
                         </TableCell>
                         <TableCell>
-                          <Box sx={{ ...flex.row, ...flex.alignCenter, gap: 2, width: 'fit-content', flexWrap: 'wrap' }}>
+                          <Box sx={{ ...flex.row, ...flex.alignCenter, gap: 2, width: 'fit-content' }}>
                             <NumberField
                               value={services}
                               onChange={() => { }}
                               disabled
-                              sx={{ maxWidth: '160px', minWidth: '120px' }}
                             />
                             <Typography variant="body1" color="initial">
                               سرویس
