@@ -82,3 +82,17 @@
 .number-field button:active {
   transform: scale(0.95);
 }
+
+.number-field.disabled .number-field-input-wrapper {
+  border-color: var(--table-border-overlay);  
+  pointer-events: none;
+}
+
+.number-field.disabled .number-field-input {
+  color: var(--table-border-overlay);
+}
+
+.number-field.disabled button {
+  opacity: 0.4;
+  cursor: not-allowed;
+}

@@ -12,6 +12,7 @@ interface NumberFieldProps {
   decimal?: boolean;
   label?: string;
   width?: number | string;
+  disabled?: boolean;
 }
 
 const NumberField: React.FC<NumberFieldProps> = ({
@@ -23,6 +24,7 @@ const NumberField: React.FC<NumberFieldProps> = ({
   decimal = false,
   label,
   width = '100%',
+  disabled = false,
 }) => {
   const [focused, setFocused] = useState(false);
   const [inputValue, setInputValue] = useState<string>(propValue.toString());
@@ -119,14 +121,14 @@ const NumberField: React.FC<NumberFieldProps> = ({
   const displayValue = inputValue === '' ? '' : inputValue;
 
   return (
-    <div className={`number-field ${focused ? 'focused' : ''}`} style={{ width }}>
+    <div className={`number-field ${focused ? 'focused' : ''} ${disabled ? 'disabled' : ''}`} style={{ width }}>
       {label && <label className="number-field-label">{label}</label>}
       <div className="number-field-input-wrapper">
         <div className="number-field-buttons">
-          <button type="button" onClick={increment} className="btn-inc">
+          <button type="button" onClick={increment} className="btn-inc" disabled={disabled}>
             <Add fontSize="small" />
           </button>
-          <button type="button" onClick={decrement} className="btn-dec">
+          <button type="button" onClick={decrement} className="btn-dec" disabled={disabled}>
             <Remove fontSize="small" />
           </button>
         </div>
@@ -139,6 +141,7 @@ const NumberField: React.FC<NumberFieldProps> = ({
           onBlur={handleBlur}
           onKeyDown={handleKeyDown} // ← Added
           placeholder={label}
+          disabled={disabled}
           className="number-field-input"
         />
       </div>
