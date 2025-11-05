@@ -125,7 +125,7 @@ const NumberField: React.FC<NumberFieldProps> = ({
   return (
     <div className={`number-field ${focused ? 'focused' : ''} ${disabled ? 'disabled' : ''}`} style={{ width, ...style }}>
       {label && <label className="number-field-label">{label}</label>}
-      <div className="number-field-input-wrapper" style={{ ...style }}>
+      <div className="number-field-input-wrapper">
         <div className="number-field-buttons">
           <button type="button" onClick={increment} className="btn-inc" disabled={disabled}>
             <Add fontSize="small" />
