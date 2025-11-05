@@ -20,7 +20,7 @@
   height: 48px;
   display: flex;
   border: 1px solid var(--border-main);
-  border-radius: 14px;
+  border-radius: 12px;
   overflow: hidden;
   align-items: center;
   justify-content: space-between;
