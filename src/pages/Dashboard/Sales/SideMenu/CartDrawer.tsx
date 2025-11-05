@@ -11,7 +11,6 @@ import {
   Tooltip,
   Zoom,
   Skeleton, Stack,
-  Badge
 } from '@mui/material';
 
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -80,16 +79,17 @@ export function CartDrawer({ onDrawerToggle, value }: { onDrawerToggle: () => vo
   const { decodedToken } = useAuth();
   const userName = (decodedToken as DecodedToken)?.Name;
   const [expanded, setExpanded] = useState<string | false>(userName || false);
+  const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
 
   const { showSnackbar } = useSnackbar();
-  const { selectedAccount, setSelectedAccount, } = useAccountStore()
+  const { setSelectedAccount, } = useAccountStore()
   const { setConnectedProjects, setSelectedProject, } = useProjectStore()
-  const { isBranchDelivery, setIsBranchDelivery } = useBranchDeliveryStore()
+  const { setIsBranchDelivery } = useBranchDeliveryStore()
   const {
     cartOpen,
     setCartProducts,
     setIsFetchingItems,
-    setIsSelectingProject,
+    currentCartDetails,
     setSelectedCartWarehouse
   } = useControlCart()
 
@@ -178,6 +178,7 @@ export function CartDrawer({ onDrawerToggle, value }: { onDrawerToggle: () => vo
 
   const sendCartId = (cart: ListCart) => {
     const controlCart = useControlCart.getState();
+    setSelectedItemId(cart.id);
 
     // ===== FULL RESET FIRST =====
     controlCart.setCartProducts([]);
@@ -307,37 +308,48 @@ export function CartDrawer({ onDrawerToggle, value }: { onDrawerToggle: () => vo
                 <AccordionDetails>
                   <List dense>
                     {items.map((item) => {
+                      const isItemSelected = selectedItemId === item.id;
                       const accountTitle = item.codeAccCustomerTitle ? item.codeAccCustomerTitle : 'نامشخص';
                       const projectTitle = item.projectIdCustomerTitle ? item.branchCenterDelivery ? 'تحویل درب انبار' : <p><strong>پروژه</strong> {item.projectIdCustomerTitle}</p> : item.branchCenterDelivery ? 'تحویل درب انبار' : 'بدون پروژه';
                       return (
                         <ListItem
                           key={item.id}
-                          sx={{ p: 0, transition: 'all 0.3s ease', mb: 1, '&:hover': { transform: 'translateX(4px)' } }} >
-                          <Tooltip
-                            title={projectTitle}
-                            placement="left"
-                            arrow
-                            disableInteractive
-                            slots={{ transition: Zoom }}
+                          sx={{
+                            p: 0,
+                            transition: 'all 0.3s ease',
+                            mb: 1,
+                            transform: isItemSelected ? 'translateX(4px)' : 'none',
+                            '&:hover': {
+                              transform: 'translateX(4px)'
+                            },
+                          }}
+                        >
+                          <Btn
+                            color='inherit'
+                            variant='outlined'
+                            fullWidth
+                            sx={{
+                              ...flex.justifyBetween,
+                              borderColor: isItemSelected ? '#646cff' : 'currentColor',
+                              borderLeftWidth: isItemSelected ? '4px' : '1px',
+                              p: 0
+                            }}
                           >
-                            <Btn
-                              color='inherit'
-                              variant='outlined'
-                              fullWidth
-                              sx={{ ...flex.justifyBetween }}
-                            >
-                              <Box sx={{ ...flex.row, width: '100%', py: 0.5 }} onClick={() => sendCartId(item)}>
-                                <ShoppingCartRoundedIcon sx={{ mr: 1 }} />
-
+                            <Box sx={{ ...flex.row, width: '100%', py: 1, px: 1 }} onClick={() => sendCartId(item)}>
+                              <ShoppingCartRoundedIcon sx={{ mr: 1, fill: isItemSelected ? '#646cff' : 'currentColor' }} />
+                              <Box sx={{ ...flex.rowCenter }}>
                                 <Typography className='disable-line-height' color='textPrimary' variant="body2">
-                                  {toPersianPrice(item.id)} - {accountTitle}
+                                  {toPersianPrice(item.id)} - {accountTitle} -
+                                </Typography>
+                                <Typography variant="caption" sx={{ ml: 1 }}>
+                                  {projectTitle}
                                 </Typography>
                               </Box>
-                              <DeleteRoundedIcon
-                                onClick={() => openDeleteModal(item.id)}
-                                sx={{ transition: 'all 0.3s ease', '&:hover': { color: 'error.main' } }} />
-                            </Btn>
-                          </Tooltip>
+                            </Box>
+                            <DeleteRoundedIcon
+                              onClick={() => openDeleteModal(item.id)}
+                              sx={{ transition: 'all 0.3s ease', '&:hover': { color: 'error.main' }, mr: 1 }} />
+                          </Btn>
                         </ListItem>
                       )
                     })}

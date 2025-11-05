@@ -82,7 +82,7 @@ export const useControlCart = create<ToggleState>((set, get) => {
 
     toggleSelectedItem: (item: ItemResaultPrice) => {
       // ✅ Generate consistent string key: "ididentity-warehouseId"
-      const key = `${item.ididentity}-${item.warehouseId}`;
+      const key = `${item.ididentity}-${item.warehouseId}-${item.tempShipmentId ?? 'null'}`;
       console.log('🔄 Toggling item:', key, 'Current selected:', Array.from(get().selectedItemKeys));
       
       set((state) => {

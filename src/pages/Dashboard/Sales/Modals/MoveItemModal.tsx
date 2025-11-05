@@ -24,9 +24,8 @@ import SwapVertRoundedIcon from '@mui/icons-material/SwapVertRounded';
 
 import Btn from '@/components/elements/Btn';
 import NumberField from '@/components/elements/NumberField';
-import { ItemResaultPrice } from '@/models';
+import { ItemResaultPrice, CartShipment } from '@/models';
 import usePersianNumbers from '@/hooks/usePersianNumbers';
-
 import { useControlCart } from '@/stores';
 
 interface MoveItemModalProps {
@@ -36,13 +35,9 @@ interface MoveItemModalProps {
   onUpdate: (updatedItems: ItemResaultPrice[]) => void;
 }
 
-// Unique ID generator for split items
-let tempIdCounter = -1;
-const generateTempId = () => tempIdCounter--;
 
-// Helper function to generate consistent item keys (MUST match Cart.tsx)
 const getItemKey = (item: ItemResaultPrice): string => {
-  return `${item.ididentity}-${item.warehouseId}`;
+  return `${item.ididentity}-${item.warehouseId}-${item.tempShipmentId ?? 'null'}`;
 };
 
 export default function MoveItemModal({
@@ -55,7 +50,13 @@ export default function MoveItemModal({
   const [targetShipmentOption, setTargetShipmentOption] = useState<'new' | number>('new');
   const { toPersianPrice } = usePersianNumbers();
 
-  const { addShipment, selectedItemKeys, clearSelectedItems, cartShipments } = useControlCart();
+  const {
+    addShipment,
+    removeShipment,
+    selectedItemKeys,
+    cartShipments,
+    setCartProducts,
+  } = useControlCart();
 
   const selectedItems = useMemo(() => {
     return items.filter((item) => {
@@ -64,13 +65,15 @@ export default function MoveItemModal({
     });
   }, [items, selectedItemKeys]);
 
-  // Reset form when modal opens
+  
   React.useEffect(() => {
     if (open) {
       const initialQuantities: Record<number, number> = {};
       selectedItems.forEach((item) => {
         initialQuantities[item.ididentity] = item.value ?? 0;
       });
+
+
       setQuantityMap(initialQuantities);
       setTargetShipmentOption('new');
     }
@@ -79,89 +82,80 @@ export default function MoveItemModal({
   const handleSave = () => {
     if (!selectedItems.length) return;
 
-    const updatedItemsList: ItemResaultPrice[] = [...items];
+    const sourceShipmentId = selectedItems[0]?.tempShipmentId;
+    if (sourceShipmentId == null) return;
+
+    const targetIsNew = targetShipmentOption === 'new';
     let targetShipmentId: number;
 
-    // Determine target shipment ID
-    if (targetShipmentOption === 'new') {
+    if (targetIsNew) {
       targetShipmentId = addShipment({
         warehouseId: null,
         deliveryMethod: null,
         deliveryDate: null,
       });
-      console.log('✨ Created new shipment:', targetShipmentId);
     } else {
       targetShipmentId = targetShipmentOption;
-      console.log('📦 Moving to existing shipment:', targetShipmentId);
     }
 
-    // Process each selected item
-    for (const selectedItem of selectedItems) {
-      const itemId = selectedItem.ididentity;
-      const currentQty = selectedItem.value ?? 0;
-      const moveQty = Math.max(0, quantityMap[itemId] || 0);
+    
+    const updatedItems = [...items];
 
-      if (moveQty <= 0) {
-        console.warn(`⚠️ Skipping item ${itemId} - move quantity is 0`);
-        continue;
-      }
+    
+    for (const item of selectedItems) {
+      const itemId = item.ididentity;
+      const currentQty = item.value ?? 0;
+      const moveQty = Math.min(currentQty, Math.max(0, quantityMap[itemId] || 0));
+      if (moveQty <= 0) continue;
 
-      // Find the item in the full list
-      const itemIndex = updatedItemsList.findIndex(i => i.ididentity === itemId);
-      if (itemIndex === -1) {
-        console.error(`❌ Item ${itemId} not found in items list`);
-        continue;
-      }
+      
+      const itemIndex = updatedItems.findIndex(i => i.ididentity === itemId && i.warehouseId === item.warehouseId);
+      if (itemIndex === -1) continue;
 
-      if (moveQty >= currentQty) {
-        // Full move - just update tempShipmentId
-        console.log(`🔄 Full move: Item ${itemId} (${currentQty} units) → Shipment ${targetShipmentId}`);
-        updatedItemsList[itemIndex] = {
-          ...updatedItemsList[itemIndex],
-          tempShipmentId: targetShipmentId,
-        };
+      const existingInTarget = updatedItems.find(
+        i => i.ididentity === itemId &&
+          i.warehouseId === item.warehouseId &&
+          i.tempShipmentId === targetShipmentId
+      );
+
+      if (existingInTarget && !targetIsNew) {
+        
+        existingInTarget.value += moveQty;
       } else {
-        // Partial move - split the item
-        console.log(`✂️ Split: Item ${itemId} - Keep ${currentQty - moveQty}, Move ${moveQty} → Shipment ${targetShipmentId}`);
         
-        // Update original item (reduce quantity, keep in original shipment)
-        updatedItemsList[itemIndex] = {
-          ...updatedItemsList[itemIndex],
-          value: currentQty - moveQty,
-        };
-
-        // Create new item for the moved portion with unique ID
-        const newId = generateTempId();
         const newItem: ItemResaultPrice = {
-          ...updatedItemsList[itemIndex],
-          ididentity: newId,
-          tempShipmentId: targetShipmentId,
+          ...item,
           value: moveQty,
+          tempShipmentId: targetShipmentId,
         };
-        
-        updatedItemsList.push(newItem);
-        console.log(`➕ Created split item ${newId} with ${moveQty} units in shipment ${targetShipmentId}`);
+        updatedItems.push(newItem);
       }
+
+      
+      updatedItems[itemIndex].value -= moveQty;
     }
 
-    console.log('✅ Move operation complete. Updated items:', updatedItemsList.length);
-    onUpdate(updatedItemsList);
+    
+    const filteredItems = updatedItems.filter(i => i.value > 0);
+
+    
+    const sourceItemsLeft = filteredItems.some(i => i.tempShipmentId === sourceShipmentId);
+    if (!sourceItemsLeft) {
+      removeShipment(sourceShipmentId);
+    }
+
+    
+    setCartProducts(filteredItems);
+    onUpdate(filteredItems);
     onClose();
   };
 
   const existingShipments = useMemo(() => {
-    // Get all unique source shipment IDs from selected items
     const sourceShipmentIds = new Set(
       selectedItems.map(item => item.tempShipmentId).filter((id): id is number => id !== null)
     );
 
-    // Get all shipments from the cart that are NOT source shipments
-    const availableShipments = cartShipments.filter(
-      shipment => !sourceShipmentIds.has(shipment.id)
-    );
-
-    console.log('📋 Available target shipments:', availableShipments.map(s => s.id));
-    return availableShipments;
+    return cartShipments.filter(shipment => !sourceShipmentIds.has(shipment.id));
   }, [cartShipments, selectedItems]);
 
   return (
@@ -203,7 +197,6 @@ export default function MoveItemModal({
               display: 'flex',
               flexDirection: 'column',
               gap: 2,
-              
               pointerEvents: 'auto',
             }}
           >
@@ -233,7 +226,6 @@ export default function MoveItemModal({
                 position: 'relative',
               }}
             >
-              {/* Legend */}
               <Box
                 sx={{
                   position: 'absolute',
@@ -288,24 +280,21 @@ export default function MoveItemModal({
                             label="مقدار انتقال"
                             value={quantityMap[item.ididentity] ?? 0}
                             onChange={(val) => {
-                              const numVal = parseFloat(val as string) || 0;
+                              const numVal = parseFloat(val.toString()) || 0;
                               const maxValue = item.value ?? 0;
-                              // Clamp value between 0 and available quantity
                               const clampedValue = Math.min(Math.max(0, numVal), maxValue);
                               setQuantityMap((prev) => ({
                                 ...prev,
                                 [item.ididentity]: clampedValue,
                               }));
                             }}
-                            decimal
-                            fullWidth
+                            decimal={item.decimalCapacity}
                           />
                         </Box>
                       </ListItem>
                     ))}
                   </List>
 
-                  {/* Target Shipment */}
                   <Box sx={{ mt: 3 }}>
                     <Typography variant="subtitle1" gutterBottom>
                       مقصد انتقال
@@ -329,13 +318,12 @@ export default function MoveItemModal({
                           key={`ship-${shipment.id}`}
                           value={shipment.id}
                           control={<Radio />}
-                          label={`مرسوله ${toPersianPrice((index + 1).toString())}`}
+                          label={`مرسوله ${toPersianPrice(index + 1)}`}
                         />
                       ))}
                     </RadioGroup>
                   </Box>
 
-                  {/* Actions */}
                   <Box
                     sx={{
                       display: 'flex',
@@ -344,10 +332,10 @@ export default function MoveItemModal({
                       mt: 3,
                     }}
                   >
-                    <Btn 
-                      variant="contained" 
-                      color="info" 
-                      onClick={handleSave} 
+                    <Btn
+                      variant="contained"
+                      color="info"
+                      onClick={handleSave}
                       sx={{ height: '42px' }}
                       disabled={selectedItems.length === 0}
                     >
