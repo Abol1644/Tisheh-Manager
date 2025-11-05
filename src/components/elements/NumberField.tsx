@@ -13,6 +13,7 @@ interface NumberFieldProps {
   label?: string;
   width?: number | string;
   disabled?: boolean;
+  style?: React.CSSProperties;
 }
 
 const NumberField: React.FC<NumberFieldProps> = ({
@@ -25,11 +26,12 @@ const NumberField: React.FC<NumberFieldProps> = ({
   label,
   width = '100%',
   disabled = false,
+  style,
 }) => {
   const [focused, setFocused] = useState(false);
   const [inputValue, setInputValue] = useState<string>(propValue.toString());
 
-  // Sync internal input if external value changes
+  
   React.useEffect(() => {
     if (propValue !== undefined && !isNaN(propValue)) {
       setInputValue(propValue.toString());
@@ -72,22 +74,22 @@ const NumberField: React.FC<NumberFieldProps> = ({
     const raw = e.target.value;
     setInputValue(raw);
 
-    // Allow empty or partial during typing
+    
     if (raw === '' || raw === '-' || raw === '.') {
       return;
     }
 
-    // Prevent multiple dots
+    
     if ((raw.match(/\./g) || []).length > 1) {
       return;
     }
 
-    // Prevent leading zeros: "01", "001", etc.
+    
     if (raw !== '0' && /^0\d/.test(raw)) {
       return;
     }
 
-    // Only allow digits and one dot
+    
     const validFormat = decimal ? /^-?\d*\.?\d*$/ : /^\d*$/.test(raw);
     if (!validFormat) return;
 
@@ -121,9 +123,9 @@ const NumberField: React.FC<NumberFieldProps> = ({
   const displayValue = inputValue === '' ? '' : inputValue;
 
   return (
-    <div className={`number-field ${focused ? 'focused' : ''} ${disabled ? 'disabled' : ''}`} style={{ width }}>
+    <div className={`number-field ${focused ? 'focused' : ''} ${disabled ? 'disabled' : ''}`} style={{ width, ...style }}>
       {label && <label className="number-field-label">{label}</label>}
-      <div className="number-field-input-wrapper">
+      <div className="number-field-input-wrapper" style={{ ...style }}>
         <div className="number-field-buttons">
           <button type="button" onClick={increment} className="btn-inc" disabled={disabled}>
             <Add fontSize="small" />
@@ -139,7 +141,7 @@ const NumberField: React.FC<NumberFieldProps> = ({
           onChange={handleChange}
           onFocus={() => setFocused(true)}
           onBlur={handleBlur}
-          onKeyDown={handleKeyDown} // ← Added
+          onKeyDown={handleKeyDown} 
           placeholder={label}
           disabled={disabled}
           className="number-field-input"

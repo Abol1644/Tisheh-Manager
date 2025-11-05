@@ -23,7 +23,7 @@
   border-radius: 12px;
   overflow: hidden;
   align-items: center;
-  justify-content: space-between;
+  justify-content: end;
   padding: 0 8px 0 12px;
   transition: border-color 0.2s ease;
 }
@@ -49,6 +49,7 @@
   text-align: left;
   background: transparent;
   color: var(--text-primary);
+  width: 100%;
 }
 
 .number-field-input::placeholder {
