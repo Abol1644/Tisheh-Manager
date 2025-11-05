@@ -65,18 +65,15 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
   const [distanceLoading, setDistanceLoading] = useState(false);
   const [rawItems, setRawItems] = useState<ItemResaultPrice[]>([]);
 
-
   const [moveItemModal, setMoveItemModal] = useState(false);
   const [deleteItemModal, setDeleteItemModal] = useState(false);
   const [confirmOrderModal, setConfirmOrderModal] = useState(false);
   const [paymentModal, setPaymentModal] = useState(false);
 
-
   const [deliveryMethod, setDeliveryMethod] = useState<string[]>([]);
   const [deliveryTime, setDeliveryTime] = useState<string[]>([]);
   const [services, setServices] = useState(0);
   const [deliveryMethodBot, setDeliveryMethodBot] = useState<string | null>('manual');
-
 
   const { selectedAccount } = useAccountStore();
   const { selectedProject, setSelectedProject } = useProjectStore();
@@ -103,7 +100,6 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
     currentCartDetails,
     setCartProducts
   } = useControlCart();
-
 
   const primaryDistance = useMemo(
     () => distance.find((d) => d.warehouseId > 0)?.warehouseId || null,
@@ -133,7 +129,6 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
     }, 0);
   }, [filteredItems]);
 
-
   const getItemKey = useCallback((item: ItemResaultPrice): string => {
     return `${item.ididentity}-${item.warehouseId}-${item.tempShipmentId ?? 'null'}`;
   }, []);
@@ -151,12 +146,8 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
     });
   }, [cartShipments, removeShipment]);
 
-
-
   useEffect(() => {
     if (!currentCartDetails) return;
-
-
     setRawItems([]);
     setCartProducts([]);
     cartShipments.forEach(s => removeShipment(s.id));
@@ -165,8 +156,6 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
     setSelectedProjectState(null);
     setConnectedProjects([]);
     setDeliverySource(null);
-
-
 
     const initializeCart = async () => {
       const {
@@ -177,29 +166,20 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
         codeAccCustomer
       } = currentCartDetails;
 
-
       setIsBranchDelivery(branchCenterDelivery);
-
 
       const sourceLabel = transit ? 'مستقیم از کارخانه' : 'از انبار';
       setDeliverySource(sourceLabel);
 
       if (branchCenterDelivery) {
-
-
-
-
         if (warehouses.length === 0) {
           setWarehousesLoading(true);
           try {
             const warehouseList = await getWarehouses();
             setWarehouses(warehouseList);
-
-
             const targetWarehouse = warehouseList.find(wh => wh.id === warehouseId);
             if (targetWarehouse) {
               setSelectedCartWarehouse(targetWarehouse);
-
             }
           } catch (error) {
             console.error('❌ Error fetching warehouses:', error);
@@ -208,21 +188,12 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
             setWarehousesLoading(false);
           }
         }
-
       } else {
-
-
-
-
-
         if (selectedAccount) {
           setProjectsLoading(true);
           try {
             const projects = await getConnectedProject(true, selectedAccount.codeAcc);
             setConnectedProjects(projects);
-
-
-
             const targetProject = projects.find(p => p.id === projectIdCustomer);
             if (targetProject) {
               setSelectedProject(targetProject);
@@ -230,18 +201,12 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
                 title: `${selectedAccount.title} - ${targetProject.title}`,
                 id: targetProject.id
               });
-
-
-
               if (targetProject.latitude === 0 || targetProject.longitude === 0) {
                 showSnackbar('مختصات جغرافیایی پروژه وارد نشده است', 'warning', 5000, <ErrorOutlineRoundedIcon />);
                 return;
               }
-
-
               setDistanceLoading(true);
               const loadingSnackbarId = showSnackbar('درحال پردازش نزدیکترین انبار', 'info', 0, <InfoRoundedIcon />);
-
               try {
                 await fetchDistance();
                 closeSnackbarById(loadingSnackbarId);
@@ -253,11 +218,9 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
               } finally {
                 setDistanceLoading(false);
               }
-
             } else {
               console.warn('⚠️ Project not found in connected projects');
             }
-
           } catch (error: any) {
             console.error('❌ Error fetching connected projects:', error);
             showSnackbar('خطا در دریافت پروژه های متصل', 'error', 5000, <ErrorOutlineRoundedIcon />);
@@ -265,8 +228,6 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
             setProjectsLoading(false);
           }
         }
-
-
         if (warehouses.length === 0) {
           setWarehousesLoading(true);
           try {
@@ -284,14 +245,10 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
     initializeCart();
   }, [currentCartDetails]);
 
-
   useEffect(() => {
     if (isBranchDelivery || !primaryDistance || warehouses.length === 0 || distanceLoading) {
       return;
     }
-
-
-
     const nearestWarehouse = warehouses.find(wh => wh.id === primaryDistance);
     if (nearestWarehouse) {
       setSelectedCartWarehouse(nearestWarehouse);
@@ -299,17 +256,13 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
     }
   }, [primaryDistance, warehouses, isBranchDelivery, distanceLoading]);
 
-
   useEffect(() => {
     if (cartProducts.length === 0) {
       setRawItems([]);
       return;
     }
-
-
     setRawItems(cartProducts);
   }, [cartProducts]);
-
 
   useEffect(() => {
     if (
@@ -320,23 +273,18 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
       return;
     }
 
-
     const shipmentId = addShipment({
       warehouseId: selectedCartWarehouse.id,
       deliveryMethod: null,
       deliveryDate: null,
     });
 
-
     const updatedItems = rawItems.map(item => ({
       ...item,
       tempShipmentId: shipmentId
     }));
-
     setRawItems(updatedItems);
-
   }, [rawItems.length, cartShipments.length, selectedCartWarehouse]);
-
 
   const handleBranchSwitch = useCallback((event: React.SyntheticEvent, checked: boolean) => {
     setIsBranchDelivery(checked);
@@ -396,7 +344,6 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
     setPaymentModal(true);
     handleConfirmModalToggle();
   }, [handleConfirmModalToggle]);
-
 
   return (
     <Box
