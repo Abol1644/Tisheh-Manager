@@ -143,3 +143,15 @@ export const addItemToCart = async (
     throw new Error(serverMessage);
   }
 };
+
+// api/cart.ts (or wherever it's defined)
+export const deleteItemsFromCart = async (itemIds: string[]): Promise<void> => {
+  try {
+    const ids = itemIds.map(id => parseInt(id, 10));
+    await apiClient.delete<void>("/Cart/DeleteItem", { data: ids });
+  } catch (error: any) {
+    console.error("Delete Items API error:", error);
+    const serverMessage = error.response?.data || "حذف آیتم‌ها با خطا مواجه شد";
+    throw new Error(serverMessage);
+  }
+};
