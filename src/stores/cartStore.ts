@@ -28,7 +28,7 @@ interface ToggleState {
   cartClose: () => void;
   setOpenCart: (cart: ListCart) => void;
   setCartProducts: (products: ItemResaultPrice[]) => void;
-  setCurrentCartDetails: (details: CartDetails) => void;
+  setCurrentCartDetails: (details: CartDetails | null) => void;
   setIsFetchingItems: (fetching: boolean) => void;
   setIsSelectingProject: (selecting: boolean) => void;
   setIsSelectingTransit: (selecting: boolean) => void;
