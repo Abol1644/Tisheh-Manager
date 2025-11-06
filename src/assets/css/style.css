@@ -333,3 +333,7 @@ input[type="search"]::-webkit-search-cancel-button {
 .nowarp {
   white-space: nowrap !important;
 }
+
+p {
+  margin: 0;
+}
