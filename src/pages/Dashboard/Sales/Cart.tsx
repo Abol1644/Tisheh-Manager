@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useEffect, useState } from 'react'
+import React, { useCallback, useMemo, useEffect, useState, useRef } from 'react'
 import {
   Box,
   ToggleButton, Typography,
@@ -39,10 +39,10 @@ import BaseModal from '@/pages/Dashboard/Sales/Modals/BaseModal';
 import PaymentModal from '@/pages/Dashboard/Sales/Modals/PaymentModal';
 import { flex, size } from '@/models/ReadyStyles';
 
-import { useAccountStore, useProjectStore, useBranchDeliveryStore, useControlCart, useDistanceStore } from '@/stores';
+import { useAccountStore, useProjectStore, useBranchDeliveryStore, useControlCart, useDistanceStore, useProductsStore } from '@/stores';
 import { useSnackbar } from "@/contexts/SnackBarContext";
-import { getWarehouses, getConnectedProject, deleteItemsFromCart } from '@/api';
-import { Warehouse, ItemResaultPrice, Project } from '@/models'
+import { getWarehouses, getConnectedProject, getTransportCartListSale, deleteItemsFromCart, getGeoFence } from '@/api';
+import { Warehouse, ItemResaultPrice, Project, GeoFence } from '@/models'
 
 interface CartProps {
   setOpenCart: (value: boolean) => void;
@@ -77,6 +77,7 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
   const [deliveryTime, setDeliveryTime] = useState<string[]>([]);
   const [services, setServices] = useState(0);
   const [deliveryMethodBot, setDeliveryMethodBot] = useState<string | null>('manual');
+  const [geofence, setgeofence] = useState<GeoFence | null>(null);
 
   const { selectedAccount } = useAccountStore();
   const { selectedProject, setSelectedProject } = useProjectStore();
@@ -84,6 +85,10 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
   const { distance, fetchDistance } = useDistanceStore();
   const { showSnackbar, closeSnackbarById } = useSnackbar();
   const { toPersianPrice } = usePersianNumbers();
+  const { selectedWarehouse } = useProductsStore();
+
+  const initAttemptedRef = React.useRef(false);
+  const vehicleApiCalledRef = useRef(false);
 
   const {
     cartClose,
@@ -149,104 +154,111 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
     });
   }, [cartShipments, removeShipment]);
 
-  useEffect(() => {
-    if (!currentCartDetails) return;
-    setRawItems([]);
-    setCartProducts([]);
-    cartShipments.forEach(s => removeShipment(s.id));
-    clearSelectedItems();
-    setSelectedCartWarehouse(null);
-    setSelectedProjectState(null);
-    setConnectedProjects([]);
-    setDeliverySource(null);
+  const initializeCart = useCallback(async () => {
+    if (!currentCartDetails || initAttemptedRef.current) return;
 
-    const initializeCart = async () => {
-      const {
-        branchCenterDelivery,
-        warehouseId,
-        projectIdCustomer,
-        transit,
-        codeAccCustomer
-      } = currentCartDetails;
+    initAttemptedRef.current = true;
 
+    const {
+      branchCenterDelivery,
+      warehouseId,
+      projectIdCustomer,
+      transit,
+      codeAccCustomer
+    } = currentCartDetails;
+
+    try {
+      // --- Step 1: Ensure account is ready ---
+      if (!selectedAccount) {
+        console.warn('No selected account yet');
+        return;
+      }
+
+      // --- Step 2: Fetch warehouses if needed (do this FIRST) ---
+      if (warehouses.length === 0) {
+        setWarehousesLoading(true);
+        const warehouseList = await getWarehouses();
+        setWarehouses(warehouseList);
+      }
+
+      // --- Step 3: Handle branch vs project mode ---
       setIsBranchDelivery(branchCenterDelivery);
-
       const sourceLabel = transit ? 'مستقیم از کارخانه' : 'از انبار';
       setDeliverySource(sourceLabel);
 
       if (branchCenterDelivery) {
-        if (warehouses.length === 0) {
-          setWarehousesLoading(true);
-          try {
-            const warehouseList = await getWarehouses();
-            setWarehouses(warehouseList);
-            const targetWarehouse = warehouseList.find(wh => wh.id === warehouseId);
-            if (targetWarehouse) {
-              setSelectedCartWarehouse(targetWarehouse);
-            }
-          } catch (error) {
-            console.error('❌ Error fetching warehouses:', error);
-            showSnackbar('خطا در دریافت انبارها', 'error', 5000, <ErrorOutlineRoundedIcon />);
-          } finally {
-            setWarehousesLoading(false);
-          }
-        }
+        // Branch mode: just select warehouse
+        const targetWarehouse = warehouses.find(wh => wh.id === warehouseId) ||
+          (warehouses.length > 0 ? warehouses[0] : null);
+        if (targetWarehouse) setSelectedCartWarehouse(targetWarehouse);
       } else {
-        if (selectedAccount) {
-          setProjectsLoading(true);
-          try {
-            const projects = await getConnectedProject(true, selectedAccount.codeAcc);
-            setConnectedProjects(projects);
-            const targetProject = projects.find(p => p.id === projectIdCustomer);
-            if (targetProject) {
-              setSelectedProject(targetProject);
-              setSelectedProjectState({
-                title: `${selectedAccount.title} - ${targetProject.title}`,
-                id: targetProject.id
-              });
-              if (targetProject.latitude === 0 || targetProject.longitude === 0) {
-                showSnackbar('مختصات جغرافیایی پروژه وارد نشده است', 'warning', 5000, <ErrorOutlineRoundedIcon />);
-                return;
-              }
-              setDistanceLoading(true);
-              const loadingSnackbarId = showSnackbar('درحال پردازش نزدیکترین انبار', 'info', 0, <InfoRoundedIcon />);
-              try {
-                await fetchDistance();
-                closeSnackbarById(loadingSnackbarId);
-                showSnackbar('انبار پردازش شد', 'success', 3000, <DoneAllRoundedIcon />);
-              } catch (error: any) {
-                closeSnackbarById(loadingSnackbarId);
-                const errorMessage = error.response?.data || error.message || 'خطا در دریافت فاصله';
-                showSnackbar(errorMessage, 'error', 5000, <ErrorOutlineRoundedIcon />);
-              } finally {
-                setDistanceLoading(false);
-              }
-            } else {
-              console.warn('⚠️ Project not found in connected projects');
-            }
-          } catch (error: any) {
-            console.error('❌ Error fetching connected projects:', error);
-            showSnackbar('خطا در دریافت پروژه های متصل', 'error', 5000, <ErrorOutlineRoundedIcon />);
-          } finally {
-            setProjectsLoading(false);
-          }
-        }
-        if (warehouses.length === 0) {
-          setWarehousesLoading(true);
-          try {
-            const warehouseList = await getWarehouses();
-            setWarehouses(warehouseList);
-          } catch (error) {
-            console.error('❌ Error fetching warehouses:', error);
-          } finally {
-            setWarehousesLoading(false);
-          }
-        }
-      }
-    };
+        // Project mode: fetch projects + distance
+        setProjectsLoading(true);
+        const projects = await getConnectedProject(true, selectedAccount.codeAcc);
+        setConnectedProjects(projects);
 
-    initializeCart();
-  }, [currentCartDetails]);
+        const targetProject = projects.find(p => p.id === projectIdCustomer);
+        if (!targetProject) {
+          showSnackbar('پروژه مورد نظر یافت نشد', 'error', 5000, <ErrorOutlineRoundedIcon />);
+          return;
+        }
+
+        setSelectedProject(targetProject);
+        setSelectedProjectState({
+          title: `${selectedAccount.title} - ${targetProject.title}`,
+          id: targetProject.id
+        });
+
+        if (targetProject.latitude === 0 || targetProject.longitude === 0) {
+          showSnackbar('مختصات جغرافیایی پروژه وارد نشده است', 'warning', 5000, <ErrorOutlineRoundedIcon />);
+          return;
+        }
+
+        // Fetch distance
+        setDistanceLoading(true);
+        const loadingSnackbarId = showSnackbar('درحال پردازش نزدیکترین انبار', 'info', 0, <InfoRoundedIcon />);
+        await fetchDistance();
+        closeSnackbarById(loadingSnackbarId);
+        showSnackbar('انبار پردازش شد', 'success', 3000, <DoneAllRoundedIcon />);
+      }
+    } catch (error: any) {
+      console.error('❌ Cart init failed:', error);
+      showSnackbar(error.message || 'خطا در بارگذاری سبد خرید', 'error', 5000, <ErrorOutlineRoundedIcon />);
+    } finally {
+      setProjectsLoading(false);
+      setWarehousesLoading(false);
+      setDistanceLoading(false);
+      initAttemptedRef.current = false; // allow retry if currentCartDetails changes again
+    }
+  }, [
+    currentCartDetails,
+    selectedAccount,
+    warehouses,
+    setIsBranchDelivery,
+    setSelectedProject,
+    fetchDistance,
+    showSnackbar,
+    closeSnackbarById
+  ]);
+
+  useEffect(() => {
+    if (currentCartDetails) {
+      // Reset state first
+      setRawItems([]);
+      setCartProducts([]);
+      cartShipments.forEach(s => removeShipment(s.id));
+      clearSelectedItems();
+      setSelectedCartWarehouse(null);
+      setSelectedProjectState(null);
+      setConnectedProjects([]);
+      setDeliverySource(null);
+      initAttemptedRef.current = false;
+      vehicleApiCalledRef.current = false; // ✅ RESET HERE
+
+      // Then initialize
+      initializeCart();
+    }
+  }, [currentCartDetails, initializeCart]);
 
   useEffect(() => {
     if (isBranchDelivery || !primaryDistance || warehouses.length === 0 || distanceLoading) {
@@ -288,6 +300,92 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
     }));
     setRawItems(updatedItems);
   }, [rawItems.length, cartShipments.length, selectedCartWarehouse]);
+
+  useEffect(() => {
+    const isStable = (
+      rawItems.length > 0 &&
+      !isFetchingItems &&
+      !projectsLoading &&
+      !warehousesLoading &&
+      !distanceLoading &&
+      !isFindingWarehouse &&
+      !isSelectingProject
+    );
+
+    if (isStable && !vehicleApiCalledRef.current) {
+      vehicleApiCalledRef.current = true;
+      getVehicleId();
+      showSnackbar("💀💀 ~ getVehicleId ~ data:", 'info', 5000, <AutoAwesomeRoundedIcon />);
+    }
+  }, [
+    rawItems.length,
+    isFetchingItems,
+    projectsLoading,
+    warehousesLoading,
+    distanceLoading,
+    isFindingWarehouse,
+    isSelectingProject,
+    filteredItems.length
+  ]);
+
+  const fetchGeoFence = async () => {
+    if (!selectedProject) return null;
+
+    try {
+      const result = await getGeoFence(selectedProject);
+      setgeofence(result);
+      if (result === null) {
+        return null;
+      } else {
+        return result
+      }
+    } catch (error: any) {
+      const errorMessage = error.response?.data || error.message || 'خطا در دریافت محدوده جغرافیایی';
+      showSnackbar(errorMessage, 'error', 5000, <ErrorOutlineRoundedIcon />);
+      return null;
+    }
+  };
+
+  const getVehicleId = useCallback(async () => {
+  let geofence: GeoFence | null = null;
+  if (selectedProject) {
+    try {
+      geofence = await getGeoFence(selectedProject);
+      setgeofence(geofence);
+    } catch (error: any) {
+      const errorMessage = error.response?.data || error.message || 'خطا در دریافت محدوده جغرافیایی';
+      showSnackbar(errorMessage, 'error', 5000, <ErrorOutlineRoundedIcon />);
+    }
+  }
+    const items = filteredItems;
+    const warehouseId = isBranchDelivery
+      ? selectedCartWarehouse?.id
+      : primaryDistance;
+
+    const data = await getTransportCartListSale(
+      null,
+      items,
+      geofence,
+      distance,
+      isBranchDelivery,
+      warehouseId,
+      currentCartDetails?.transit,
+      selectedProject
+    );
+
+    console.log("💀💀 ~ getVehicleId ~ data:", data);
+  }, [
+    filteredItems,
+    isBranchDelivery,
+    selectedCartWarehouse?.id,
+    primaryDistance,
+    distance,
+    currentCartDetails?.transit,
+    selectedProject,
+    fetchGeoFence // make sure this is stable or inline it
+  ]);
+
+
 
   const handleBranchSwitch = useCallback((event: React.SyntheticEvent, checked: boolean) => {
     setIsBranchDelivery(checked);
