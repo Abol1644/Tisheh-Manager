@@ -499,11 +499,14 @@ function OrderOptions({
   const { selectedWarehouse } = useProductsStore();
 
   const alternateDays = selectedItem?.shippingTimeAlternate;
+  const warehouseShippingStart = selectedItem?.shippingStartTimeWarehouse;
   const weekdayNames = useWeekdays(alternateDays);
   const formattedAlternateDays = useFormattedWeekdays(weekdayNames);
 
   const transitStartPreaper = selectedItem?.shippingStartTimeTransit;
   const transitPreparationTime = usePreparationTime({ start: transitStartPreaper });
+  const warehouseStartPreaper = selectedItem?.shippingStartTimeWarehouse;
+  const warehousePreparationTime = usePreparationTime({ start: warehouseStartPreaper });
 
   const isBranchDelivery = useBranchDeliveryStore((s) => s.isBranchDelivery);
 
@@ -533,7 +536,16 @@ function OrderOptions({
             </Tooltip>
             <Typography sx={typoStyles}>
               <AccessTimeRoundedIcon color='info' sx={{ fontSize: '22px', mr: 0.5 }} />
-              {selectedTransport[0]?.alternate ? formattedAlternateDays : 'آماده سازی ' + transitPreparationTime}
+              {
+                selectedTransport[0]?.alternate
+                  ?
+                  formattedAlternateDays
+                  :
+                  selectedTransport[0]?.transit ?
+                  'آماده سازی ' + transitPreparationTime
+                  :
+                  'آماده سازی ' + warehousePreparationTime
+              }
             </Typography>
           </Box>
         </Grow>
