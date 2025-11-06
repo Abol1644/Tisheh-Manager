@@ -348,14 +348,11 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
       return updated;
     });
 
-    // Sync with Zustand store and clean up shipments
-    setCartProducts(prev => {
-      const updated = prev.filter(item => {
-        const key = getItemKey(item);
-        return !keysToDelete.includes(key);
-      });
-      return updated;
+    const updatedCart = cartProducts.filter(item => {
+      const key = getItemKey(item);
+      return !keysToDelete.includes(key);
     });
+    setCartProducts(updatedCart);
 
     // Now clean up empty shipments
     setTimeout(() => {
@@ -370,7 +367,7 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
     clearSelectedItems();
     setDeleteItemModal(false);
     showSnackbar('آیتم‌ها حذف شدند', 'success', 3000, <DoneAllRoundedIcon />);
-  }, [getItemKey, refineShipments, clearSelectedItems, showSnackbar]);
+  }, [getItemKey, refineShipments, clearSelectedItems, showSnackbar, cartProducts, setCartProducts]);
 
   const handleDeleteItemModalToggle = useCallback(() => {
     setDeleteItemModal(prev => !prev);
