@@ -26,6 +26,8 @@ import DoneAllIcon from '@mui/icons-material/DoneAll';
 import DoneAllRoundedIcon from '@mui/icons-material/DoneAllRounded';
 import ErrorOutlineRoundedIcon from '@mui/icons-material/ErrorOutlineRounded';
 import InfoRoundedIcon from '@mui/icons-material/InfoRounded';
+import PaidRoundedIcon from '@mui/icons-material/PaidRounded';
+import PaidOutlinedIcon from '@mui/icons-material/PaidOutlined';
 
 import usePersianNumbers from '@/hooks/usePersianNumbers';
 import NumberField from '@/components/elements/NumberField';
@@ -39,7 +41,7 @@ import { flex, size } from '@/models/ReadyStyles';
 
 import { useAccountStore, useProjectStore, useBranchDeliveryStore, useControlCart, useDistanceStore } from '@/stores';
 import { useSnackbar } from "@/contexts/SnackBarContext";
-import { getWarehouses, getConnectedProject } from '@/api';
+import { getWarehouses, getConnectedProject, deleteItemsFromCart } from '@/api';
 import { Warehouse, ItemResaultPrice, Project } from '@/models'
 
 interface CartProps {
@@ -63,6 +65,7 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [warehousesLoading, setWarehousesLoading] = useState(false);
   const [distanceLoading, setDistanceLoading] = useState(false);
+  const [cashPay, setCashPay] = useState(false);
   const [rawItems, setRawItems] = useState<ItemResaultPrice[]>([]);
 
   const [moveItemModal, setMoveItemModal] = useState(false);
@@ -328,6 +331,47 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
     setMoveItemModal(prev => !prev);
   }, []);
 
+  const deleteSelectedItems = useCallback(() => {
+    const { selectedItemKeys } = useControlCart.getState();
+
+    if (selectedItemKeys.size === 0) return;
+
+    // Compute keys to delete
+    const keysToDelete = Array.from(selectedItemKeys);
+
+    // Update rawItems (local state)
+    setRawItems(prev => {
+      const updated = prev.filter(item => {
+        const key = getItemKey(item);
+        return !keysToDelete.includes(key);
+      });
+      return updated;
+    });
+
+    // Sync with Zustand store and clean up shipments
+    setCartProducts(prev => {
+      const updated = prev.filter(item => {
+        const key = getItemKey(item);
+        return !keysToDelete.includes(key);
+      });
+      return updated;
+    });
+
+    // Now clean up empty shipments
+    setTimeout(() => {
+      refineShipments(
+        useControlCart.getState().products.filter(item => {
+          const key = getItemKey(item);
+          return !keysToDelete.includes(key);
+        })
+      );
+    }, 0);
+
+    clearSelectedItems();
+    setDeleteItemModal(false);
+    showSnackbar('آیتم‌ها حذف شدند', 'success', 3000, <DoneAllRoundedIcon />);
+  }, [getItemKey, refineShipments, clearSelectedItems, showSnackbar]);
+
   const handleDeleteItemModalToggle = useCallback(() => {
     setDeleteItemModal(prev => !prev);
   }, []);
@@ -462,6 +506,24 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
             flex: 0.18,
           }}
         >
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 'fit-content',
+            }}
+          >
+            <Checkbox
+              checked={cashPay}
+              onChange={(e) => setCashPay(e.target.checked)}
+              icon={<PaidOutlinedIcon />}
+              checkedIcon={<PaidRoundedIcon />}
+            />
+            <Typography variant='subtitle1'>
+              نقدی
+            </Typography>
+          </Box>
           <Box
             sx={{
               p: 1,
@@ -776,12 +838,16 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
           showSnackbar('آیتم‌ها منتقل شدند', 'success', 3000, <DoneAllRoundedIcon />);
         }}
       />
-      <DeleteModal
+      <BaseModal
         open={deleteItemModal}
-        onClose={handleDeleteItemModalToggle}
-        title='حذف آیتم'
-        buttonText='حذف شود'
-        info='آیتم مورد نظر حذف شود؟'
+        onClose={() => setDeleteItemModal(false)}
+        title="حذف آیتم‌های انتخابی"
+        info={`آیا از حذف ${selectedItemKeys.size} آیتم مطمئن هستید؟`}
+        buttonText="حذف definitively"
+        buttonColor="error"
+        windowColor="error"
+        buttonFunc={deleteSelectedItems}
+        width="400px"
       />
       <BaseModal
         open={confirmOrderModal}
