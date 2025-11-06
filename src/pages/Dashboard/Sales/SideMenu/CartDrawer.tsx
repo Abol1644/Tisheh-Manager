@@ -310,7 +310,7 @@ export function CartDrawer({ onDrawerToggle, value }: { onDrawerToggle: () => vo
                     {items.map((item) => {
                       const isItemSelected = selectedItemId === item.id;
                       const accountTitle = item.codeAccCustomerTitle ? item.codeAccCustomerTitle : 'نامشخص';
-                      const projectTitle = item.projectIdCustomerTitle ? item.branchCenterDelivery ? 'تحویل درب انبار' : <p><strong>پروژه</strong> {item.projectIdCustomerTitle}</p> : item.branchCenterDelivery ? 'تحویل درب انبار' : 'بدون پروژه';
+                      const projectTitle = item.projectIdCustomerTitle ? item.branchCenterDelivery ? 'تحویل درب انبار' : <p>پروژه {item.projectIdCustomerTitle}</p> : item.branchCenterDelivery ? 'تحویل درب انبار' : 'بدون پروژه';
                       return (
                         <ListItem
                           key={item.id}
