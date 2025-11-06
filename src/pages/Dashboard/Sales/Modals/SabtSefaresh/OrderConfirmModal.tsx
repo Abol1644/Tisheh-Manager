@@ -76,7 +76,7 @@ export default function SabtKalaModal({ open, onClose }: SaleModalProps) {
             overflow: 'auto',
             display: 'flex',
             flexDirection: 'column',
-            justifyContent: 'space-between',
+            justifyContent: 'start',
             '&:focus-visible': {
               outline: 'none'
             },

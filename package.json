@@ -32,6 +32,7 @@
     "jalaliday": "^3.1.0",
     "jwt-decode": "^4.0.0",
     "leaflet": "^1.9.4",
+    "leaflet-defaulticon-compatibility": "^0.1.2",
     "leaflet.offline": "^3.1.0",
     "localforage": "^1.10.0",
     "mapbox-gl": "^3.14.0",
