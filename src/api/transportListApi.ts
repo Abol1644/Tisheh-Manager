@@ -2,7 +2,8 @@ import apiClient from "./apiClient";
 import { TransportList, GeoFence, ItemResaultPrice, Distance, Account, Project } from "@/models/";
 
 export const getTransportListSale = async (
-  item: ItemResaultPrice[],
+  item: ItemResaultPrice[] | null,
+  cartItem: ItemResaultPrice[] | null,
   geofence: GeoFence | null,
   distance: Distance[],
   branchDeliveryCenter: boolean,
@@ -17,6 +18,7 @@ export const getTransportListSale = async (
         listDistance: distance,
         warehouseId: warehouseId,
         listModelPrice: item,
+        listCartItem: cartItem,
         modelGeofences: geofence,
         projectCustomerId: project?.id,
         latitudeProject: project?.latitude || 0,
@@ -24,7 +26,6 @@ export const getTransportListSale = async (
         elevationProject: project?.elevation || 0,
       }
     );
-    // console.log('🦈🦈🦈🦈 get transport sale list', project?.id)
     console.log('❤ get transport sale list', response.data)
     return response.data;
   } catch (error: any) {

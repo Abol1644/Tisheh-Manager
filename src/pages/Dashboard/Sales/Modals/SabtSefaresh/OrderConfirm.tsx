@@ -156,6 +156,7 @@ export default function OrderConfirm({ selectedTransport, setSelectedTransport }
 
         const data = await getTransportListSale(
           transportListPrice,
+          null,
           fetchedGeofence,
           distance,
           isBranchDelivery,
