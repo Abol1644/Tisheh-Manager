@@ -44,7 +44,7 @@ export const getTransportCartListSale = async (
   branchDeliveryCenter: boolean,
   warehouseId: number | undefined | null,
   transit: boolean | null | undefined,
-  project: Project | null,
+  project: Project | null | undefined,
 ): Promise<TransportList[]> => {
   try {
     const response = await apiClient.post<TransportList[]>(
