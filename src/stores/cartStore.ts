@@ -21,6 +21,8 @@ interface ToggleState {
   currentCartDetails: CartDetails | null;
   cartShipments: CartShipment[];
   selectedItemKeys: Set<string>; 
+  selectedCartId: number | null;
+
 
   
   toggleCart: () => void;
@@ -37,7 +39,7 @@ interface ToggleState {
   setSelectedItemKeys: (keys: Set<string>) => void;
   toggleSelectedItem: (item: ItemResaultPrice) => void;
   clearSelectedItems: () => void;
-
+  setSelectedCartId: (id: number | null) => void;
   
   addShipment: (shipment: Omit<CartShipment, 'id'>) => number;
   removeShipment: (id: number) => void;
@@ -61,8 +63,9 @@ export const useControlCart = create<ToggleState>((set, get) => {
     selectedCartWarehouse: null,
     cartShipments: [],
     selectedItemKeys: new Set<string>(),
+    selectedCartId: null,
 
-    
+    setSelectedCartId: (id) => set({ selectedCartId: id }),
     toggleCart: () => set((state) => ({ isCartOpen: !state.isCartOpen })),
     cartOpen: () => set({ isCartOpen: true }),
     cartClose: () => set({ isCartOpen: false }),
