@@ -101,14 +101,15 @@ export const addCart = async (
   account: Account| null,
   project: Project| null,
   branchCenterDelivery: boolean | null,
-  vehicleId: string | undefined
+  vehicleId: string | undefined,
+  transit: boolean | undefined,
 ): Promise<Cart> => {
   try {
     const response = await apiClient.post<Cart>(`/Cart/Add`, {
       codeAccCustomer: account?.codeAcc,
       projectIdCustomer: project?.id,
       branchCenterDelivery: branchCenterDelivery,
-      transit: item?.activateTransit,
+      transit: transit,
       warehouseId: item?.warehouseId,
       vehicleId: vehicleId,
     });
