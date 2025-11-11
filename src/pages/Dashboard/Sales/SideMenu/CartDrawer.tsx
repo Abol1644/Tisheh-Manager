@@ -197,6 +197,7 @@ export function CartDrawer({ onDrawerToggle, value }: { onDrawerToggle: () => vo
     findAccount(cart.codeAccCustomer)
       .then(account => {
         setSelectedAccount(account);
+        console.log("🚀 ~ sendCartId ~ account:", account)
         return getConnectedProject(cart.branchCenterDelivery, account.codeAcc);
       })
       .then(projects => {

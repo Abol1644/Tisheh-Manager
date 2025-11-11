@@ -155,8 +155,8 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
   }, [cartShipments, removeShipment]);
 
   const initializeCart = useCallback(async () => {
-    if (!currentCartDetails || initAttemptedRef.current) return;
-
+    // if (!currentCartDetails || initAttemptedRef.current) return;
+    if (!currentCartDetails) return;
     initAttemptedRef.current = true;
 
     const {
@@ -230,19 +230,13 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
       setDistanceLoading(false);
       initAttemptedRef.current = false; // allow retry if currentCartDetails changes again
     }
-  }, [
-    currentCartDetails,
-    selectedAccount,
-    warehouses,
-    setIsBranchDelivery,
-    setSelectedProject,
-    fetchDistance,
-    showSnackbar,
-    closeSnackbarById
-  ]);
+  },
+  // [ currentCartDetails, selectedAccount, warehouses, setIsBranchDelivery, setSelectedProject, fetchDistance, showSnackbar, closeSnackbarById ]
+  [currentCartDetails]
+);
 
   useEffect(() => {
-    if (currentCartDetails) {
+    if (currentCartDetails || !selectedProjectState) {
       // Reset state first
       setRawItems([]);
       setCartProducts([]);
@@ -253,11 +247,10 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
       setConnectedProjects([]);
       setDeliverySource(null);
       initAttemptedRef.current = false;
-      vehicleApiCalledRef.current = false; // ✅ RESET HERE
-
-      // Then initialize
-      initializeCart();
+      vehicleApiCalledRef.current = false;
     }
+    initializeCart();
+    showSnackbar("Initializing cart...", 'info', 3000, <InfoRoundedIcon />);
   }, [currentCartDetails, initializeCart]);
 
   useEffect(() => {
@@ -357,7 +350,8 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
       showSnackbar(errorMessage, 'error', 5000, <ErrorOutlineRoundedIcon />);
     }
   }
-    const items = filteredItems;
+    const items = rawItems;
+    console.log("🚀 ~ Cart ~ items:", items)
     const warehouseId = isBranchDelivery
       ? selectedCartWarehouse?.id
       : primaryDistance;
@@ -372,8 +366,21 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
       currentCartDetails?.transit,
       selectedProject
     );
-
-    console.log("💀💀 ~ getVehicleId ~ data:", data);
+    console.log("🚀 ~ Cart ~ null" ,
+      items,
+      geofence,
+      distance,
+      isBranchDelivery,
+      warehouseId,
+      currentCartDetails?.transit,
+      null,
+      items,
+      geofence,
+      distance,
+      isBranchDelivery,
+      warehouseId,
+      currentCartDetails?.transit,
+      selectedProject)
   }, [
     filteredItems,
     isBranchDelivery,
@@ -382,7 +389,7 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
     distance,
     currentCartDetails?.transit,
     selectedProject,
-    fetchGeoFence // make sure this is stable or inline it
+    fetchGeoFence
   ]);
 
 
