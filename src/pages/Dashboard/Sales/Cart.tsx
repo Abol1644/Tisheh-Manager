@@ -442,7 +442,12 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
       console.log("🚛 ~ getVehicleId ~ Transport Data:", data);
 
       if (data.listItemVehicleShipp && data.listItemVehicleShipp.length > 0) {
-        const mapped = data.listItemVehicleShipp.map((v) => ({
+        const filteredVehicles = data.listItemVehicleShipp.filter((vehicle) => {
+          const isTransitMode = !!currentCartDetails?.transit;
+          return isTransitMode || !vehicle.transit;
+        });
+
+        const mapped = filteredVehicles.map((v) => ({
           id: v.vehicleId,
           title: `${v.vehicleTitle}`
         }));
@@ -457,7 +462,7 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
       }
     } catch (error: any) {
       console.error("🚚 Transport calculation failed:", error);
-      showSnackbar( error.message || 'محاسبه وسایل نقلیه ارسال با خطا مواجه شد', 'error', 6000, <ErrorOutlineRoundedIcon /> );
+      showSnackbar(error.message || 'محاسبه وسایل نقلیه ارسال با خطا مواجه شد', 'error', 6000, <ErrorOutlineRoundedIcon />);
     }
   }, [
     rawItems,
