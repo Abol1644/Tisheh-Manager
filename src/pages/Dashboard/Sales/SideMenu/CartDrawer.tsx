@@ -79,7 +79,6 @@ export function CartDrawer({ onDrawerToggle, value }: { onDrawerToggle: () => vo
   const { decodedToken } = useAuth();
   const userName = (decodedToken as DecodedToken)?.Name;
   const [expanded, setExpanded] = useState<string | false>(userName || false);
-  const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
 
   const { showSnackbar } = useSnackbar();
   const { setSelectedAccount, } = useAccountStore()
@@ -90,8 +89,13 @@ export function CartDrawer({ onDrawerToggle, value }: { onDrawerToggle: () => vo
     setCartProducts,
     setIsFetchingItems,
     currentCartDetails,
-    setSelectedCartWarehouse
+    setSelectedCartWarehouse,
+    setSelectedCartId,
+    selectedCartId,
+    setOpenCart
   } = useControlCart()
+  
+  const controlCart = useControlCart.getState();
 
   const { toPersianPrice } = usePersianNumbers();
 
@@ -176,51 +180,27 @@ export function CartDrawer({ onDrawerToggle, value }: { onDrawerToggle: () => vo
       });
   }
 
-  const sendCartId = (cart: ListCart) => {
-    const controlCart = useControlCart.getState();
-    setSelectedItemId(cart.id);
-
-    // ===== FULL RESET FIRST =====
+  const clearCart = async () => {
+    setSelectedCartId(0);
     controlCart.setCartProducts([]);
     controlCart.clearSelectedItems();
     controlCart.cartShipments.forEach(s => controlCart.removeShipment(s.id));
-    controlCart.setCurrentCartDetails(null); // ← Triggers useEffect in Cart
+    controlCart.setCurrentCartDetails(null);
 
-    // Reset other stores
     setSelectedAccount(null);
     setSelectedProject(null);
     setConnectedProjects([]);
     setSelectedCartWarehouse(null);
     setIsBranchDelivery(false);
+  }
 
-    // ===== THEN FETCH NEW DATA =====
-    findAccount(cart.codeAccCustomer)
-      .then(account => {
-        setSelectedAccount(account);
-        console.log("🚀 ~ sendCartId ~ account:", account)
-        return getConnectedProject(cart.branchCenterDelivery, account.codeAcc);
-      })
-      .then(projects => {
-        setConnectedProjects(projects);
-        const matchedProject = projects.find(p => p.id === cart.projectIdCustomer);
-        if (matchedProject) setSelectedProject(matchedProject);
-      })
-      .catch(console.error);
-
-    // Fetch cart details (this will trigger the useEffect in Cart)
-    getCart(cart.id)
-      .then((details: CartDetails) => {
-        controlCart.setCurrentCartDetails(details); // ← This triggers Cart's useEffect
-        if (details.branchCenterDelivery && details.warehouseId) {
-          return findWarehouse(details.warehouseId).then(setSelectedCartWarehouse);
-        }
-      })
-      .catch(console.error);
-
-    // Re-fetch items
+  const sendCartId = async (cart: ListCart) => {
+    setOpenCart(cart);
+    await clearCart();
+    console.log("🚀 ~ CartDrawer ~ selectedCartId:", selectedCartId)
+    setSelectedCartId(cart.id);
+    console.log("🚀 ~ CartDrawer ~ selectedCartId:", selectedCartId)
     getCartItems(cart);
-
-    // Open UI
     cartOpen();
     onDrawerToggle();
   };
@@ -309,7 +289,7 @@ export function CartDrawer({ onDrawerToggle, value }: { onDrawerToggle: () => vo
                 <AccordionDetails>
                   <List dense>
                     {items.map((item) => {
-                      const isItemSelected = selectedItemId === item.id;
+                      const isItemSelected = selectedCartId === item.id;
                       const accountTitle = item.codeAccCustomerTitle ? item.codeAccCustomerTitle : 'نامشخص';
                       const projectTitle = item.projectIdCustomerTitle ? item.branchCenterDelivery ? 'تحویل درب انبار' : <p>پروژه {item.projectIdCustomerTitle}</p> : item.branchCenterDelivery ? 'تحویل درب انبار' : 'بدون پروژه';
                       return (

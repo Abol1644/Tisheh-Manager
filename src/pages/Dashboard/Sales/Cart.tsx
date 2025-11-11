@@ -41,8 +41,8 @@ import { flex, size } from '@/models/ReadyStyles';
 
 import { useAccountStore, useProjectStore, useBranchDeliveryStore, useControlCart, useDistanceStore, useProductsStore } from '@/stores';
 import { useSnackbar } from "@/contexts/SnackBarContext";
-import { getWarehouses, getConnectedProject, getTransportCartListSale, deleteItemsFromCart, getGeoFence } from '@/api';
-import { Warehouse, ItemResaultPrice, Project, GeoFence } from '@/models'
+import { getWarehouses, getConnectedProject, getTransportCartListSale, findAccount, getGeoFence, getCart, findWarehouse, getListOfCartItems } from '@/api';
+import { Warehouse, ItemResaultPrice, Project, GeoFence, ListCart, CartDetails } from '@/models'
 
 interface CartProps {
   setOpenCart: (value: boolean) => void;
@@ -72,14 +72,16 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
   const [deleteItemModal, setDeleteItemModal] = useState(false);
   const [confirmOrderModal, setConfirmOrderModal] = useState(false);
   const [paymentModal, setPaymentModal] = useState(false);
+  const prevCartIdRef = useRef<number | null>(null);
 
   const [deliveryMethod, setDeliveryMethod] = useState<string[]>([]);
   const [deliveryTime, setDeliveryTime] = useState<string[]>([]);
   const [services, setServices] = useState(0);
   const [deliveryMethodBot, setDeliveryMethodBot] = useState<string | null>('manual');
   const [geofence, setgeofence] = useState<GeoFence | null>(null);
+  const [currentProject, setCurrentProject] = useState<Project | undefined>(undefined);
 
-  const { selectedAccount } = useAccountStore();
+  const { setSelectedAccount, selectedAccount } = useAccountStore();
   const { selectedProject, setSelectedProject } = useProjectStore();
   const { isBranchDelivery, setIsBranchDelivery } = useBranchDeliveryStore();
   const { distance, fetchDistance } = useDistanceStore();
@@ -106,8 +108,12 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
     toggleSelectedItem,
     clearSelectedItems,
     currentCartDetails,
-    setCartProducts
+    setCartProducts,
+    selectedCartId,
+    setCurrentCartDetails,
+    cartList
   } = useControlCart();
+  const controlCart = useControlCart.getState();
 
   const primaryDistance = useMemo(
     () => distance.find((d) => d.warehouseId > 0)?.warehouseId || null,
@@ -154,10 +160,69 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
     });
   }, [cartShipments, removeShipment]);
 
-  const initializeCart = useCallback(async () => {
-    // if (!currentCartDetails || initAttemptedRef.current) return;
-    if (!currentCartDetails) return;
-    initAttemptedRef.current = true;
+  const setTopFormData = useCallback(async (): Promise<void> => {
+    if (!cartList) return;
+
+    try {
+      showSnackbar("Loading top form data...", 'info', 3000, <InfoRoundedIcon />);
+
+      // Step 1: Fetch account
+      const account = await findAccount(cartList.codeAccCustomer);
+      setSelectedAccount(account);
+
+      // Step 2: Fetch connected projects
+      const projects = await getConnectedProject(cartList.branchCenterDelivery, account.codeAcc);
+      setConnectedProjects(projects);
+
+      const matchedProject = projects.find(p => p.id === cartList.projectIdCustomer);
+      setCurrentProject(matchedProject);
+      showSnackbar(`Top form data loaded ${currentProject?.title}`, 'success', 3000, <InfoRoundedIcon />);
+      if (currentProject) {
+        setSelectedProject(currentProject);
+        setSelectedProjectState({
+          title: `${account?.title} - ${currentProject.title}`,
+          id: currentProject.id
+        });
+      }
+
+      // Step 3: Load warehouses if needed
+      if (warehouses.length === 0) {
+        setWarehousesLoading(true);
+        const warehouseList = await getWarehouses();
+        setWarehouses(warehouseList);
+      }
+    } catch (error) {
+      console.error('❌ Failed to load top form data:', error);
+      throw error; // Re-throw so caller knows something went wrong
+    } finally {
+      setWarehousesLoading(false);
+    }
+  }, [
+    cartList,
+    warehouses,
+    findAccount,
+    getConnectedProject,
+    setSelectedAccount,
+    setConnectedProjects,
+    setSelectedProject,
+    setWarehouses,
+    setWarehousesLoading
+  ]);
+
+  const getCartDetails = useCallback(async (cartId: number | null): Promise<CartDetails | null> => {
+    if (cartId === null) return null;
+    try {
+      const details = await getCart(cartId);
+      setCurrentCartDetails(details);
+      return details;
+    } catch (error) {
+      console.error(error);
+      return null;
+    }
+  }, [setCurrentCartDetails]);
+
+  const initializeCart = useCallback(async (cartData: CartDetails | null) => {
+    if (!cartData) return;
 
     const {
       branchCenterDelivery,
@@ -165,23 +230,9 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
       projectIdCustomer,
       transit,
       codeAccCustomer
-    } = currentCartDetails;
+    } = cartData;
 
     try {
-      // --- Step 1: Ensure account is ready ---
-      if (!selectedAccount) {
-        console.warn('No selected account yet');
-        return;
-      }
-
-      // --- Step 2: Fetch warehouses if needed (do this FIRST) ---
-      if (warehouses.length === 0) {
-        setWarehousesLoading(true);
-        const warehouseList = await getWarehouses();
-        setWarehouses(warehouseList);
-      }
-
-      // --- Step 3: Handle branch vs project mode ---
       setIsBranchDelivery(branchCenterDelivery);
       const sourceLabel = transit ? 'مستقیم از کارخانه' : 'از انبار';
       setDeliverySource(sourceLabel);
@@ -192,34 +243,26 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
           (warehouses.length > 0 ? warehouses[0] : null);
         if (targetWarehouse) setSelectedCartWarehouse(targetWarehouse);
       } else {
-        // Project mode: fetch projects + distance
-        setProjectsLoading(true);
-        const projects = await getConnectedProject(true, selectedAccount.codeAcc);
-        setConnectedProjects(projects);
-
-        const targetProject = projects.find(p => p.id === projectIdCustomer);
-        if (!targetProject) {
-          showSnackbar('پروژه مورد نظر یافت نشد', 'error', 5000, <ErrorOutlineRoundedIcon />);
-          return;
-        }
-
-        setSelectedProject(targetProject);
-        setSelectedProjectState({
-          title: `${selectedAccount.title} - ${targetProject.title}`,
-          id: targetProject.id
-        });
-
-        if (targetProject.latitude === 0 || targetProject.longitude === 0) {
+        
+        if (currentProject?.latitude === 0 || currentProject?.longitude === 0) {
           showSnackbar('مختصات جغرافیایی پروژه وارد نشده است', 'warning', 5000, <ErrorOutlineRoundedIcon />);
           return;
         }
 
         // Fetch distance
-        setDistanceLoading(true);
-        const loadingSnackbarId = showSnackbar('درحال پردازش نزدیکترین انبار', 'info', 0, <InfoRoundedIcon />);
-        await fetchDistance();
-        closeSnackbarById(loadingSnackbarId);
-        showSnackbar('انبار پردازش شد', 'success', 3000, <DoneAllRoundedIcon />);
+        if (!isBranchDelivery && currentProject && currentProject.latitude !== 0 && currentProject.longitude !== 0) {
+          setDistanceLoading(true);
+          const loadingSnack = showSnackbar('در حال پردازش انبار...', 'info', 0, <InfoRoundedIcon />);
+
+          try {
+            await fetchDistance();
+          } finally {
+            closeSnackbarById(loadingSnack);
+            setDistanceLoading(false);
+          }
+        } else {
+          showSnackbar('Didnt pardazesh', 'warning', 1000, <InfoRoundedIcon />);
+        }
       }
     } catch (error: any) {
       console.error('❌ Cart init failed:', error);
@@ -228,30 +271,52 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
       setProjectsLoading(false);
       setWarehousesLoading(false);
       setDistanceLoading(false);
-      initAttemptedRef.current = false; // allow retry if currentCartDetails changes again
+      initAttemptedRef.current = false;
     }
   },
-  // [ currentCartDetails, selectedAccount, warehouses, setIsBranchDelivery, setSelectedProject, fetchDistance, showSnackbar, closeSnackbarById ]
-  [currentCartDetails]
-);
+    [currentCartDetails, selectedAccount, warehouses, setIsBranchDelivery, fetchDistance, selectedProject, currentProject]
+  );
+
+  const clearCartDetails = () => {
+    setRawItems([]);
+    setCartProducts([]);
+    cartShipments.forEach(s => removeShipment(s.id));
+    clearSelectedItems();
+    setSelectedCartWarehouse(null);
+    setSelectedProjectState(null);
+    setConnectedProjects([]);
+    setDeliverySource(null);
+    initAttemptedRef.current = false;
+    vehicleApiCalledRef.current = false;
+  }
+
+  const cartChanged = useCallback(async () => {
+    await clearCartDetails();
+    await setTopFormData();
+    const cartData = await getCartDetails(selectedCartId);
+    await initializeCart(cartData);
+  }, [
+    clearCartDetails,
+    setTopFormData,
+    getCartDetails,
+    selectedCartId,
+    initializeCart
+  ]);
 
   useEffect(() => {
-    if (currentCartDetails || !selectedProjectState) {
-      // Reset state first
-      setRawItems([]);
-      setCartProducts([]);
-      cartShipments.forEach(s => removeShipment(s.id));
-      clearSelectedItems();
-      setSelectedCartWarehouse(null);
-      setSelectedProjectState(null);
-      setConnectedProjects([]);
-      setDeliverySource(null);
-      initAttemptedRef.current = false;
-      vehicleApiCalledRef.current = false;
+    const currentCartId = selectedCartId;
+
+    // Prevent re-run on same cart
+    if (currentCartId === prevCartIdRef.current) return;
+    prevCartIdRef.current = currentCartId;
+
+    // Only initialize if we have a cart ID
+    if (currentCartId) {
+      showSnackbar("Initializing cart...", 'info', 3000, <InfoRoundedIcon />);
+      cartChanged();
     }
-    initializeCart();
-    showSnackbar("Initializing cart...", 'info', 3000, <InfoRoundedIcon />);
-  }, [currentCartDetails, initializeCart]);
+  }, [selectedCartId, cartChanged]); // Stable if cartChanged is memoized properly
+
 
   useEffect(() => {
     if (isBranchDelivery || !primaryDistance || warehouses.length === 0 || distanceLoading) {
@@ -340,21 +405,25 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
   };
 
   const getVehicleId = useCallback(async () => {
-  let geofence: GeoFence | null = null;
-  if (selectedProject) {
-    try {
-      geofence = await getGeoFence(selectedProject);
-      setgeofence(geofence);
-    } catch (error: any) {
-      const errorMessage = error.response?.data || error.message || 'خطا در دریافت محدوده جغرافیایی';
-      showSnackbar(errorMessage, 'error', 5000, <ErrorOutlineRoundedIcon />);
+    let geofence: GeoFence | null = null;
+    if (currentProject) {
+      try {
+        geofence = await getGeoFence(currentProject);
+        setgeofence(geofence);
+      } catch (error: any) {
+        const errorMessage = error.response?.data || error.message || 'خطا در دریافت محدوده جغرافیایی';
+        showSnackbar(errorMessage, 'error', 5000, <ErrorOutlineRoundedIcon />);
+      }
     }
-  }
     const items = rawItems;
-    console.log("🚀 ~ Cart ~ items:", items)
     const warehouseId = isBranchDelivery
       ? selectedCartWarehouse?.id
       : primaryDistance;
+    
+    if (!geofence) {
+      console.log("🗺 ~ Cart ~ geofence:", geofence)
+      return;
+    }
 
     const data = await getTransportCartListSale(
       null,
@@ -364,23 +433,9 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
       isBranchDelivery,
       warehouseId,
       currentCartDetails?.transit,
-      selectedProject
+      currentProject
     );
-    console.log("🚀 ~ Cart ~ null" ,
-      items,
-      geofence,
-      distance,
-      isBranchDelivery,
-      warehouseId,
-      currentCartDetails?.transit,
-      null,
-      items,
-      geofence,
-      distance,
-      isBranchDelivery,
-      warehouseId,
-      currentCartDetails?.transit,
-      selectedProject)
+    console.log("🤢 ~ Cart ~ data:", data)
   }, [
     filteredItems,
     isBranchDelivery,
@@ -391,8 +446,6 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
     selectedProject,
     fetchGeoFence
   ]);
-
-
 
   const handleBranchSwitch = useCallback((event: React.SyntheticEvent, checked: boolean) => {
     setIsBranchDelivery(checked);
