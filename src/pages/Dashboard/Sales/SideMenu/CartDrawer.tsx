@@ -197,28 +197,11 @@ export function CartDrawer({ onDrawerToggle, value }: { onDrawerToggle: () => vo
   const sendCartId = async (cart: ListCart) => {
     setOpenCart(cart);
     await clearCart();
-    console.log("🚀 ~ CartDrawer ~ selectedCartId:", selectedCartId)
     setSelectedCartId(cart.id);
-    console.log("🚀 ~ CartDrawer ~ selectedCartId:", selectedCartId)
-    getCartItems(cart);
     cartOpen();
     onDrawerToggle();
   };
 
-  const getCartItems = (cart: ListCart) => {
-    setIsFetchingItems(true);
-    getListOfCartItems(cart)
-      .then((data: ItemResaultPrice[]) => {
-        console.log('Fetched cart items:', data);
-        setCartProducts(data);
-      })
-      .catch((error) => {
-        console.error('Error fetching cart items:', error);
-      })
-      .finally(() => {
-        setIsFetchingItems(false);
-      });
-  }
 
   return (
     <React.Fragment>

@@ -42,7 +42,8 @@ import { flex, size } from '@/models/ReadyStyles';
 import { useAccountStore, useProjectStore, useBranchDeliveryStore, useControlCart, useDistanceStore, useProductsStore } from '@/stores';
 import { useSnackbar } from "@/contexts/SnackBarContext";
 import { getWarehouses, getConnectedProject, getTransportCartListSale, findAccount, getGeoFence, getCart, findWarehouse, getListOfCartItems } from '@/api';
-import { Warehouse, ItemResaultPrice, Project, GeoFence, ListCart, CartDetails, TransportList } from '@/models'
+import { Warehouse, ItemResaultPrice, Project, GeoFence, ListCart, CartDetails, TransportList, Account } from '@/models'
+import { clear } from 'localforage';
 
 interface CartProps {
   setOpenCart: (value: boolean) => void;
@@ -81,6 +82,7 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
   const [deliveryMethodBot, setDeliveryMethodBot] = useState<string | null>('manual');
   const [geofence, setgeofence] = useState<GeoFence | null>(null);
   const [currentProject, setCurrentProject] = useState<Project | undefined>(undefined);
+  const [currentAccount, setCurrentAccount] = useState<Account | undefined>(undefined);
 
   const { setSelectedAccount, selectedAccount } = useAccountStore();
   const { selectedProject, setSelectedProject } = useProjectStore();
@@ -89,9 +91,6 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
   const { showSnackbar, closeSnackbarById } = useSnackbar();
   const { toPersianPrice } = usePersianNumbers();
   const { selectedWarehouse } = useProductsStore();
-
-  const initAttemptedRef = React.useRef(false);
-  const vehicleApiCalledRef = useRef(false);
 
   const {
     cartClose,
@@ -112,9 +111,9 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
     setCartProducts,
     selectedCartId,
     setCurrentCartDetails,
-    cartList
+    cartList,
+    setIsFetchingItems
   } = useControlCart();
-  const controlCart = useControlCart.getState();
 
   const primaryDistance = useMemo(
     () => distance.find((d) => d.warehouseId > 0)?.warehouseId || null,
@@ -161,54 +160,39 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
     });
   }, [cartShipments, removeShipment]);
 
-  const setTopFormData = useCallback(async (): Promise<void> => {
-    if (!cartList) return;
+  const setProjectAccount = async (cartList: ListCart | null) => {
+    if (!cartList) {
+      console.log("Cart not ready");
+      return;
+    }
+    const account = await findAccount(cartList.codeAccCustomer);
+    setSelectedAccount(account);
+    setCurrentAccount(account);
 
+    const projects = await getConnectedProject(cartList.branchCenterDelivery, account.codeAcc);
+    setConnectedProjects(projects);
+
+    const matchedProject = projects.find(p => p.id === cartList.projectIdCustomer);
+    setCurrentProject(matchedProject);
+
+    if (matchedProject && account) {
+      setSelectedProjectState({
+        title: `${account.title} - ${matchedProject.title}`,
+        id: matchedProject.id
+      });
+      setSelectedProject(matchedProject);
+    }
+  }
+
+  const getWarehouseList = async () => {
     try {
-      showSnackbar("Loading top form data...", 'info', 3000, <InfoRoundedIcon />);
-
-      // Step 1: Fetch account
-      const account = await findAccount(cartList.codeAccCustomer);
-      setSelectedAccount(account);
-
-      // Step 2: Fetch connected projects
-      const projects = await getConnectedProject(cartList.branchCenterDelivery, account.codeAcc);
-      setConnectedProjects(projects);
-
-      const matchedProject = projects.find(p => p.id === cartList.projectIdCustomer);
-      setCurrentProject(matchedProject);
-      showSnackbar(`Top form data loaded ${currentProject?.title}`, 'success', 3000, <InfoRoundedIcon />);
-      if (currentProject) {
-        setSelectedProject(currentProject);
-        setSelectedProjectState({
-          title: `${account?.title} - ${currentProject.title}`,
-          id: currentProject.id
-        });
-      }
-
-      // Step 3: Load warehouses if needed
-      if (warehouses.length === 0) {
-        setWarehousesLoading(true);
-        const warehouseList = await getWarehouses();
-        setWarehouses(warehouseList);
-      }
-    } catch (error) {
-      console.error('❌ Failed to load top form data:', error);
-      throw error; // Re-throw so caller knows something went wrong
+      setWarehousesLoading(true);
+      const warehouseList = await getWarehouses();
+      setWarehouses(warehouseList);
     } finally {
       setWarehousesLoading(false);
     }
-  }, [
-    cartList,
-    warehouses,
-    findAccount,
-    getConnectedProject,
-    setSelectedAccount,
-    setConnectedProjects,
-    setSelectedProject,
-    setWarehouses,
-    setWarehousesLoading
-  ]);
+  }
 
   const getCartDetails = useCallback(async (cartId: number | null): Promise<CartDetails | null> => {
     if (cartId === null) return null;
@@ -222,36 +206,36 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
     }
   }, [setCurrentCartDetails]);
 
-  const initializeCart = useCallback(async (cartData: CartDetails | null) => {
-    if (!cartData) return;
+  const setTransitList = (cartList: ListCart | null) => {
+    const isTransit = cartList?.transit;
+    const sourceLabel = isTransit ? 'مستقیم از کارخانه' : 'از انبار';
+    setDeliverySource(sourceLabel);
+  }
 
-    const {
-      branchCenterDelivery,
-      warehouseId,
-      projectIdCustomer,
-      transit,
-      codeAccCustomer
-    } = cartData;
+  const setBranchDelivery = (cartList: ListCart | null) => {
+    const isBranch = cartList?.branchCenterDelivery;
+    if (isBranch) {
+      setIsBranchDelivery(true);
+    } else {
+      setIsBranchDelivery(false);
+    }
+  }
 
+  const getNearestWarehouse = async (cartList: ListCart | null, project: Project | undefined, listWarehouses: Warehouse[]) => {
+    const warehouseId = cartList?.warehouseId;
     try {
-      setIsBranchDelivery(branchCenterDelivery);
-      const sourceLabel = transit ? 'مستقیم از کارخانه' : 'از انبار';
-      setDeliverySource(sourceLabel);
-
-      if (branchCenterDelivery) {
-        // Branch mode: just select warehouse
-        const targetWarehouse = warehouses.find(wh => wh.id === warehouseId) ||
-          (warehouses.length > 0 ? warehouses[0] : null);
+      if (isBranchDelivery) {
+        const targetWarehouse = listWarehouses.find(wh => wh.id === warehouseId) ||
+          (listWarehouses.length > 0 ? listWarehouses[0] : null);
         if (targetWarehouse) setSelectedCartWarehouse(targetWarehouse);
       } else {
 
-        if (currentProject?.latitude === 0 || currentProject?.longitude === 0) {
+        if (project?.latitude === 0 || project?.longitude === 0) {
           showSnackbar('مختصات جغرافیایی پروژه وارد نشده است', 'warning', 5000, <ErrorOutlineRoundedIcon />);
           return;
         }
 
-        // Fetch distance
-        if (!isBranchDelivery && currentProject && currentProject.latitude !== 0 && currentProject.longitude !== 0) {
+        if (!isBranchDelivery && project && project.latitude !== 0 && project.longitude !== 0) {
           setDistanceLoading(true);
           const loadingSnack = showSnackbar('در حال پردازش انبار...', 'info', 0, <InfoRoundedIcon />);
 
@@ -261,8 +245,9 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
             closeSnackbarById(loadingSnack);
             setDistanceLoading(false);
           }
-        } else {
-          showSnackbar('Didnt pardazesh', 'warning', 1000, <InfoRoundedIcon />);
+        } else if (!project) {
+          console.log("🥐🥐 Missing required data for initializeCart calc", { project });
+          showSnackbar('اطلاعات نداریم', 'warning', 3000, <ErrorOutlineRoundedIcon />);
         }
       }
     } catch (error: any) {
@@ -272,11 +257,23 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
       setProjectsLoading(false);
       setWarehousesLoading(false);
       setDistanceLoading(false);
-      initAttemptedRef.current = false;
     }
-  },
-    [currentCartDetails, selectedAccount, warehouses, setIsBranchDelivery, fetchDistance, selectedProject, currentProject]
-  );
+  }
+
+  const getCartItems = (cart: ListCart | null) => {
+    setIsFetchingItems(true);
+    getListOfCartItems(cart)
+      .then((data: ItemResaultPrice[]) => {
+        console.log('Fetched cart items:', data);
+        setCartProducts(data);
+      })
+      .catch((error) => {
+        console.error('Error fetching cart items:', error);
+      })
+      .finally(() => {
+        setIsFetchingItems(false);
+      });
+  }
 
   const clearCartDetails = () => {
     setRawItems([]);
@@ -287,147 +284,43 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
     setSelectedProjectState(null);
     setConnectedProjects([]);
     setDeliverySource(null);
-    initAttemptedRef.current = false;
-    vehicleApiCalledRef.current = false;
   }
 
-  const cartChanged = useCallback(async () => {
-    await clearCartDetails();
-    await setTopFormData();
-    const cartData = await getCartDetails(selectedCartId);
-    await initializeCart(cartData);
-  }, [
-    clearCartDetails,
-    setTopFormData,
-    getCartDetails,
-    selectedCartId,
-    initializeCart
-  ]);
-
-  useEffect(() => {
-    const currentCartId = selectedCartId;
-
-    // Prevent re-run on same cart
-    if (currentCartId === prevCartIdRef.current) return;
-    prevCartIdRef.current = currentCartId;
-
-    // Only initialize if we have a cart ID
-    if (currentCartId) {
-      showSnackbar("Initializing cart...", 'info', 3000, <InfoRoundedIcon />);
-      cartChanged();
-    }
-  }, [selectedCartId, cartChanged]); // Stable if cartChanged is memoized properly
-
-
-  useEffect(() => {
-    if (isBranchDelivery || !primaryDistance || warehouses.length === 0 || distanceLoading) {
-      return;
-    }
-    const nearestWarehouse = warehouses.find(wh => wh.id === primaryDistance);
-    if (nearestWarehouse) {
-      setSelectedCartWarehouse(nearestWarehouse);
-
-    }
-  }, [primaryDistance, warehouses, isBranchDelivery, distanceLoading]);
-
-  useEffect(() => {
+  const setRawItemsList = async () => {
     if (cartProducts.length === 0) {
       setRawItems([]);
-      return;
+    } else {
+      setRawItems(cartProducts);
     }
-    setRawItems(cartProducts);
-  }, [cartProducts]);
+  }
 
-  useEffect(() => {
-    console.log("🚀 ~ Cart ~ cartShipments:", rawItems)
-    if (
-      rawItems.length === 0 ||
-      cartShipments.length > 0 ||
-      !selectedCartWarehouse
-    ) {
-      return;
-    }
-
-    const shipmentId = addShipment({
-      warehouseId: selectedCartWarehouse.id,
-      deliveryMethod: null,
-      deliveryDate: null,
-    });
-
-    const updatedItems = rawItems.map(item => ({
-      ...item,
-      tempShipmentId: shipmentId
-    }));
-    setRawItems(updatedItems);
-  }, [rawItems.length, cartShipments.length, selectedCartWarehouse]);
-
-  useEffect(() => {
-    const isStable = (
-      rawItems.length > 0 &&
-      !isFetchingItems &&
-      !projectsLoading &&
-      !warehousesLoading &&
-      !distanceLoading &&
-      !isFindingWarehouse &&
-      !isSelectingProject
-    );
-
-    if (isStable && !vehicleApiCalledRef.current) {
-      vehicleApiCalledRef.current = true;
-      getVehicleId();
-      showSnackbar("💀💀 ~ getVehicleId ~ data:", 'info', 5000, <AutoAwesomeRoundedIcon />);
-    }
-  }, [
-    rawItems.length,
-    isFetchingItems,
-    projectsLoading,
-    warehousesLoading,
-    distanceLoading,
-    isFindingWarehouse,
-    isSelectingProject,
-    filteredItems.length
-  ]);
-
-  const fetchGeoFence = async () => {
-    if (!selectedProject) return null;
-
-    try {
-      const result = await getGeoFence(selectedProject);
-      setgeofence(result);
-      if (result === null) {
-        return null;
-      } else {
-        return result
-      }
-    } catch (error: any) {
-      const errorMessage = error.response?.data || error.message || 'خطا در دریافت محدوده جغرافیایی';
-      showSnackbar(errorMessage, 'error', 5000, <ErrorOutlineRoundedIcon />);
-      return null;
-    }
-  };
-
-  const getVehicleId = useCallback(async () => {
+  const getVehicleId = async (items: ItemResaultPrice[], warehouseId: number | undefined, project: Project | undefined) => {
     let geofence: GeoFence | null = null;
-    if (currentProject) {
+    if (project) {
       try {
-        geofence = await getGeoFence(currentProject);
+        geofence = await getGeoFence(project);
         setgeofence(geofence);
       } catch (error: any) {
         const errorMessage = error.response?.data || error.message || 'خطا در دریافت محدوده جغرافیایی';
         showSnackbar(errorMessage, 'error', 5000, <ErrorOutlineRoundedIcon />);
+        return;
       }
     }
-    const items = rawItems;
-    const warehouseId = isBranchDelivery
-      ? selectedCartWarehouse?.id
-      : primaryDistance;
 
-    if (!geofence) {
-      console.log("🗺 ~ Cart ~ geofence:", geofence)
+    if (!geofence || !warehouseId || !project) {
+      console.log("🗺 Missing required data for transport calc", { geofence, warehouseId, project });
       return;
     }
 
     try {
+      console.log("👚🎒 ~ Cart ~ null",
+        items,
+        geofence,
+        distance,
+        isBranchDelivery,
+        warehouseId,
+        currentCartDetails?.transit,
+      )
       const data: TransportList = await getTransportCartListSale(
         null,
         items,
@@ -436,10 +329,10 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
         isBranchDelivery,
         warehouseId,
         currentCartDetails?.transit,
-        currentProject
+        project
       );
 
-      console.log("🚛 ~ getVehicleId ~ Transport Data:", data);
+      console.log("🚛 Transport Data:", data);
 
       if (data.listItemVehicleShipp && data.listItemVehicleShipp.length > 0) {
         const filteredVehicles = data.listItemVehicleShipp.filter((vehicle) => {
@@ -462,20 +355,86 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
       }
     } catch (error: any) {
       console.error("🚚 Transport calculation failed:", error);
-      showSnackbar(error.message || 'محاسبه وسایل نقلیه ارسال با خطا مواجه شد', 'error', 6000, <ErrorOutlineRoundedIcon />);
+      showSnackbar(
+        error.message || 'محاسبه وسایل نقلیه ارسال با خطا مواجه شد',
+        'error',
+        6000,
+        <ErrorOutlineRoundedIcon />
+      );
     }
-  }, [
-    rawItems,
-    isBranchDelivery,
-    selectedCartWarehouse?.id,
-    primaryDistance,
-    distance,
-    currentCartDetails?.transit,
-    currentProject,
-    getGeoFence,
-    toPersianPrice,
-    showSnackbar
-  ]);
+  };
+
+  useEffect(() => {
+    if (!selectedCartId || selectedCartId === 0) {
+      clearCartDetails();
+    } else {
+      getCartDetails(selectedCartId);
+    }
+  }, [selectedCartId])
+
+  useEffect(() => {
+    if (!cartList || cartProducts.length > 0 || isFetchingItems) {
+      return;
+    }
+    getCartItems(cartList);
+    setRawItemsList();
+
+  }, [cartProducts, isFetchingItems, cartList])
+
+  useEffect(() => {
+    if (!cartList) {
+      return;
+    } else {
+      setBranchDelivery(cartList);
+      setTransitList(cartList);
+      setProjectAccount(cartList);
+    }
+  }, [cartList])
+
+  useEffect(() => {
+    if (warehouses.length >= 1) { return; } else {
+      getWarehouseList();
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!warehouses && !cartList && !currentProject) {
+      return;
+    } else {
+      getNearestWarehouse(cartList, currentProject, warehouses);
+    }
+  }, [warehouses, cartList, currentProject])
+
+  useEffect(() => {
+    if (!rawItems && !selectedCartWarehouse && !currentProject) {
+      return;
+    } else {
+      getVehicleId(rawItems, selectedCartWarehouse?.id, currentProject);
+    }
+  }, [rawItems, selectedCartWarehouse, currentProject])
+
+
+  useEffect(() => {
+    if (
+      rawItems.length === 0 ||
+      cartShipments.length > 0 ||
+      !selectedCartWarehouse
+    ) {
+      return;
+    }
+
+    const shipmentId = addShipment({
+      warehouseId: selectedCartWarehouse.id,
+      deliveryMethod: null,
+      deliveryDate: null,
+    });
+
+    const updatedItems = rawItems.map(item => ({
+      ...item,
+      tempShipmentId: shipmentId
+    }));
+    setRawItems(updatedItems);
+  }, [rawItems.length, cartShipments.length, selectedCartWarehouse]);
 
   const handleBranchSwitch = useCallback((event: React.SyntheticEvent, checked: boolean) => {
     setIsBranchDelivery(checked);

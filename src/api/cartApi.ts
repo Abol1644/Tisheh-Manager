@@ -37,7 +37,7 @@ export const getCart = async (cartId: number): Promise<CartDetails> => {
 };
 
 export const getListOfCartItems = async (
-  cart: ListCart
+  cart: ListCart | null
 ): Promise<ItemResaultPrice[]> => {
   try {
     const response = await apiClient.post<ItemResaultPrice[]>(
