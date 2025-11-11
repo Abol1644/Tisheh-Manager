@@ -81,19 +81,14 @@ export default function OrderConfirm({ selectedTransport, setSelectedTransport }
       setSelectedUnit(baseUnit);
     }
   }, [selectedItem, availableUnits, selectedUnit]);
+  console.log("💚 ~ OrderConfirm ~ selectedItem:", selectedItem)
 
   React.useEffect(() => {
     if (selectedTransport && selectedItem) {
       const numericWeight = selectedTransport.capacity * (selectedItem.unitRatio || 1);
       setNumberOfProduct(numericWeight);
-      console.log("🚀 ~ OrderConfirm ~ numericWeight:", numericWeight)
     }
   }, [selectedTransport, selectedItem]);
-
-  React.useEffect(() => {
-    console.log("🧮 ~ OrderConfirm ~ numericWeight:", numberOfProduct)
-  }, [numberOfProduct]);
-
 
   const handleUnitChange = (e: SelectChangeEvent<string>) => {
     const title = e.target.value;
@@ -883,7 +878,8 @@ function CartSelection({ selectedTransport, selectedItem, selectedUnit, numberOf
       } else {
         vehicleId = '0';
       }
-      const response = await addCart(selectedItem, selectedAccount, selectedProject, isBranchDelivery, vehicleId);
+      const isTransit = selectedTransport?.transit;
+      const response = await addCart(selectedItem, selectedAccount, selectedProject, isBranchDelivery, vehicleId, isTransit);
       console.log("🐱‍👤 ~ createCart ~ response.id:", response.id);
       showSnackbar('سبد جدید ایجاد شد', 'success');
       return response.id;
