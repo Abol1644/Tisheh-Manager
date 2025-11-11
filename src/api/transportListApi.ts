@@ -45,9 +45,9 @@ export const getTransportCartListSale = async (
   warehouseId: number | undefined | null,
   transit: boolean | null | undefined,
   project: Project | null | undefined,
-): Promise<TransportList[]> => {
+): Promise<TransportList> => {
   try {
-    const response = await apiClient.post<TransportList[]>(
+    const response = await apiClient.post<TransportList>(
       '/Transport/GetListTansportCartSale',
       {
         branchCenterDelivery: branchDeliveryCenter,
@@ -63,8 +63,7 @@ export const getTransportCartListSale = async (
         elevationProject: project?.elevation || 0,
       }
     );
-    console.log("🥰🥰🥰 ~ getTransportCartListSale ~ project?.id:", project?.id)
-    console.log('❤ get transport sale list', response.data)
+    console.log('🥽 get transport sale list', response.data)
     return response.data;
   } catch (error: any) {
     console.error("Get Transport List Sale API error: ", error);

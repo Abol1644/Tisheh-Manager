@@ -42,7 +42,7 @@ import { flex, size } from '@/models/ReadyStyles';
 import { useAccountStore, useProjectStore, useBranchDeliveryStore, useControlCart, useDistanceStore, useProductsStore } from '@/stores';
 import { useSnackbar } from "@/contexts/SnackBarContext";
 import { getWarehouses, getConnectedProject, getTransportCartListSale, findAccount, getGeoFence, getCart, findWarehouse, getListOfCartItems } from '@/api';
-import { Warehouse, ItemResaultPrice, Project, GeoFence, ListCart, CartDetails } from '@/models'
+import { Warehouse, ItemResaultPrice, Project, GeoFence, ListCart, CartDetails, TransportList } from '@/models'
 
 interface CartProps {
   setOpenCart: (value: boolean) => void;
@@ -59,6 +59,7 @@ const deliverySourceLabels = deliverySources.map(a => a.method);
 export function Cart({ setOpenCart, openCart }: CartProps) {
 
   const [selectedProjectState, setSelectedProjectState] = useState<{ title: string; id: number } | null>(null);
+  const [vehicleOptions, setVehicleOptions] = useState<{ title: string; id: number }[]>([]);
   const [connectedProjects, setConnectedProjects] = useState<Project[]>([]);
   const [projectsLoading, setProjectsLoading] = useState(false);
   const [deliverySource, setDeliverySource] = useState<string | null>(null);
@@ -74,7 +75,7 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
   const [paymentModal, setPaymentModal] = useState(false);
   const prevCartIdRef = useRef<number | null>(null);
 
-  const [deliveryMethod, setDeliveryMethod] = useState<string[]>([]);
+  const [deliveryMethod, setDeliveryMethod] = useState<{ id: number; title: string } | null>(null);
   const [deliveryTime, setDeliveryTime] = useState<string[]>([]);
   const [services, setServices] = useState(0);
   const [deliveryMethodBot, setDeliveryMethodBot] = useState<string | null>('manual');
@@ -243,7 +244,7 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
           (warehouses.length > 0 ? warehouses[0] : null);
         if (targetWarehouse) setSelectedCartWarehouse(targetWarehouse);
       } else {
-        
+
         if (currentProject?.latitude === 0 || currentProject?.longitude === 0) {
           showSnackbar('مختصات جغرافیایی پروژه وارد نشده است', 'warning', 5000, <ErrorOutlineRoundedIcon />);
           return;
@@ -338,6 +339,7 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
   }, [cartProducts]);
 
   useEffect(() => {
+    console.log("🚀 ~ Cart ~ cartShipments:", rawItems)
     if (
       rawItems.length === 0 ||
       cartShipments.length > 0 ||
@@ -419,32 +421,55 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
     const warehouseId = isBranchDelivery
       ? selectedCartWarehouse?.id
       : primaryDistance;
-    
+
     if (!geofence) {
       console.log("🗺 ~ Cart ~ geofence:", geofence)
       return;
     }
 
-    const data = await getTransportCartListSale(
-      null,
-      items,
-      geofence,
-      distance,
-      isBranchDelivery,
-      warehouseId,
-      currentCartDetails?.transit,
-      currentProject
-    );
-    console.log("🤢 ~ Cart ~ data:", data)
+    try {
+      const data: TransportList = await getTransportCartListSale(
+        null,
+        items,
+        geofence,
+        distance,
+        isBranchDelivery,
+        warehouseId,
+        currentCartDetails?.transit,
+        currentProject
+      );
+
+      console.log("🚛 ~ getVehicleId ~ Transport Data:", data);
+
+      if (data.listItemVehicleShipp && data.listItemVehicleShipp.length > 0) {
+        const mapped = data.listItemVehicleShipp.map((v) => ({
+          id: v.vehicleId,
+          title: `${v.vehicleTitle}`
+        }));
+        setVehicleOptions(mapped);
+
+        if (deliveryMethod && !mapped.some(opt => opt.id === deliveryMethod.id)) {
+          setDeliveryMethod(null);
+        }
+      } else {
+        setVehicleOptions([]);
+        setDeliveryMethod(null);
+      }
+    } catch (error: any) {
+      console.error("🚚 Transport calculation failed:", error);
+      showSnackbar( error.message || 'محاسبه وسایل نقلیه ارسال با خطا مواجه شد', 'error', 6000, <ErrorOutlineRoundedIcon /> );
+    }
   }, [
-    filteredItems,
+    rawItems,
     isBranchDelivery,
     selectedCartWarehouse?.id,
     primaryDistance,
     distance,
     currentCartDetails?.transit,
-    selectedProject,
-    fetchGeoFence
+    currentProject,
+    getGeoFence,
+    toPersianPrice,
+    showSnackbar
   ]);
 
   const handleBranchSwitch = useCallback((event: React.SyntheticEvent, checked: boolean) => {
@@ -763,7 +788,6 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
 
                   return (
                     <React.Fragment key={`shipment-${shipment.id}`}>
-                      {/* ITEM ROWS */}
                       {itemsInShipment.map((item, itemIndex) => {
                         const itemKey = getItemKey(item);
                         const isChecked = selectedItemKeys.has(itemKey);
@@ -909,9 +933,18 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
                         <TableCell className='first-cell'>
                           <Combo
                             value={deliveryMethod}
-                            onChange={setDeliveryMethod}
-                            options={[]}
+                            onChange={(newValue) => {
+                              // newValue is either { id, title } or null
+                              setDeliveryMethod(newValue);
+                            }}
+                            options={vehicleOptions}
+                            // @ts-ignore
+                            getOptionLabel={(option) => option.title}
+                            // @ts-ignore
+                            getOptionValue={(option) => option.id}
                             label="شیوه تحویل"
+                            loading={distanceLoading || !vehicleOptions.length}
+                            disabled={!vehicleOptions.length}
                           />
                         </TableCell>
                         <TableCell>
