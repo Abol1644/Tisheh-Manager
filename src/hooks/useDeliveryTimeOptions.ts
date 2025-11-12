@@ -3,7 +3,6 @@ import dayjs from "@/utils/dayjs-jalali";
 import { ItemResaultPrice } from "@/models";
 import usePersianNumbers from "@/hooks/usePersianNumbers";
 
-// Days: 0=Saturday, 1=Sunday, ..., 6=Friday
 const PERSIAN_DAYS = [
   "شنبه",
   "یک‌شنبه",
@@ -17,9 +16,10 @@ const PERSIAN_DAYS = [
 export interface DeliveryTimeOption {
   id: string;
   label: string;
-  dayIndex: number;
+  dayIndex: number; // 0=Saturday ... 6=Friday
   startHour: number;
   endHour: number;
+  daysFromToday: number;
 }
 
 interface UseDeliveryTimeOptionsParams {
@@ -38,70 +38,75 @@ export function useDeliveryTimeOptions({
   return useMemo(() => {
     if (!selectedDeliveryMethod || items.length === 0) return [];
 
-    // Step 1: Intersect shipping days [start, end] from all items
-    const [startDay, endDay] = items.reduce<[number, number]>(
-      ([start, end], item) => {
-        const itemStart = item.shippingStartTimeWarehouse ?? 0;
-        const itemEnd = item.shippingEndTimeWarehouse ?? 6;
+    // Step 1: Calculate valid delivery date range for each item as [startOffset, endOffset]
+    // where offset = number of days from today (0 = today, 1 = tomorrow, etc.)
+    const ranges = items.map(item => {
+      const startOffset = item.shippingStartTimeWarehouse ?? 0;
+      const endOffset = item.shippingEndTimeWarehouse ?? 3; // default 3-day window
+      return [startOffset, endOffset] as [number, number];
+    });
 
-        const intersectStart = Math.max(start, itemStart);
-        const intersectEnd = Math.min(end, itemEnd);
-
-        return intersectStart <= intersectEnd
-          ? [intersectStart, intersectEnd]
-          : [-1, -2];
-      },
-      [0, 6]
+    // Step 2: Intersect all [start, end] ranges
+    const [globalStart, globalEnd] = ranges.reduce<[number, number]>(
+      ([accStart, accEnd], [start, end]) => [
+        Math.max(accStart, start),
+        Math.min(accEnd, end),
+      ],
+      [0, 6] // initial wide range
     );
 
-    if (startDay > endDay) return []; // No valid intersection
+    // No overlap → no valid delivery window
+    if (globalStart > globalEnd) return [];
 
-    // Step 2: Get today as 0=Saturday
-    const todayInWeek = dayjs().day(); // 0=Sunday ... 6=Saturday in default Gregorian
-    const correctedToday = todayInWeek === 0 ? 6 : todayInWeek - 1; // Convert to 0=Saturday
-
-    // Step 3: Generate next 4 delivery days within [startDay, endDay], starting from today
-    const daySequence: number[] = [];
-    let current = correctedToday;
-
-    while (daySequence.length < 4) {
-      if (startDay <= current && current <= endDay) {
-        daySequence.push(current);
-      }
-      current = (current + 1) % 7;
-    }
-
-    // Step 4: Define time slots
-    const timeSlots = [
-      { start: 8, end: 13 },
-      { start: 13, end: 18 },
-      ...(isTransitMode ? [{ start: 6, end: 22 }] : []),
-    ];
-
-    // Step 5: Build options with Persian date labels
+    // Step 3: Generate up to 4 upcoming delivery dates within [globalStart, globalEnd]
     const options: DeliveryTimeOption[] = [];
+    const now = dayjs();
+    const currentHour = now.hour();
+    const todayIndex = now.day() === 0 ? 6 : now.day() - 1; // 0=Saturday
 
-    daySequence.forEach((dayOffsetIndex) => {
-      const diffInDays = (dayOffsetIndex - correctedToday + 7) % 7;
-      const targetDate = dayjs().add(diffInDays, "day");
+    // We'll consider days from `globalStart` to `globalEnd`, capped at 4 days
+    const daysToGenerate = Math.min(4, globalEnd - globalStart + 1);
 
-      // Format as Jalali and convert digits to Persian
-      const jDate = targetDate.calendar("jalali").format("YYYY/MM/DD"); // "1405/8/21"
-      const persianJDate = toPersianNumber(jDate); // "۱۴۰۵/۸/۲۱"
+    for (let i = 0; i < daysToGenerate; i++) {
+      const daysFromToday = globalStart + i; // e.g., deliver in 1, 2, or 3 days
+      const targetDate = dayjs().add(daysFromToday, "day");
 
+      const dayOfWeek = targetDate.day();
+      const dayOffsetIndex = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // 0=Saturday
+      const isToday = daysFromToday === 0;
+
+      // Format Jalali date with Persian digits
+      const jDate = targetDate.calendar("jalali").format("YYYY/MM/DD");
+      const persianJDate = toPersianNumber(jDate);
       const dayName = PERSIAN_DAYS[dayOffsetIndex];
+
+      // Define time slots
+      let timeSlots = [
+        { start: 8, end: 13 },
+        { start: 13, end: 18 },
+        ...(isTransitMode ? [{ start: 6, end: 22 }] : []),
+      ];
+
+      // Filter out expired slots for today
+      if (isToday) {
+        if (currentHour >= 18) continue; // No slots available
+        if (currentHour >= 13) {
+          timeSlots = timeSlots.filter(slot => !(slot.start === 8 && slot.end === 13));
+        }
+      }
 
       timeSlots.forEach((slot) => {
         const label = `${dayName}، ${persianJDate}، ساعت ${toPersianNumber(slot.start)} - ${toPersianNumber(slot.end)}`;
         options.push({
-          id: `day-${dayOffsetIndex}-slot-${slot.start}-${slot.end}`,
+          id: `day-${daysFromToday}-slot-${slot.start}-${slot.end}`,
           label,
           dayIndex: dayOffsetIndex,
           startHour: slot.start,
           endHour: slot.end,
+          daysFromToday
         });
       });
-    });
+    }
 
     return options;
   }, [items, isTransitMode, selectedDeliveryMethod, toPersianNumber]);

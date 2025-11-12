@@ -39,6 +39,7 @@ import BaseModal from '@/pages/Dashboard/Sales/Modals/BaseModal';
 import PaymentModal from '@/pages/Dashboard/Sales/Modals/PaymentModal';
 import { flex, size } from '@/models/ReadyStyles';
 
+import dayjs from "@/utils/dayjs-jalali";
 import { useSnackbar } from "@/contexts/SnackBarContext";
 import { useDeliveryTimeOptions } from '@/hooks/useDeliveryTimeOptions';
 import {
@@ -344,7 +345,6 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
       setRawItems([]);
     } else {
       setRawItems(cartProducts);
-      console.log("🚀 ~ Cart ~ cartProducts:", cartProducts)
       // showSnackbar(`موفقیت آمیز ${rawItems.length}`, 'success', 5000, <InfoRoundedIcon />);
 
     }
@@ -387,7 +387,7 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
         project
       );
 
-      // console.log("🚛 Transport Data:", data);
+      console.log("🚛 Transport Data:", data);
 
       if (data.listItemVehicleShipp && data.listItemVehicleShipp.length > 0) {
         const filteredVehicles = data.listItemVehicleShipp.filter((vehicle) => {
@@ -504,6 +504,31 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
     }));
     setRawItems(updatedItems);
   }, [rawItems.length, cartShipments.length, selectedCartWarehouse]);
+
+  // Auto-select best delivery time when deliveryMethod is chosen
+  useEffect(() => {
+    if (deliveryMethod && !deliveryTime && deliveryTimeOptions.length > 0) {
+      const now = dayjs();
+      const currentHour = now.hour();
+
+      // Find best option: prefer morning slot if before 13, else afternoon
+      let selectedOption = null;
+
+      // Try to find a valid "today" option (i.e., delivered 0 days from now)
+      const availableTodayOptions = deliveryTimeOptions.filter(opt => opt.daysFromToday === 0);
+
+      if (availableTodayOptions.length > 0) {
+        if (currentHour < 13) {
+          selectedOption = availableTodayOptions.find(opt => opt.startHour === 8 && opt.endHour === 13);
+        } else if (currentHour < 18) {
+          selectedOption = availableTodayOptions.find(opt => opt.startHour === 13 && opt.endHour === 18);
+        }
+      }
+
+      // Fallback: first available option (could be tomorrow)
+      setDeliveryTime(selectedOption || deliveryTimeOptions[0]);
+    }
+  }, [deliveryMethod, deliveryTimeOptions, deliveryTime]);
 
   const handleBranchSwitch = useCallback((event: React.SyntheticEvent, checked: boolean) => {
     setIsBranchDelivery(checked);
