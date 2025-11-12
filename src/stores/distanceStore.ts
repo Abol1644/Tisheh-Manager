@@ -2,14 +2,14 @@
 import { create } from "zustand";
 import { getDistance } from "@/api/";
 import { Distance } from "@/models/";
-import { useProjectStore, useProductsStore } from "@/stores/";
+import { Project } from "@/models/";
 
 interface DistanceState {
   distance: Distance[];
   setDistance: (distance: Distance[]) => void;
   loading: boolean;
   error: string | null;
-  fetchDistance: () => Promise<Distance[]>; // ← Change return type
+  fetchDistance: (project: Project | undefined) => Promise<Distance[]>; // ← Accept project as arg
   clearDistance: () => void;
 }
 
@@ -19,17 +19,19 @@ export const useDistanceStore = create<DistanceState>((set) => ({
   error: null,
   setDistance: (distance: Distance[]) => set({ distance }),
 
-  fetchDistance: async (): Promise<Distance[]> => {
-    set({ loading: true, error: null });
-    try {
-      const { selectedProject } = useProjectStore.getState();
-      if (!selectedProject) {
-        throw new Error("No project selected");
-      }
+  fetchDistance: async (project): Promise<Distance[]> => {
+    if (!project) {
+      const error = new Error("No project provided");
+      set({ error: error.message, loading: false });
+      throw error;
+    }
 
-      const distanceArray = await getDistance(selectedProject, false);
+    set({ loading: true, error: null });
+
+    try {
+      const distanceArray = await getDistance(project, false);
       set({ distance: distanceArray, loading: false });
-      return distanceArray; // ✅ Return it!
+      return distanceArray;
     } catch (error: any) {
       const message = error.message || "Failed to fetch distance";
       set({ error: message, loading: false });

@@ -195,7 +195,7 @@ export function ProductSelect(props: any) {
       setIsFetchingDistance(true);
       try {
         const loadingSnackbarId = showSnackbar('درحال پردازش انبار', 'info', 0, <InfoRoundedIcon />);
-        await fetchDistance();
+        await fetchDistance(selectedProject);
         closeSnackbarById(loadingSnackbarId);
       } catch (error: any) {
         setSelectedWarehouse(null);

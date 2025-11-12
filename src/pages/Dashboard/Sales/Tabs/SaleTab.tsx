@@ -61,6 +61,19 @@ export default function Sale() {
   const [categories, setCategories] = useState<CategorySale[]>([]);
   const { setSelectedCategory } = useProductsStore();
   const [loading, setLoading] = useState(true);
+  const [cartOpenDisable, setCartOpenDisable] = useState(false);
+
+  useEffect(() => {
+    if (!isCartOpen) {
+    const timer = setTimeout(() => {
+      setCartOpenDisable(isCartOpen);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  } else {
+    setCartOpenDisable(isCartOpen);
+  }
+  }, [isCartOpen]);
 
   const handleCategorySelect = useCallback((category: CategorySale | null) => {
     setSelectedCategory(category);
@@ -129,7 +142,7 @@ export default function Sale() {
   };
 
   const handlePinToggle = () => {
-    setDrawerPinned((prev:boolean) => {
+    setDrawerPinned((prev: boolean) => {
       const newValue = !prev;
       return newValue;
     });
@@ -272,7 +285,7 @@ export default function Sale() {
                   zIndex: isCartOpen ? 10 : 0
                 }}
               >
-                <Cart openCart={isCartOpen} setOpenCart={cartOpen} />
+                {cartOpenDisable && <Cart openCart={isCartOpen} setOpenCart={cartOpen} />}
               </Box>
 
               <Box
@@ -284,13 +297,15 @@ export default function Sale() {
                   zIndex: isCartOpen ? 0 : 10
                 }}
               >
-                <ProductSelect
-                  drawerOpen={drawerOpen}
-                  setDrawerOpen={setDrawerOpen}
-                  openModal={openModal}
-                  categoryEnable={categoryEnable}
-                  setCategoryEnable={setCategoryEnable}
-                />
+                { !isCartOpen &&
+                  <ProductSelect
+                    drawerOpen={drawerOpen}
+                    setDrawerOpen={setDrawerOpen}
+                    openModal={openModal}
+                    categoryEnable={categoryEnable}
+                    setCategoryEnable={setCategoryEnable}
+                  />
+                }
               </Box>
             </Box>
           </Box>

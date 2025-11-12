@@ -109,8 +109,8 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
   const [currentProject, setCurrentProject] = useState<Project | undefined>(undefined);
   const [currentAccount, setCurrentAccount] = useState<Account | undefined>(undefined);
 
-  const { setSelectedAccount, selectedAccount } = useAccountStore();
-  const { selectedProject, setSelectedProject } = useProjectStore();
+  const [selectedAccount, setSelectedAccount] = useState<Account | undefined>(undefined);
+  const [selectedProject, setSelectedProject] = useState<Project | undefined>(undefined);
   const { isBranchDelivery, setIsBranchDelivery } = useBranchDeliveryStore();
   const { distance, fetchDistance } = useDistanceStore();
   const { showSnackbar, closeSnackbarById } = useSnackbar();
@@ -317,14 +317,11 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
     setDeliverySource(null);
   }
 
-  // const setRawItemsList = async () => {
-  //   if (cartProducts.length === 0) {
-  //     setRawItems([]);
-  //   } else {
-  //     setRawItems(cartProducts);
-  //     showSnackbar(`موفقیت آمیز ${rawItems.length}`, 'success', 5000, <InfoRoundedIcon />);
-  //   }
-  // }
+  useEffect(() => {
+    if (!isCartOpen) {
+      clearCartDetails();
+    }
+  }, [isCartOpen])
 
   useEffect(() => {
     if (cartProducts.length === 0) {
@@ -408,7 +405,7 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
 
   const findDistance = async (): Promise<Distance[]> => {
     try {
-      const distances = await fetchDistance(); // ✅ Direct result
+      const distances = await fetchDistance(selectedProject);
       console.log("Found distances:", distances);
       return distances;
     } catch (error) {
