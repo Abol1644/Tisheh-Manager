@@ -39,11 +39,36 @@ import BaseModal from '@/pages/Dashboard/Sales/Modals/BaseModal';
 import PaymentModal from '@/pages/Dashboard/Sales/Modals/PaymentModal';
 import { flex, size } from '@/models/ReadyStyles';
 
-import { useAccountStore, useProjectStore, useBranchDeliveryStore, useControlCart, useDistanceStore, useProductsStore } from '@/stores';
 import { useSnackbar } from "@/contexts/SnackBarContext";
-import { getWarehouses, getConnectedProject, getTransportCartListSale, findAccount, getGeoFence, getCart, findWarehouse, getListOfCartItems } from '@/api';
-import { Warehouse, ItemResaultPrice, Project, GeoFence, ListCart, CartDetails, TransportList, Account } from '@/models'
-import { clear } from 'localforage';
+import {
+  useAccountStore,
+  useProjectStore,
+  useBranchDeliveryStore,
+  useControlCart,
+  useDistanceStore,
+  useProductsStore
+} from '@/stores';
+import {
+  getWarehouses,
+  getConnectedProject,
+  getTransportCartListSale,
+  findAccount,
+  getGeoFence,
+  getCart,
+  findWarehouse,
+  getListOfCartItems
+} from '@/api';
+import {
+  Warehouse,
+  ItemResaultPrice,
+  Project,
+  GeoFence,
+  ListCart,
+  CartDetails,
+  TransportList,
+  Account,
+  Distance
+} from '@/models'
 
 interface CartProps {
   setOpenCart: (value: boolean) => void;
@@ -114,11 +139,6 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
     cartList,
     setIsFetchingItems
   } = useControlCart();
-
-  const primaryDistance = useMemo(
-    () => distance.find((d) => d.warehouseId > 0)?.warehouseId || null,
-    [distance]
-  );
 
   const projectTitles = useMemo(() => {
     if (!selectedAccount || connectedProjects.length === 0) return [];
@@ -230,21 +250,32 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
         if (targetWarehouse) setSelectedCartWarehouse(targetWarehouse);
       } else {
 
-        if (project?.latitude === 0 || project?.longitude === 0) {
+        if (project?.latitude === 0 || project?.longitude === 0 || !listWarehouses) {
           showSnackbar('مختصات جغرافیایی پروژه وارد نشده است', 'warning', 5000, <ErrorOutlineRoundedIcon />);
           return;
         }
 
         if (!isBranchDelivery && project && project.latitude !== 0 && project.longitude !== 0) {
           setDistanceLoading(true);
-          const loadingSnack = showSnackbar('در حال پردازش انبار...', 'info', 0, <InfoRoundedIcon />);
 
+          let distances: Distance[] = [];
           try {
-            await fetchDistance();
-          } finally {
-            closeSnackbarById(loadingSnack);
-            setDistanceLoading(false);
+            distances = await findDistance();
+          } catch (error) {
+            showSnackbar("محاسبه فاصله ناموفق بود", "error", 5000, <ErrorOutlineRoundedIcon />);
+            return;
           }
+
+          const primaryDistance = distances.find((d) => d.warehouseId > 0)?.warehouseId || null;
+          const targetWarehouse = listWarehouses.find(wh => wh.id === primaryDistance)
+          if (targetWarehouse) {
+            setSelectedCartWarehouse(targetWarehouse);
+            showSnackbar(`انبار با موفقیت انتخاب شد ${targetWarehouse?.title}`, 'info', 1000, <InfoRoundedIcon />);
+          } else {
+            showSnackbar('انبار مناسب پیدا نشد', 'warning', 3000, <ErrorOutlineRoundedIcon />);
+            return;
+          }
+          setDistanceLoading(false);
         } else if (!project) {
           console.log("🥐🥐 Missing required data for initializeCart calc", { project });
           showSnackbar('اطلاعات نداریم', 'warning', 3000, <ErrorOutlineRoundedIcon />);
@@ -286,19 +317,30 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
     setDeliverySource(null);
   }
 
-  const setRawItemsList = async () => {
+  // const setRawItemsList = async () => {
+  //   if (cartProducts.length === 0) {
+  //     setRawItems([]);
+  //   } else {
+  //     setRawItems(cartProducts);
+  //     showSnackbar(`موفقیت آمیز ${rawItems.length}`, 'success', 5000, <InfoRoundedIcon />);
+  //   }
+  // }
+
+  useEffect(() => {
     if (cartProducts.length === 0) {
       setRawItems([]);
     } else {
       setRawItems(cartProducts);
+      showSnackbar(`موفقیت آمیز ${rawItems.length}`, 'success', 5000, <InfoRoundedIcon />);
     }
-  }
+  }, [cartProducts])
 
-  const getVehicleId = async (items: ItemResaultPrice[], warehouseId: number | undefined, project: Project | undefined) => {
+  const getVehicleId = async (items: ItemResaultPrice[], warehouse: Warehouse | null, project: Project | undefined) => {
     let geofence: GeoFence | null = null;
     if (project) {
       try {
         geofence = await getGeoFence(project);
+        showSnackbar("در حال دریافت جئو", 'error', 5000, <ErrorOutlineRoundedIcon />);
         setgeofence(geofence);
       } catch (error: any) {
         const errorMessage = error.response?.data || error.message || 'خطا در دریافت محدوده جغرافیایی';
@@ -307,8 +349,8 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
       }
     }
 
-    if (!geofence || !warehouseId || !project) {
-      console.log("🗺 Missing required data for transport calc", { geofence, warehouseId, project });
+    if (!geofence || !warehouse || !project) {
+      console.log("🗺 Missing required data for transport calc", { geofence, warehouse, project });
       return;
     }
 
@@ -318,7 +360,7 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
         geofence,
         distance,
         isBranchDelivery,
-        warehouseId,
+        warehouse.id,
         currentCartDetails?.transit,
       )
       const data: TransportList = await getTransportCartListSale(
@@ -327,7 +369,7 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
         geofence,
         distance,
         isBranchDelivery,
-        warehouseId,
+        warehouse.id,
         currentCartDetails?.transit,
         project
       );
@@ -364,12 +406,23 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
     }
   };
 
+  const findDistance = async (): Promise<Distance[]> => {
+    try {
+      const distances = await fetchDistance(); // ✅ Direct result
+      console.log("Found distances:", distances);
+      return distances;
+    } catch (error) {
+      console.error("Failed to get distances:", error);
+      return [];
+    }
+  };
+
   useEffect(() => {
     if (!selectedCartId || selectedCartId === 0) {
       clearCartDetails();
-    } else {
-      getCartDetails(selectedCartId);
     }
+    getCartDetails(selectedCartId);
+
   }, [selectedCartId])
 
   useEffect(() => {
@@ -377,42 +430,45 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
       return;
     }
     getCartItems(cartList);
-    setRawItemsList();
+    // setRawItemsList();
 
   }, [cartProducts, isFetchingItems, cartList])
 
   useEffect(() => {
     if (!cartList) {
       return;
-    } else {
-      setBranchDelivery(cartList);
-      setTransitList(cartList);
-      setProjectAccount(cartList);
     }
+    setBranchDelivery(cartList);
+    setTransitList(cartList);
+    setProjectAccount(cartList);
   }, [cartList])
 
   useEffect(() => {
-    if (warehouses.length >= 1) { return; } else {
-      getWarehouseList();
-    }
+    if (warehouses.length >= 1) { return; }
+    getWarehouseList();
   }, [])
 
   useEffect(() => {
-    if (!warehouses && !cartList && !currentProject) {
+    if (!warehouses || !cartList || !currentProject) {
       return;
-    } else {
-      getNearestWarehouse(cartList, currentProject, warehouses);
     }
+
+    if (warehouses && cartList && currentProject) {
+    }
+
+    getNearestWarehouse(cartList, currentProject, warehouses);
+
   }, [warehouses, cartList, currentProject])
 
   useEffect(() => {
-    if (!rawItems && !selectedCartWarehouse && !currentProject) {
+    if (rawItems.length <= 0 || !selectedCartWarehouse || !currentProject || !selectedProject) {
+      console.log("⏸️ Waiting for all values:", { rawItems, selectedCartWarehouse, currentProject, selectedProject });
+      console.log("%cno items", 'color: red', { rawItems });
       return;
-    } else {
-      getVehicleId(rawItems, selectedCartWarehouse?.id, currentProject);
     }
-  }, [rawItems, selectedCartWarehouse, currentProject])
-
+    getVehicleId(rawItems, selectedCartWarehouse, currentProject);
+    console.log("✅ all values:", rawItems, selectedCartWarehouse.id, currentProject);
+  }, [rawItems, selectedCartWarehouse, currentProject, selectedProject]);
 
   useEffect(() => {
     if (
