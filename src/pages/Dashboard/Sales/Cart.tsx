@@ -182,7 +182,7 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
 
   const setProjectAccount = async (cartList: ListCart | null) => {
     if (!cartList) {
-      console.log("Cart not ready");
+      // console.log("Cart not ready");
       return;
     }
     const account = await findAccount(cartList.codeAccCustomer);
@@ -277,7 +277,7 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
           }
           setDistanceLoading(false);
         } else if (!project) {
-          console.log("🥐🥐 Missing required data for initializeCart calc", { project });
+          // console.log("🥐🥐 Missing required data for initializeCart calc", { project });
           showSnackbar('خطا در دریافت اطلاعات', 'warning', 3000, <ErrorOutlineRoundedIcon />);
         }
       }
@@ -295,7 +295,7 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
     setIsFetchingItems(true);
     getListOfCartItems(cart)
       .then((data: ItemResaultPrice[]) => {
-        console.log('Fetched cart items:', data);
+        // console.log('Fetched cart items:', data);
         setCartProducts(data);
       })
       .catch((error) => {
@@ -347,19 +347,12 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
     }
 
     if (!geofence || !warehouse || !project) {
-      console.log("🗺 Missing required data for transport calc", { geofence, warehouse, project });
+      // console.log("🗺 Missing required data for transport calc", { geofence, warehouse, project });
       return;
     }
 
     try {
-      console.log("👚🎒 ~ Cart ~ null",
-        items,
-        geofence,
-        distance,
-        isBranchDelivery,
-        warehouse.id,
-        currentCartDetails?.transit,
-      )
+      // console.log("👚🎒 ~ Cart ~ null", items, geofence, distance, isBranchDelivery, warehouse.id, currentCartDetails?.transit, )
       const data: TransportList = await getTransportCartListSale(
         null,
         items,
@@ -371,7 +364,7 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
         project
       );
 
-      console.log("🚛 Transport Data:", data);
+      // console.log("🚛 Transport Data:", data);
 
       if (data.listItemVehicleShipp && data.listItemVehicleShipp.length > 0) {
         const filteredVehicles = data.listItemVehicleShipp.filter((vehicle) => {
@@ -406,7 +399,7 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
   const findDistance = async (): Promise<Distance[]> => {
     try {
       const distances = await fetchDistance(selectedProject);
-      console.log("Found distances:", distances);
+      // console.log("Found distances:", distances);
       return distances;
     } catch (error) {
       console.error("Failed to get distances:", error);
@@ -459,12 +452,12 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
 
   useEffect(() => {
     if (rawItems.length <= 0 || !selectedCartWarehouse || !currentProject || !selectedProject) {
-      console.log("⏸️ Waiting for all values:", { rawItems, selectedCartWarehouse, currentProject, selectedProject });
-      console.log("%cno items", 'color: red', { rawItems });
+      // console.log("⏸️ Waiting for all values:", { rawItems, selectedCartWarehouse, currentProject, selectedProject });
+      // console.log("%cno items", 'color: red', { rawItems });
       return;
     }
     getVehicleId(rawItems, selectedCartWarehouse, currentProject);
-    console.log("✅ all values:", rawItems, selectedCartWarehouse.id, currentProject);
+    // console.log("✅ all values:", rawItems, selectedCartWarehouse.id, currentProject);
   }, [rawItems, selectedCartWarehouse, currentProject, selectedProject]);
 
   useEffect(() => {
