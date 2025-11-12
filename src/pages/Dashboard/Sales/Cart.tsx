@@ -40,6 +40,7 @@ import PaymentModal from '@/pages/Dashboard/Sales/Modals/PaymentModal';
 import { flex, size } from '@/models/ReadyStyles';
 
 import { useSnackbar } from "@/contexts/SnackBarContext";
+import { useDeliveryTimeOptions } from '@/hooks/useDeliveryTimeOptions';
 import {
   useAccountStore,
   useProjectStore,
@@ -75,6 +76,15 @@ interface CartProps {
   openCart: boolean;
 }
 
+export interface DeliveryTimeOption {
+  id: string; // "day-3-slot-8-13"
+  label: string;
+  dayIndex: number; // 0-6
+  startHour: number;
+  endHour: number;
+}
+
+
 const deliverySources = [
   { id: 1, method: 'از انبار' },
   { id: 2, method: 'مستقیم از کارخانه' }
@@ -102,7 +112,7 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
   const prevCartIdRef = useRef<number | null>(null);
 
   const [deliveryMethod, setDeliveryMethod] = useState<{ id: number; title: string } | null>(null);
-  const [deliveryTime, setDeliveryTime] = useState<string[]>([]);
+  const [deliveryTime, setDeliveryTime] = useState<DeliveryTimeOption | null>(null);
   const [services, setServices] = useState(0);
   const [deliveryMethodBot, setDeliveryMethodBot] = useState<string | null>('manual');
   const [geofence, setgeofence] = useState<GeoFence | null>(null);
@@ -153,6 +163,12 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
     if (!selectedCartWarehouse) return [];
     return rawItems.filter(item => item.warehouseId === selectedCartWarehouse.id);
   }, [rawItems, selectedCartWarehouse]);
+
+  const deliveryTimeOptions = useDeliveryTimeOptions({
+    items: filteredItems,
+    isTransitMode: !!currentCartDetails?.transit,
+    selectedDeliveryMethod: deliveryMethod
+  });
 
   const totalInvoice = useMemo(() => {
     return filteredItems.reduce((sum, item) => {
@@ -328,9 +344,16 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
       setRawItems([]);
     } else {
       setRawItems(cartProducts);
+      console.log("🚀 ~ Cart ~ cartProducts:", cartProducts)
       // showSnackbar(`موفقیت آمیز ${rawItems.length}`, 'success', 5000, <InfoRoundedIcon />);
+
     }
   }, [cartProducts])
+
+  useEffect(() => {
+    console.log("😌 ~ Cart ~ filteredItems:", filteredItems)
+
+  }, [filteredItems])
 
   const getVehicleId = async (items: ItemResaultPrice[], warehouse: Warehouse | null, project: Project | undefined) => {
     let geofence: GeoFence | null = null;
@@ -961,8 +984,16 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
                           <Combo
                             value={deliveryTime}
                             onChange={setDeliveryTime}
-                            options={[]}
+                            options={deliveryTimeOptions}
+                            // @ts-ignore
+                            getOptionLabel={(option) => option.label}
+                            // @ts-ignore
+                            getOptionValue={(option) => option.id}
                             label="زمان تحویل"
+                            placeholder="زمان تحویل را انتخاب کنید"
+                            disabled={!deliveryMethod || deliveryTimeOptions.length === 0}
+                            loading={!deliveryMethod ? false : !deliveryTimeOptions.length}
+                            noOptionsText={deliveryMethod ? "زمانی برای تحویل موجود نیست" : "ابتدا شیوه تحویل را انتخاب کنید"}
                           />
                         </TableCell>
                         <TableCell>

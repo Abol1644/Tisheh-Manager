@@ -284,7 +284,7 @@ export function AddChequeModal({ open, onClose }: any) {
 export function AddPayModal({ open, onClose }: any) {
   const [paymentOrg, setPaymentOrg] = React.useState<string[]>([]);
   const [orderFullPrice, setOrderFullPrice] = React.useState('1200000');
-  const { toPersianPrice, toEnglishNumber } = usePersianNumbers();
+  const { toPersianPrice } = usePersianNumbers();
 
   return (
     <Modal
@@ -868,7 +868,7 @@ export default function PaymentModal({ open, onClose, receiptNumber }: { open: b
   const [orderEditModalOpen, setOrderEditModalOpen] = React.useState(false);
   const [paymentMethod, setPaymentMethod] = React.useState<string[]>([]);
   const [orderFullPrice, setOrderFullPrice] = React.useState('1200000');
-  const { toPersianPrice, toEnglishNumber } = usePersianNumbers();
+  const { toPersianPrice } = usePersianNumbers();
   const [value, setValue] = React.useState(0);
   const [OrderAnchorEl, setOrderAnchorEl] = React.useState<null | HTMLElement>(null);
   const printMenuOpen = Boolean(OrderAnchorEl);
@@ -998,7 +998,7 @@ export default function PaymentModal({ open, onClose, receiptNumber }: { open: b
                     label="تخفیف نهایی "
                     variant="standard"
                     // type="number"
-                    value={toEnglishNumber(orderFullPrice)}
+                    value={orderFullPrice}
                     onChange={(e) => {
                       // Only allow numbers
                       const value = e.target.value.replace(/[^0-9]/g, '');
