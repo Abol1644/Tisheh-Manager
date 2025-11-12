@@ -319,6 +319,7 @@ export default function MainLayout() {
 
   const handleNavigateToProfile = () => {
     navigate('/profile');
+    setMainDrawerOpen(false);
   };
 
   const handleMainDrawerClose = () => {
