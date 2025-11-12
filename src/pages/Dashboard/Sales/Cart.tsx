@@ -270,7 +270,7 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
           const targetWarehouse = listWarehouses.find(wh => wh.id === primaryDistance)
           if (targetWarehouse) {
             setSelectedCartWarehouse(targetWarehouse);
-            showSnackbar(`انبار با موفقیت انتخاب شد ${targetWarehouse?.title}`, 'info', 1000, <InfoRoundedIcon />);
+            // showSnackbar(`انبار با موفقیت انتخاب شد ${targetWarehouse?.title}`, 'info', 1000, <InfoRoundedIcon />);
           } else {
             showSnackbar('انبار مناسب پیدا نشد', 'warning', 3000, <ErrorOutlineRoundedIcon />);
             return;
@@ -278,7 +278,7 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
           setDistanceLoading(false);
         } else if (!project) {
           console.log("🥐🥐 Missing required data for initializeCart calc", { project });
-          showSnackbar('اطلاعات نداریم', 'warning', 3000, <ErrorOutlineRoundedIcon />);
+          showSnackbar('خطا در دریافت اطلاعات', 'warning', 3000, <ErrorOutlineRoundedIcon />);
         }
       }
     } catch (error: any) {
@@ -328,7 +328,7 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
       setRawItems([]);
     } else {
       setRawItems(cartProducts);
-      showSnackbar(`موفقیت آمیز ${rawItems.length}`, 'success', 5000, <InfoRoundedIcon />);
+      // showSnackbar(`موفقیت آمیز ${rawItems.length}`, 'success', 5000, <InfoRoundedIcon />);
     }
   }, [cartProducts])
 
@@ -337,7 +337,7 @@ export function Cart({ setOpenCart, openCart }: CartProps) {
     if (project) {
       try {
         geofence = await getGeoFence(project);
-        showSnackbar("در حال دریافت جئو", 'error', 5000, <ErrorOutlineRoundedIcon />);
+        // showSnackbar("در حال دریافت جئو", 'error', 5000, <ErrorOutlineRoundedIcon />);
         setgeofence(geofence);
       } catch (error: any) {
         const errorMessage = error.response?.data || error.message || 'خطا در دریافت محدوده جغرافیایی';
